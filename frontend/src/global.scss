@@ -1,0 +1,203 @@
+/*
+ * App Global CSS
+ * ----------------------------------------------------------------------------
+ * Put style rules here that you want to apply globally. These styles are for
+ * the entire app and not just one component. Additionally, this file can be
+ * used as an entry point to import other CSS/Sass files to be included in the
+ * output CSS.
+ * For more information on global stylesheets, visit the documentation:
+ * https://ionicframework.com/docs/layout/global-stylesheets
+ */
+
+/* Core CSS required for Ionic components to work properly */
+@import "@ionic/angular/css/core.css";
+
+/* Basic CSS for apps built with Ionic */
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import "@ionic/angular/css/display.css";
+
+/* Optional CSS utils that can be commented out */
+@import "@ionic/angular/css/padding.css";
+@import "@ionic/angular/css/float-elements.css";
+@import "@ionic/angular/css/text-alignment.css";
+@import "@ionic/angular/css/text-transformation.css";
+@import "@ionic/angular/css/flex-utils.css";
+
+/**
+ * Ionic Dark Mode
+ * -----------------------------------------------------
+ * For more info, please see:
+ * https://ionicframework.com/docs/theming/dark-mode
+ */
+
+/* @import "@ionic/angular/css/palettes/dark.always.css"; */
+/* @import "@ionic/angular/css/palettes/dark.class.css"; */
+/* @import '@ionic/angular/css/palettes/dark.system.css'; */
+
+/**
+ * Side-docked modals
+ * -----------------------------------------------------
+ * Docks the modal to the right edge, full height, instead of the default
+ * centered card. Paired with slideInFromRight/slideOutToRight animations
+ * (see app/modals/side-modal.animations.ts) for a drawer-like entrance.
+ */
+ion-modal.side-modal {
+  --width: min(440px, 100vw);
+  --height: 100%;
+  --border-radius: 0;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+
+ion-modal.side-modal .modal-wrapper {
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.45);
+  border-left: 1px solid var(--app-surface-border);
+}
+
+/**
+ * Side-modal form fields
+ * -----------------------------------------------------
+ * Default Ionic list items (underline, generous padding, no visual grouping)
+ * waste space on a narrow docked panel. Turn every real field into a compact
+ * "glass" card instead, and leave lines="none" items (live labels, slider
+ * containers — not actual inputs) alone so they stay flat.
+ */
+.side-modal ion-header ion-toolbar {
+  --border-width: 0 0 1px 0;
+  --border-color: var(--app-surface-border);
+}
+
+.side-modal ion-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.side-modal form ion-item:not([lines="none"]) {
+  --background: var(--app-surface-glass);
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  border: 1px solid var(--app-surface-border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  transition: border-color 0.15s ease;
+}
+
+.side-modal form ion-item:not([lines="none"]):focus-within {
+  border-color: var(--ion-color-primary);
+}
+
+.side-modal form ion-item[lines="none"] {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  --min-height: 0;
+  margin-bottom: 2px;
+}
+
+/* Groups the % slider and its two live value labels (adicionar/editar receita) into one card
+   instead of three near-invisible lines="none" items with no breathing room between them. */
+.side-modal form .cash-card {
+  background: var(--app-surface-glass);
+  border: 1px solid var(--app-surface-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.side-modal form .cash-card ion-item {
+  margin-bottom: 0;
+  --padding-top: 4px;
+  --padding-bottom: 4px;
+}
+
+.side-modal form .cash-card-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.side-modal form .cash-card-label {
+  font-size: 0.8rem;
+  color: var(--app-text-secondary);
+}
+
+.side-modal form .cash-card-value {
+  font-weight: 600;
+  color: var(--app-text-primary);
+}
+
+.side-modal form .cash-card-footer {
+  margin-top: 2px;
+}
+
+.side-modal form .cash-card-footer .cash-card-value {
+  color: var(--ion-color-success);
+  font-weight: 700;
+}
+
+.side-modal form .field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.side-modal form .field-row > ion-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.side-modal form .field-row > ion-item.col-grow {
+  flex: 2;
+}
+
+.side-modal form ion-button[type="submit"] {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: 20px;
+  font-weight: 600;
+  --border-radius: 12px;
+  --box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+}
+
+/**
+ * Fullscreen modals
+ * -----------------------------------------------------
+ * Takes over the entire viewport — used for the expanded chart view.
+ */
+ion-modal.fullscreen-modal {
+  --width: 100vw;
+  --height: 100vh;
+  --border-radius: 0;
+}
+
+/**
+ * Prefixo "R$" nos campos de valor com máscara de moeda (ver shared/currency-mask.ts)
+ * -----------------------------------------------------
+ * Fica fora do texto editável do input (que só contém os dígitos formatados, ex: "12,56"),
+ * então a regex de máscara nunca precisa lidar com o símbolo da moeda.
+ */
+ion-input .currency-prefix {
+  color: var(--app-text-secondary);
+  font-weight: 600;
+  margin-inline-end: 2px;
+}
+
+/**
+ * Botões de ação do header em icon-only no mobile
+ * -----------------------------------------------------
+ * Headers com vários botões de ação (Home, Manutenção Veículos) ficariam
+ * espremidos ou cortados num toolbar estreito de celular — abaixo de 576px o
+ * texto do botão é escondido, o ícone sozinho já identifica a ação.
+ */
+@media (max-width: 576px) {
+  ion-toolbar ion-buttons[slot="end"] ion-button .btn-text {
+    display: none;
+  }
+
+  ion-toolbar ion-buttons[slot="end"] ion-button ion-icon[slot="start"] {
+    margin-inline-end: 0;
+  }
+}

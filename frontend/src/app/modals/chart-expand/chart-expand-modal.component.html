@@ -1,0 +1,30 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>{{ title }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-select
+        [value]="meses()"
+        (ionChange)="onJanelaChange($any($event.detail.value))"
+        interface="popover"
+        fill="outline"
+      >
+        @for (j of janelas; track j) {
+          <ion-select-option [value]="j">Últimos {{ j }} meses</ion-select-option>
+        }
+      </ion-select>
+      <ion-button (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="expanded-chart-wrap">
+    @if (chartType === 'line') {
+      <canvas baseChart [type]="'line'" [data]="lineChartData()" [options]="lineChartOptions"></canvas>
+    } @else {
+      <canvas baseChart [type]="'bar'" [data]="comboChartData()" [options]="comboChartOptions"></canvas>
+    }
+  </div>
+</ion-content>

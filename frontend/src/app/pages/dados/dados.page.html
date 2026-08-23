@@ -1,0 +1,153 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Início"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Visualizar dados</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="dados">
+    <div class="top-controls">
+      <ion-segment [value]="aba()" (ionChange)="onAbaChange($any($event.detail.value))">
+        <ion-segment-button value="gastos">
+          <ion-label>Gastos</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="receitas">
+          <ion-label>Receitas</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+
+      <div class="filters">
+        <ion-select
+          [value]="mes()"
+          (ionChange)="onMesChange($any($event.detail.value))"
+          interface="popover"
+          [interfaceOptions]="{ size: 'auto' }"
+          fill="outline"
+          placeholder="Mês"
+        >
+          <ion-select-option [value]="null">Todos os meses</ion-select-option>
+          @for (m of meses; track $index) {
+            <ion-select-option [value]="$index + 1">{{ m }}</ion-select-option>
+          }
+        </ion-select>
+        <ion-select
+          [value]="ano()"
+          (ionChange)="onAnoChange($any($event.detail.value))"
+          interface="popover"
+          fill="outline"
+          placeholder="Ano"
+        >
+          <ion-select-option [value]="null">Todos os anos</ion-select-option>
+          @for (a of anos; track a) {
+            <ion-select-option [value]="a">{{ a }}</ion-select-option>
+          }
+        </ion-select>
+      </div>
+    </div>
+
+    @if (initialLoading()) {
+      <app-loading-state message="Carregando lançamentos..."></app-loading-state>
+    } @else if (aba() === 'gastos') {
+      <section class="data-section">
+        <h2>Gastos <span class="count">({{ gastos().length }} de {{ totalGastos() }})</span></h2>
+        <div class="table-card">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th appSortTh="date" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Data</th>
+                  <th appSortTh="priority" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Prioridade</th>
+                  <th appSortTh="item" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Item</th>
+                  <th appSortTh="value" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Valor</th>
+                  <th appSortTh="installment" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Parcela</th>
+                  <th appSortTh="description" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Descrição</th>
+                  <th class="actions-col">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (gasto of sortedGastos(); track gasto.id) {
+                  <tr>
+                    <td>{{ gasto.date | date: 'dd/MM/yyyy' }}</td>
+                    <td>{{ gasto.priority === 'essencial' ? 'Essencial' : 'Não essencial' }}</td>
+                    <td>{{ gasto.item_name }}</td>
+                    <td class="num">{{ gasto.value | currency: 'BRL' }}</td>
+                    <td>{{ gasto.is_installment ? gasto.installment_number + '/' + gasto.installment_count : '-' }}</td>
+                    <td class="description">{{ gasto.description || '-' }}</td>
+                    <td class="actions-col">
+                      <button class="icon-btn" (click)="editarGasto(gasto)">
+                        <ion-icon name="create"></ion-icon>
+                      </button>
+                      <button class="icon-btn danger" (click)="excluirGasto(gasto)">
+                        <ion-icon name="trash"></ion-icon>
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="empty">Nenhum gasto encontrado para o filtro selecionado.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        @if (gastos().length < totalGastos()) {
+          <button class="load-more-btn" (click)="carregarMaisGastos()">
+            Carregar mais 25 ({{ totalGastos() - gastos().length }} restantes)
+          </button>
+        }
+      </section>
+    } @else {
+      <section class="data-section">
+        <h2>Receitas <span class="count">({{ receitas().length }} de {{ totalReceitas() }})</span></h2>
+        <div class="table-card">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th appSortTh="date" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Data</th>
+                  <th appSortTh="value" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Valor</th>
+                  <th appSortTh="cash_percentage" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">% Caixa</th>
+                  <th appSortTh="cash_value" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Valor caixa</th>
+                  <th appSortTh="description" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Descrição</th>
+                  <th class="actions-col">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (receita of sortedReceitas(); track receita.id) {
+                  <tr>
+                    <td>{{ receita.date | date: 'dd/MM/yyyy' }}</td>
+                    <td class="num">{{ receita.value | currency: 'BRL' }}</td>
+                    <td class="num">{{ receita.cash_percentage }}%</td>
+                    <td class="num">{{ receita.cash_value | currency: 'BRL' }}</td>
+                    <td class="description">{{ receita.description || '-' }}</td>
+                    <td class="actions-col">
+                      <button class="icon-btn" (click)="editarReceita(receita)">
+                        <ion-icon name="create"></ion-icon>
+                      </button>
+                      <button class="icon-btn danger" (click)="excluirReceita(receita)">
+                        <ion-icon name="trash"></ion-icon>
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="empty">Nenhuma receita encontrada para o filtro selecionado.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        @if (receitas().length < totalReceitas()) {
+          <button class="load-more-btn" (click)="carregarMaisReceitas()">
+            Carregar mais 25 ({{ totalReceitas() - receitas().length }} restantes)
+          </button>
+        }
+      </section>
+    }
+  </div>
+</ion-content>

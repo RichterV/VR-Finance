@@ -1,0 +1,91 @@
+.login-content {
+  --background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.18), transparent 60%), var(--ion-background-color);
+}
+
+.login-wrap {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 32px;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.brand-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--ion-color-primary);
+  color: #f8fafc;
+  font-size: 32px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 28px rgba(99, 102, 241, 0.35);
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--app-text-primary);
+}
+
+.brand-subtitle {
+  margin: 0;
+  color: var(--app-text-secondary);
+  font-size: 0.9rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--app-surface-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--app-surface-border);
+  border-radius: 20px;
+  padding: 28px 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+.login-card ion-item {
+  --background: var(--app-surface);
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  border: 1px solid var(--app-surface-border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  transition: border-color 0.15s ease;
+}
+
+.login-card ion-item:focus-within {
+  border-color: var(--ion-color-primary);
+}
+
+.remember-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--app-text-secondary);
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 4px;
+}
+
+.login-card ion-button[type="submit"] {
+  --border-radius: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+}

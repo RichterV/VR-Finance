@@ -1,0 +1,251 @@
+.veiculos {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.empty-state {
+  color: var(--app-text-secondary);
+}
+
+.stat-card {
+  background: var(--app-surface-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--app-surface-border);
+  border-radius: 16px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.stat-label {
+  font-size: 0.82rem;
+  color: var(--app-text-secondary);
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text-primary);
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--app-text-secondary);
+  margin-top: 4px;
+}
+
+.chart-card {
+  background: var(--app-surface-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--app-surface-border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.chart-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 12px;
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--app-text-primary);
+  }
+}
+
+.chart-wrap {
+  position: relative;
+  height: 280px;
+}
+
+.data-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  h2 {
+    font-weight: 600;
+    margin: 0;
+    color: var(--app-text-primary);
+
+    .count {
+      font-weight: 400;
+      color: var(--app-text-secondary);
+      font-size: 0.9rem;
+    }
+  }
+}
+
+.section-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  ion-select {
+    max-width: 220px;
+  }
+}
+
+@media (max-width: 480px) {
+  .veiculos {
+    gap: 24px;
+  }
+
+  .stat-card,
+  .chart-card {
+    padding: 16px 18px;
+  }
+
+  .stat-value {
+    font-size: 1.2rem;
+  }
+
+  .chart-wrap {
+    height: 220px;
+  }
+
+  .section-header ion-select {
+    max-width: none;
+    width: 100%;
+  }
+
+  td.description {
+    max-width: 140px;
+  }
+}
+
+.load-more-btn {
+  align-self: center;
+  border: 1px solid var(--app-surface-border);
+  background: var(--app-surface-glass);
+  color: var(--app-text-primary);
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+
+  &:hover {
+    background: var(--app-surface-hover);
+  }
+}
+
+.table-card {
+  background: var(--app-surface-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--app-surface-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.table-scroll {
+  max-height: 860px;
+  overflow-y: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: var(--app-surface);
+  color: var(--app-text-secondary);
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--app-surface-border);
+  z-index: 1;
+}
+
+tbody td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--app-surface-border);
+  color: var(--app-text-primary);
+  white-space: nowrap;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover td {
+  background: var(--app-surface-hover);
+}
+
+td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+td.description {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--app-text-secondary);
+}
+
+td.empty {
+  text-align: center;
+  color: var(--app-text-secondary);
+  padding: 24px 16px;
+  white-space: normal;
+}
+
+th.actions-col,
+td.actions-col {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.icon-btn {
+  border: none;
+  background: transparent;
+  color: var(--app-text-secondary);
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+
+  ion-icon {
+    font-size: 1.1rem;
+  }
+
+  &:hover {
+    background: var(--app-surface-hover);
+    color: var(--app-text-primary);
+  }
+
+  &.danger:hover {
+    color: var(--ion-color-danger);
+  }
+}

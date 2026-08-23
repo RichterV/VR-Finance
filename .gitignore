@@ -1,0 +1,15 @@
+**/.env
+**/venv/
+**/__pycache__/
+**/*.pyc
+**/*.db
+**/*.db.bak-*
+**/node_modules/
+**/www/
+**/.angular/
+**/android/local.properties
+**/android/**/build/
+**/android/.gradle/
+doc/site/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,345 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Início</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="toggleValores()" [title]="valoresOcultos() ? 'Mostrar valores' : 'Ocultar valores'">
+        <ion-icon slot="icon-only" [name]="valoresOcultos() ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+      </ion-button>
+      <ion-button (click)="abrirAdicionarGasto()">
+        <ion-icon slot="start" name="remove-circle-outline"></ion-icon>
+        <span class="btn-text">Adicionar gasto</span>
+      </ion-button>
+      <ion-button (click)="abrirAdicionarReceita()">
+        <ion-icon slot="start" name="add-circle-outline"></ion-icon>
+        <span class="btn-text">Adicionar receita</span>
+      </ion-button>
+      <ion-button routerLink="/dados">
+        <ion-icon slot="start" name="bar-chart-outline"></ion-icon>
+        <span class="btn-text">Visualizar dados</span>
+      </ion-button>
+      <ion-button (click)="abrirItens()">
+        <ion-icon slot="start" name="pricetags-outline"></ion-icon>
+        <span class="btn-text">Categorias</span>
+      </ion-button>
+      <ion-button (click)="abrirPerfil()">
+        <ion-icon slot="start" name="person-outline"></ion-icon>
+        <span class="btn-text">Perfil</span>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <ion-refresher slot="fixed" (ionRefresh)="onPullToRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+  @if (loading()) {
+    <app-loading-state message="Carregando seu resumo financeiro..."></app-loading-state>
+  } @else {
+  <div class="dashboard">
+    <header class="dashboard-header">
+      @if (auth.currentUser(); as user) {
+        <h1>Olá, {{ user.username }}</h1>
+      }
+      <p class="subtitle">Aqui está o resumo das suas finanças</p>
+    </header>
+
+    <section class="dashboard-section">
+      <div class="section-header">
+        <h2>Resumo mensal</h2>
+        <div class="period-controls">
+          <ion-select
+            class="select-mes"
+            [value]="mes()"
+            (ionChange)="onMesChange($any($event.detail.value))"
+            interface="popover"
+            [interfaceOptions]="{ size: 'auto' }"
+            fill="outline"
+          >
+            @for (m of meses; track $index) {
+              <ion-select-option [value]="$index + 1">{{ m }}</ion-select-option>
+            }
+          </ion-select>
+          <ion-select
+            [value]="anoMensal()"
+            (ionChange)="onAnoMensalChange($any($event.detail.value))"
+            interface="popover"
+            fill="outline"
+          >
+            @for (a of anos; track a) {
+              <ion-select-option [value]="a">{{ a }}</ion-select-option>
+            }
+          </ion-select>
+          <ion-button fill="outline" size="small" (click)="abrirDetalhesMes()">
+            <ion-icon slot="start" name="document-text-outline"></ion-icon>
+            Ver detalhes
+          </ion-button>
+        </div>
+        <label class="cutoff-toggle">
+          <ion-checkbox
+            [checked]="limitarAteMesSelecionado()"
+            (ionChange)="setLimitarAteMesSelecionado($any($event.detail.checked))"
+          ></ion-checkbox>
+          <span>Mostrar apenas até o mês selecionado</span>
+        </label>
+      </div>
+
+      @if (resumoMensal(); as rm) {
+        <div class="stats-grid">
+          <div class="stat-card stat-card--highlight" [class.negativo]="rm.disponivel_para_gastar < 0">
+            <span class="stat-label">Disponível pra gastar</span>
+            <span class="stat-value">{{ maskCurrency(rm.disponivel_para_gastar) }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Gastos do mês</span>
+            <span class="stat-value">{{ maskCurrency(rm.total_gastos) }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Essenciais</span>
+            <span class="stat-value"
+              >{{ maskCurrency(rm.total_essenciais) }}
+              <span class="stat-percent">{{ maskPercentParen(rm.total_essenciais, rm.total_gastos) }}</span></span
+            >
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Não essenciais</span>
+            <span class="stat-value"
+              >{{ maskCurrency(rm.total_nao_essenciais) }}
+              <span class="stat-percent">{{ maskPercentParen(rm.total_nao_essenciais, rm.total_gastos) }}</span></span
+            >
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Qtd. de gastos</span>
+            <span class="stat-value">{{ maskCount(rm.quantidade_gastos) }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Qtd. de receitas</span>
+            <span class="stat-value">{{ maskCount(rm.quantidade_receitas) }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Média por gasto</span>
+            <span class="stat-value">{{ maskCurrency(rm.media_gastos_lancamento) }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Média por receita</span>
+            <span class="stat-value">{{ maskCurrency(rm.media_receitas_lancamento) }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Caixa pretendido</span>
+            <span class="stat-value">{{ maskCurrency(rm.total_caixa_pretendido) }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Caixa real</span>
+            <span class="stat-value">{{ maskCurrency(rm.total_caixa_real) }}</span>
+          </div>
+        </div>
+
+        @if (rm.percentuais_itens.length) {
+          @let essenciaisMensal = itemsForPriority(rm.percentuais_itens, 'essencial');
+          @let naoEssenciaisMensal = itemsForPriority(rm.percentuais_itens, 'nao_essencial');
+          @let maxEssencialMensal = maxPercentual(essenciaisMensal);
+          @let maxNaoEssencialMensal = maxPercentual(naoEssenciaisMensal);
+          <div class="percentuais-grid">
+            <div class="percentuais-col">
+              <h3>Essencial</h3>
+              @for (item of essenciaisMensal; track item.item_id) {
+                <div class="percentual-row">
+                  <span class="percentual-name">{{ item.item_name }}</span>
+                  <span class="percentual-bar">
+                    <span class="percentual-fill" [style.width.%]="maskWidth((item.percentual / maxEssencialMensal) * 100)"></span>
+                  </span>
+                  <span class="percentual-value">{{ maskItemPercent(item.percentual) }}</span>
+                </div>
+              }
+            </div>
+            <div class="percentuais-col">
+              <h3>Não essencial</h3>
+              @for (item of naoEssenciaisMensal; track item.item_id) {
+                <div class="percentual-row">
+                  <span class="percentual-name">{{ item.item_name }}</span>
+                  <span class="percentual-bar">
+                    <span class="percentual-fill" [style.width.%]="maskWidth((item.percentual / maxNaoEssencialMensal) * 100)"></span>
+                  </span>
+                  <span class="percentual-value">{{ maskItemPercent(item.percentual) }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
+    </section>
+
+    <section class="dashboard-section">
+      <div class="section-header">
+        <h2>Resumo anual <span class="section-subtitle">({{ anoMensal() }})</span></h2>
+        <label class="cutoff-toggle">
+          <ion-checkbox
+            [checked]="limitarAteMesSelecionado()"
+            (ionChange)="setLimitarAteMesSelecionado($any($event.detail.checked))"
+          ></ion-checkbox>
+          <span>Mostrar apenas até o mês selecionado</span>
+        </label>
+      </div>
+
+      @if (resumoAnual(); as ra) {
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Receita total</span>
+            <span class="stat-value">{{ maskCurrency(ra.total_receita) }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Gastos do ano</span>
+            <span class="stat-value">{{ maskCurrency(ra.total_gastos) }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Essenciais</span>
+            <span class="stat-value"
+              >{{ maskCurrency(ra.total_essenciais) }}
+              <span class="stat-percent">{{ maskPercentParen(ra.total_essenciais, ra.total_gastos) }}</span></span
+            >
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Não essenciais</span>
+            <span class="stat-value"
+              >{{ maskCurrency(ra.total_nao_essenciais) }}
+              <span class="stat-percent">{{ maskPercentParen(ra.total_nao_essenciais, ra.total_gastos) }}</span></span
+            >
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Qtd. de gastos</span>
+            <span class="stat-value">{{ maskCount(ra.quantidade_gastos) }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Qtd. de receitas</span>
+            <span class="stat-value">{{ maskCount(ra.quantidade_receitas) }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Média mensal de gastos</span>
+            <span class="stat-value">{{ maskCurrency(ra.media_gastos_mensal) }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Média mensal de receitas</span>
+            <span class="stat-value">{{ maskCurrency(ra.media_receitas_mensal) }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Caixa pretendido</span>
+            <span class="stat-value">{{ maskCurrency(ra.total_caixa_pretendido) }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Caixa real</span>
+            <span class="stat-value">{{ maskCurrency(ra.total_caixa_real) }}</span>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <h3>Evolução (últimos 12 meses)</h3>
+              <button class="icon-btn" (click)="expandirGrafico('line', 'Evolução')">
+                <ion-icon name="expand-outline"></ion-icon>
+              </button>
+            </div>
+            <div class="chart-wrap">
+              <canvas baseChart [type]="'line'" [data]="lineChartData()" [options]="lineChartOptions()"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <h3>Caixa pretendido vs. real (últimos 12 meses)</h3>
+              <button class="icon-btn" (click)="expandirGrafico('bar', 'Caixa pretendido vs. real')">
+                <ion-icon name="expand-outline"></ion-icon>
+              </button>
+            </div>
+            <div class="chart-wrap">
+              <canvas baseChart [type]="'bar'" [data]="comboChartData()" [options]="comboChartOptions()"></canvas>
+            </div>
+          </div>
+        </div>
+
+        @if (ra.percentuais_itens.length) {
+          @let essenciaisAnual = itemsForPriority(ra.percentuais_itens, 'essencial');
+          @let naoEssenciaisAnual = itemsForPriority(ra.percentuais_itens, 'nao_essencial');
+          @let maxEssencialAnual = maxPercentual(essenciaisAnual);
+          @let maxNaoEssencialAnual = maxPercentual(naoEssenciaisAnual);
+          <div class="percentuais-grid">
+            <div class="percentuais-col">
+              <h3>Essencial</h3>
+              @for (item of essenciaisAnual; track item.item_id) {
+                <div class="percentual-row">
+                  <span class="percentual-name">{{ item.item_name }}</span>
+                  <span class="percentual-bar">
+                    <span class="percentual-fill" [style.width.%]="maskWidth((item.percentual / maxEssencialAnual) * 100)"></span>
+                  </span>
+                  <span class="percentual-value">{{ maskItemPercent(item.percentual) }}</span>
+                </div>
+              }
+            </div>
+            <div class="percentuais-col">
+              <h3>Não essencial</h3>
+              @for (item of naoEssenciaisAnual; track item.item_id) {
+                <div class="percentual-row">
+                  <span class="percentual-name">{{ item.item_name }}</span>
+                  <span class="percentual-bar">
+                    <span class="percentual-fill" [style.width.%]="maskWidth((item.percentual / maxNaoEssencialAnual) * 100)"></span>
+                  </span>
+                  <span class="percentual-value">{{ maskItemPercent(item.percentual) }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
+    </section>
+
+    <section class="dashboard-section">
+      <div class="section-header">
+        <h2>Relatório geral</h2>
+        <label class="cutoff-toggle">
+          <ion-checkbox
+            [checked]="limitarAteMesSelecionado()"
+            (ionChange)="setLimitarAteMesSelecionado($any($event.detail.checked))"
+          ></ion-checkbox>
+          <span>Mostrar apenas até o mês selecionado</span>
+        </label>
+      </div>
+
+      @if (resumoGeral(); as rg) {
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <h3>Totais gerais</h3>
+            </div>
+            <div class="chart-wrap">
+              <canvas baseChart [type]="'bar'" [data]="totaisGeraisChartData()" [options]="totaisGeraisChartOptions()"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <h3>Gastos, receita e caixa por ano</h3>
+            </div>
+            <div class="chart-wrap">
+              <canvas baseChart [type]="'bar'" [data]="porAnoChartData()" [options]="porAnoChartOptions()"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-card chart-card--wide">
+          <div class="chart-card-header">
+            <h3>Gastos, receita e caixa por mês (tendência entre os anos)</h3>
+          </div>
+          <div class="chart-wrap">
+            <canvas baseChart [type]="'bar'" [data]="porMesChartData()" [options]="porMesChartOptions()"></canvas>
+          </div>
+        </div>
+
+        @if (!rg.anos.length) {
+          <p class="empty-state">Nenhum lançamento encontrado ainda.</p>
+        }
+      }
+    </section>
+  </div>
+  }
+</ion-content>

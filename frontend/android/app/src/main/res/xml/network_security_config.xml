@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Permite trafego HTTP puro (sem TLS) apenas para o hostname do Tailscale.
+  A partir do Android 9 (API 28), apps bloqueiam cleartext por padrao; sem isso,
+  TODAS as chamadas a API falham silenciosamente (o app so tem esse host como backend,
+  e o trafego ja e criptografado pelo tunel WireGuard do Tailscale mesmo sem HTTPS aqui).
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">seu-celular.seu-tailnet.ts.net</domain>
+    </domain-config>
+</network-security-config>

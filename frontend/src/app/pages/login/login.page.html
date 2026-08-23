@@ -1,0 +1,37 @@
+<ion-content [fullscreen]="true" class="login-content">
+  <div class="login-wrap">
+    <div class="brand">
+      <div class="brand-icon">$</div>
+      <h1>VR Finance</h1>
+      <p class="brand-subtitle">Controle financeiro pessoal</p>
+    </div>
+
+    <form class="login-card" [formGroup]="form" (ngSubmit)="submit()">
+      <ion-item>
+        <ion-input label="Usuário" labelPlacement="stacked" formControlName="username" type="text" autocomplete="username"></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-input label="Senha" labelPlacement="stacked" formControlName="password" type="password" autocomplete="current-password"></ion-input>
+      </ion-item>
+
+      <label class="remember-toggle">
+        <ion-checkbox
+          [checked]="lembrarCredenciais()"
+          (ionChange)="lembrarCredenciais.set($any($event.detail.checked))"
+        ></ion-checkbox>
+        <span>Lembrar usuário e senha</span>
+      </label>
+
+      @if (errorMessage()) {
+        <ion-text color="danger">
+          <p>{{ errorMessage() }}</p>
+        </ion-text>
+      }
+
+      <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="form.invalid || loading()">
+        {{ loading() ? 'Entrando...' : 'Entrar' }}
+      </ion-button>
+    </form>
+  </div>
+</ion-content>

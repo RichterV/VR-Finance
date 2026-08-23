@@ -1,0 +1,64 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Editar gasto</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <ion-segment [value]="form.value.priority" (ionChange)="onPriorityChange($any($event.detail.value))">
+      <ion-segment-button value="essencial">
+        <ion-label>Essencial</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="nao_essencial">
+        <ion-label>Não essencial</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+
+    <ion-item>
+      <ion-select label="Item" placeholder="Selecione" formControlName="itemId" interface="popover">
+        @for (item of items(); track item.id) {
+          <ion-select-option [value]="item.id">{{ item.name }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-item>
+
+    <ion-item>
+      <ion-input
+        label="Valor"
+        labelPlacement="stacked"
+        type="text"
+        inputmode="decimal"
+        [value]="valorDisplay()"
+        (ionInput)="onValorInput($event)"
+        placeholder="0,00"
+      >
+        <div slot="start" class="currency-prefix">R$</div>
+      </ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-textarea
+        label="Descrição"
+        labelPlacement="stacked"
+        formControlName="description"
+        placeholder="Opcional"
+      ></ion-textarea>
+    </ion-item>
+
+    @if (errorMessage()) {
+      <ion-text color="danger">
+        <p>{{ errorMessage() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving()">
+      {{ saving() ? 'Salvando...' : 'Salvar alterações' }}
+    </ion-button>
+  </form>
+</ion-content>

@@ -1,0 +1,211 @@
+ion-menu {
+  --width: 264px;
+  --border-width: 0;
+}
+
+ion-menu ion-content {
+  --background: var(--app-surface);
+}
+
+ion-menu ion-list {
+  padding: 16px 12px;
+}
+
+ion-menu ion-item {
+  --background: transparent;
+  --border-radius: 12px;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --color: var(--ion-color-medium);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+ion-menu ion-item ion-icon {
+  color: var(--ion-color-medium);
+}
+
+ion-menu ion-item.active-nav-item {
+  --background: var(--app-surface-active);
+  --color: var(--ion-color-primary);
+  font-weight: 600;
+}
+
+ion-menu ion-item.active-nav-item ion-icon {
+  color: var(--ion-color-primary);
+}
+
+.user-box {
+  padding: 20px 20px 4px;
+  border-top: 1px solid var(--app-surface-border);
+  margin-top: 8px;
+}
+
+.user-box .username {
+  font-weight: 600;
+  margin: 0;
+}
+
+.user-box .role {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+}
+
+.logout-item {
+  margin: 4px 12px 12px;
+  --color: var(--ion-color-danger);
+}
+
+.logout-item ion-icon {
+  color: var(--ion-color-danger);
+}
+
+/**
+ * Desktop hover-to-expand side menu
+ * -----------------------------------------------------
+ * Hidden by default (a thin edge strip); hovering reveals it as an overlay
+ * on top of the page content. Pinning it makes it part of the layout
+ * (pushes the content) instead of floating above it.
+ */
+.desktop-shell {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.side-rail {
+  position: relative;
+  flex-shrink: 0;
+  width: 6px;
+  transition: width 0.2s ease;
+}
+
+.side-rail.pinned {
+  width: 240px;
+}
+
+.side-nav {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 6px;
+  overflow: hidden;
+  background: var(--app-surface);
+  z-index: 20;
+  transition: width 0.2s ease, box-shadow 0.2s ease;
+}
+
+.side-rail.expanded .side-nav {
+  width: 240px;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.45);
+}
+
+.side-rail.pinned .side-nav {
+  box-shadow: none;
+  border-right: 1px solid var(--app-surface-border);
+}
+
+.side-nav-inner {
+  width: 240px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.side-rail.expanded .side-nav-inner {
+  opacity: 1;
+}
+
+.side-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 8px;
+
+  .brand {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+}
+
+.pin-btn {
+  border: none;
+  background: transparent;
+  color: var(--ion-color-medium);
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+
+  ion-icon {
+    font-size: 1.1rem;
+  }
+
+  &:hover {
+    background: var(--app-surface-hover);
+  }
+
+  &.pinned {
+    color: var(--ion-color-primary);
+  }
+}
+
+.side-nav-list {
+  flex: 1;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.side-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  color: var(--ion-color-medium);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.95rem;
+
+  ion-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: var(--app-surface-hover);
+  }
+
+  &.active {
+    background: var(--app-surface-active);
+    color: var(--ion-color-primary);
+  }
+
+  &.logout {
+    color: var(--ion-color-danger);
+  }
+}
+
+.side-nav-footer {
+  padding: 8px 12px 16px;
+}
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}

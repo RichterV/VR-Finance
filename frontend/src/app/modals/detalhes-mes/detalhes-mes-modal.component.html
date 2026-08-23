@@ -1,0 +1,92 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Detalhes de {{ tituloPeriodo }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="detalhes-mes">
+    <section class="data-section">
+      <h2>
+        Gastos <span class="count">({{ gastos().length }})</span>
+        @if (gastos().length) {
+          <span class="legend-top3">
+            <span class="legend-swatch"></span>
+            3 maiores gastos
+          </span>
+        }
+      </h2>
+      <div class="table-card">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th appSortTh="date" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Data</th>
+                <th appSortTh="priority" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Prioridade</th>
+                <th appSortTh="item" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Item</th>
+                <th appSortTh="value" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Valor</th>
+                <th appSortTh="installment" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Parcela</th>
+                <th appSortTh="description" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Descrição</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (gasto of sortedGastos(); track gasto.id) {
+                <tr [class.top-gasto]="top3GastoIds().has(gasto.id)">
+                  <td>{{ gasto.date | date: 'dd/MM/yyyy' }}</td>
+                  <td>{{ gasto.priority === 'essencial' ? 'Essencial' : 'Não essencial' }}</td>
+                  <td>{{ gasto.item_name }}</td>
+                  <td class="num">{{ gasto.value | currency: 'BRL' }}</td>
+                  <td>{{ gasto.is_installment ? gasto.installment_number + '/' + gasto.installment_count : '-' }}</td>
+                  <td class="description">{{ gasto.description || '-' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="empty">Nenhum gasto neste mês.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="data-section">
+      <h2>Receitas <span class="count">({{ receitas().length }})</span></h2>
+      <div class="table-card">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th appSortTh="date" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Data</th>
+                <th appSortTh="value" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Valor</th>
+                <th appSortTh="cash_percentage" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">% Caixa</th>
+                <th appSortTh="cash_value" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Valor caixa</th>
+                <th appSortTh="description" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Descrição</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (receita of sortedReceitas(); track receita.id) {
+                <tr>
+                  <td>{{ receita.date | date: 'dd/MM/yyyy' }}</td>
+                  <td class="num">{{ receita.value | currency: 'BRL' }}</td>
+                  <td class="num">{{ receita.cash_percentage }}%</td>
+                  <td class="num">{{ receita.cash_value | currency: 'BRL' }}</td>
+                  <td class="description">{{ receita.description || '-' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="empty">Nenhuma receita neste mês.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</ion-content>

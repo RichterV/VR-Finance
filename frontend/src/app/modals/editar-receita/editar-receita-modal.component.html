@@ -1,0 +1,61 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Editar receita</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <ion-item>
+      <ion-input
+        label="Valor"
+        labelPlacement="stacked"
+        type="text"
+        inputmode="decimal"
+        [value]="valorDisplay()"
+        (ionInput)="onValorInput($event)"
+        placeholder="0,00"
+      >
+        <div slot="start" class="currency-prefix">R$</div>
+      </ion-input>
+    </ion-item>
+
+    <div class="cash-card">
+      <div class="cash-card-row">
+        <span class="cash-card-label">% para caixa</span>
+        <span class="cash-card-value">{{ form.value.cashPercentage }}%</span>
+      </div>
+      <ion-item lines="none">
+        <ion-range formControlName="cashPercentage" [min]="0" [max]="100" [step]="1" [pin]="true"></ion-range>
+      </ion-item>
+      <div class="cash-card-row cash-card-footer">
+        <span class="cash-card-label">Valor caixa</span>
+        <span class="cash-card-value">{{ cashValue() | currency: 'BRL' }}</span>
+      </div>
+    </div>
+
+    <ion-item>
+      <ion-textarea
+        label="Descrição"
+        labelPlacement="stacked"
+        formControlName="description"
+        placeholder="Opcional"
+      ></ion-textarea>
+    </ion-item>
+
+    @if (errorMessage()) {
+      <ion-text color="danger">
+        <p>{{ errorMessage() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving()">
+      {{ saving() ? 'Salvando...' : 'Salvar alterações' }}
+    </ion-button>
+  </form>
+</ion-content>

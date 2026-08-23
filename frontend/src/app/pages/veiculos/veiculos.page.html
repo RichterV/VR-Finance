@@ -1,0 +1,156 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Início"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Manutenção Veículos</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="abrirAdicionarVeiculo()">
+        <ion-icon slot="start" name="car-sport-outline"></ion-icon>
+        <span class="btn-text">Adicionar veículo</span>
+      </ion-button>
+      <ion-button (click)="abrirAdicionarServico()">
+        <ion-icon slot="start" name="add-circle-outline"></ion-icon>
+        <span class="btn-text">Adicionar serviço</span>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  @if (initialLoading()) {
+    <app-loading-state message="Carregando veículos e serviços..."></app-loading-state>
+  } @else {
+  <div class="veiculos">
+    <section class="cards-grid">
+      @for (v of resumo()?.veiculos ?? []; track v.vehicle_id) {
+        <div class="stat-card">
+          <span class="stat-label">{{ v.vehicle_name }}</span>
+          <span class="stat-value">{{ v.total_gasto | currency: 'BRL' }}</span>
+          <div class="card-footer">
+            <span>{{ v.quantidade_servicos }} serviço(s)</span>
+            <span>{{ v.ultimo_servico ? ('Último: ' + (v.ultimo_servico | date: 'dd/MM/yyyy')) : 'Sem serviços' }}</span>
+          </div>
+        </div>
+      } @empty {
+        <p class="empty-state">Nenhum veículo cadastrado ainda. Use "Adicionar veículo" para começar.</p>
+      }
+    </section>
+
+    @if ((resumo()?.veiculos?.length ?? 0) > 0) {
+      <section class="chart-card">
+        <div class="chart-card-header">
+          <h3>Evolução de gastos</h3>
+        </div>
+        <div class="chart-wrap">
+          <canvas baseChart [type]="'line'" [data]="chartData()" [options]="chartOptions"></canvas>
+        </div>
+      </section>
+    }
+
+    <section class="data-section">
+      <div class="section-header">
+        <h2>Veículos cadastrados</h2>
+      </div>
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th appSortTh="name" [sortColumn]="vehiclesSort().column" [sortDirection]="vehiclesSort().direction" (sort)="toggleVehiclesSort($event)">Nome</th>
+              <th appSortTh="year" [sortColumn]="vehiclesSort().column" [sortDirection]="vehiclesSort().direction" (sort)="toggleVehiclesSort($event)">Ano</th>
+              <th class="actions-col">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (vehicle of sortedVehicles(); track vehicle.id) {
+              <tr>
+                <td>{{ vehicle.name }}</td>
+                <td>{{ vehicle.year }}</td>
+                <td class="actions-col">
+                  <button class="icon-btn" (click)="editarVeiculo(vehicle)">
+                    <ion-icon name="create"></ion-icon>
+                  </button>
+                  <button class="icon-btn danger" (click)="excluirVeiculo(vehicle)">
+                    <ion-icon name="trash"></ion-icon>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="empty">Nenhum veículo cadastrado.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="data-section">
+      <div class="section-header">
+        <h2>Serviços <span class="count">({{ services().length }} de {{ totalServices() }})</span></h2>
+        <ion-select
+          [value]="filtroVeiculoId()"
+          (ionChange)="onFiltroVeiculoChange($any($event.detail.value))"
+          interface="popover"
+          [interfaceOptions]="{ size: 'auto' }"
+          fill="outline"
+          placeholder="Todos os veículos"
+        >
+          <ion-select-option [value]="null">Todos os veículos</ion-select-option>
+          @for (vehicle of vehicles(); track vehicle.id) {
+            <ion-select-option [value]="vehicle.id">{{ vehicle.name }}</ion-select-option>
+          }
+        </ion-select>
+      </div>
+      <div class="table-card">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th appSortTh="date" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Data</th>
+                <th appSortTh="vehicle" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Veículo</th>
+                <th appSortTh="description" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Descrição</th>
+                <th appSortTh="notes" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Observação</th>
+                <th appSortTh="value" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Valor</th>
+                <th appSortTh="type" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Tipo</th>
+                <th appSortTh="mileage" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Km</th>
+                <th class="actions-col">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (servico of sortedServices(); track servico.id) {
+                <tr>
+                  <td>{{ servico.date | date: 'dd/MM/yyyy' }}</td>
+                  <td>{{ servico.vehicle_name }}</td>
+                  <td class="description">{{ servico.description }}</td>
+                  <td class="description">{{ servico.notes || '-' }}</td>
+                  <td class="num">{{ servico.value | currency: 'BRL' }}</td>
+                  <td>{{ serviceTypeLabel(servico.service_type) }}</td>
+                  <td class="num">{{ servico.mileage ?? '-' }}</td>
+                  <td class="actions-col">
+                    <button class="icon-btn" (click)="editarServico(servico)">
+                      <ion-icon name="create"></ion-icon>
+                    </button>
+                    <button class="icon-btn danger" (click)="excluirServico(servico)">
+                      <ion-icon name="trash"></ion-icon>
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="8" class="empty">Nenhum serviço registrado ainda.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+      @if (services().length < totalServices()) {
+        <button class="load-more-btn" (click)="carregarMaisServicos()">
+          Carregar mais 25 ({{ totalServices() - services().length }} restantes)
+        </button>
+      }
+    </section>
+  </div>
+  }
+</ion-content>

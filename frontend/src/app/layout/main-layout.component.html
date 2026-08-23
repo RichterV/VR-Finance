@@ -1,0 +1,97 @@
+@if (isDesktop()) {
+  <div class="desktop-shell">
+    <div
+      class="side-rail"
+      [class.pinned]="pinned()"
+      [class.expanded]="expanded()"
+      (mouseenter)="onSideNavEnter()"
+      (mouseleave)="onSideNavLeave()"
+    >
+      <nav class="side-nav">
+        <div class="side-nav-inner">
+          <div class="side-nav-header">
+            <span class="brand">VR Finance</span>
+            <button class="pin-btn" [class.pinned]="pinned()" (click)="togglePin()">
+              <ion-icon [name]="pinned() ? 'pin' : 'pin-outline'"></ion-icon>
+            </button>
+          </div>
+
+          <div class="side-nav-list">
+            @for (item of navItems; track item.route) {
+              <a
+                class="side-nav-item"
+                [routerLink]="item.route"
+                routerLinkActive="active"
+                (click)="onNavItemClick(item, $event)"
+              >
+                <ion-icon [name]="item.icon"></ion-icon>
+                <span>{{ item.label }}</span>
+              </a>
+            }
+          </div>
+
+          <div class="side-nav-footer">
+            @if (auth.currentUser(); as user) {
+              <div class="user-box">
+                <p class="username">{{ user.username }}</p>
+                <p class="role">{{ user.role === 'master' ? 'Master' : 'Usuário' }}</p>
+              </div>
+            }
+            <button class="side-nav-item logout" (click)="logout()">
+              <ion-icon name="log-out-outline"></ion-icon>
+              <span>Sair</span>
+            </button>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="ion-page main-content">
+      <ion-router-outlet></ion-router-outlet>
+    </div>
+  </div>
+} @else {
+  <ion-split-pane contentId="main-content" when="md">
+    <ion-menu contentId="main-content">
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>VR Finance</ion-title>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content>
+        <ion-list>
+          @for (item of navItems; track item.route) {
+            <ion-item
+              [routerLink]="item.route"
+              routerLinkActive="active-nav-item"
+              (click)="closeMenu()"
+              lines="none"
+              detail="false"
+              button
+            >
+              <ion-icon [name]="item.icon" slot="start"></ion-icon>
+              <ion-label>{{ item.label }}</ion-label>
+            </ion-item>
+          }
+        </ion-list>
+
+        @if (auth.currentUser(); as user) {
+          <div class="user-box">
+            <p class="username">{{ user.username }}</p>
+            <p class="role">{{ user.role === 'master' ? 'Master' : 'Usuário' }}</p>
+          </div>
+        }
+
+        <ion-item class="logout-item" lines="none" detail="false" button (click)="logout()">
+          <ion-icon name="log-out-outline" slot="start"></ion-icon>
+          <ion-label>Sair</ion-label>
+        </ion-item>
+      </ion-content>
+    </ion-menu>
+
+    <div class="ion-page" id="main-content">
+      <ion-router-outlet></ion-router-outlet>
+    </div>
+  </ion-split-pane>
+}

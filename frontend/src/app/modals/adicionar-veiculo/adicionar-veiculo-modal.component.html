@@ -1,0 +1,41 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Adicionar veículo</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="field-row">
+      <ion-item class="col-grow">
+        <ion-input label="Nome do veículo" labelPlacement="stacked" formControlName="name" placeholder="Ex: Voyage"></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-input
+          label="Ano"
+          labelPlacement="stacked"
+          type="number"
+          inputmode="numeric"
+          formControlName="year"
+          placeholder="Ex: 2011"
+        ></ion-input>
+      </ion-item>
+    </div>
+
+    @if (errorMessage()) {
+      <ion-text color="danger">
+        <p>{{ errorMessage() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving()">
+      {{ saving() ? 'Salvando...' : 'Salvar veículo' }}
+    </ion-button>
+  </form>
+</ion-content>
