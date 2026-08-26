@@ -242,11 +242,12 @@
 }
 
 .percentual-bar {
+  position: relative;
   display: block;
   height: 6px;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
+  cursor: pointer;
 }
 
 .percentual-fill {
@@ -254,6 +255,34 @@
   height: 100%;
   background: var(--ion-color-primary);
   border-radius: 3px;
+}
+
+.percentual-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--app-surface, #1e293b);
+  border: 1px solid var(--app-surface-border);
+  color: var(--app-text-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 5;
+}
+
+.percentual-bar:hover .percentual-tooltip,
+.percentual-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 .percentual-value {

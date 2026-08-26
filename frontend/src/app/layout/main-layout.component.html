@@ -27,6 +27,15 @@
                 <ion-icon [name]="item.icon"></ion-icon>
                 <span>{{ item.label }}</span>
               </a>
+              @if (item.children) {
+                <div class="side-nav-sublist">
+                  @for (child of item.children; track child.fragment) {
+                    <a class="side-nav-subitem" [routerLink]="child.route" [fragment]="child.fragment">
+                      <span>{{ child.label }}</span>
+                    </a>
+                  }
+                </div>
+              }
             }
           </div>
 
@@ -73,6 +82,21 @@
               <ion-icon [name]="item.icon" slot="start"></ion-icon>
               <ion-label>{{ item.label }}</ion-label>
             </ion-item>
+            @if (item.children) {
+              @for (child of item.children; track child.fragment) {
+                <ion-item
+                  class="sub-nav-item"
+                  [routerLink]="child.route"
+                  [fragment]="child.fragment"
+                  (click)="closeMenu()"
+                  lines="none"
+                  detail="false"
+                  button
+                >
+                  <ion-label>{{ child.label }}</ion-label>
+                </ion-item>
+              }
+            }
           }
         </ion-list>
 

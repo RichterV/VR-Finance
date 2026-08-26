@@ -47,7 +47,7 @@
       <p class="subtitle">Aqui está o resumo das suas finanças</p>
     </header>
 
-    <section class="dashboard-section">
+    <section class="dashboard-section" id="resumo-mensal">
       <div class="section-header">
         <h2>Resumo mensal</h2>
         <div class="period-controls">
@@ -143,10 +143,12 @@
             <div class="percentuais-col">
               <h3>Essencial</h3>
               @for (item of essenciaisMensal; track item.item_id) {
+                @let tooltipKey = 'mensal-essencial-' + item.item_id;
                 <div class="percentual-row">
                   <span class="percentual-name">{{ item.item_name }}</span>
-                  <span class="percentual-bar">
+                  <span class="percentual-bar" (click)="toggleTooltip(tooltipKey, $event)">
                     <span class="percentual-fill" [style.width.%]="maskWidth((item.percentual / maxEssencialMensal) * 100)"></span>
+                    <span class="percentual-tooltip" [class.visible]="activeTooltip() === tooltipKey">{{ maskCurrency(item.total) }}</span>
                   </span>
                   <span class="percentual-value">{{ maskItemPercent(item.percentual) }}</span>
                 </div>
@@ -155,10 +157,12 @@
             <div class="percentuais-col">
               <h3>Não essencial</h3>
               @for (item of naoEssenciaisMensal; track item.item_id) {
+                @let tooltipKey = 'mensal-nao-essencial-' + item.item_id;
                 <div class="percentual-row">
                   <span class="percentual-name">{{ item.item_name }}</span>
-                  <span class="percentual-bar">
+                  <span class="percentual-bar" (click)="toggleTooltip(tooltipKey, $event)">
                     <span class="percentual-fill" [style.width.%]="maskWidth((item.percentual / maxNaoEssencialMensal) * 100)"></span>
+                    <span class="percentual-tooltip" [class.visible]="activeTooltip() === tooltipKey">{{ maskCurrency(item.total) }}</span>
                   </span>
                   <span class="percentual-value">{{ maskItemPercent(item.percentual) }}</span>
                 </div>
@@ -169,7 +173,7 @@
       }
     </section>
 
-    <section class="dashboard-section">
+    <section class="dashboard-section" id="resumo-anual">
       <div class="section-header">
         <h2>Resumo anual <span class="section-subtitle">({{ anoMensal() }})</span></h2>
         <label class="cutoff-toggle" (click)="$event.preventDefault(); setLimitarAteMesSelecionado(!limitarAteMesSelecionado())">
@@ -262,10 +266,12 @@
             <div class="percentuais-col">
               <h3>Essencial</h3>
               @for (item of essenciaisAnual; track item.item_id) {
+                @let tooltipKey = 'anual-essencial-' + item.item_id;
                 <div class="percentual-row">
                   <span class="percentual-name">{{ item.item_name }}</span>
-                  <span class="percentual-bar">
+                  <span class="percentual-bar" (click)="toggleTooltip(tooltipKey, $event)">
                     <span class="percentual-fill" [style.width.%]="maskWidth((item.percentual / maxEssencialAnual) * 100)"></span>
+                    <span class="percentual-tooltip" [class.visible]="activeTooltip() === tooltipKey">{{ maskCurrency(item.total) }}</span>
                   </span>
                   <span class="percentual-value">{{ maskItemPercent(item.percentual) }}</span>
                 </div>
@@ -274,10 +280,12 @@
             <div class="percentuais-col">
               <h3>Não essencial</h3>
               @for (item of naoEssenciaisAnual; track item.item_id) {
+                @let tooltipKey = 'anual-nao-essencial-' + item.item_id;
                 <div class="percentual-row">
                   <span class="percentual-name">{{ item.item_name }}</span>
-                  <span class="percentual-bar">
+                  <span class="percentual-bar" (click)="toggleTooltip(tooltipKey, $event)">
                     <span class="percentual-fill" [style.width.%]="maskWidth((item.percentual / maxNaoEssencialAnual) * 100)"></span>
+                    <span class="percentual-tooltip" [class.visible]="activeTooltip() === tooltipKey">{{ maskCurrency(item.total) }}</span>
                   </span>
                   <span class="percentual-value">{{ maskItemPercent(item.percentual) }}</span>
                 </div>
@@ -288,7 +296,7 @@
       }
     </section>
 
-    <section class="dashboard-section">
+    <section class="dashboard-section" id="relatorio-geral">
       <div class="section-header">
         <h2>Relatório geral</h2>
         <label class="cutoff-toggle" (click)="$event.preventDefault(); setLimitarAteMesSelecionado(!limitarAteMesSelecionado())">

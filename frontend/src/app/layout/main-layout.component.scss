@@ -52,6 +52,14 @@ ion-menu ion-item.active-nav-item ion-icon {
   color: var(--ion-color-medium);
 }
 
+.sub-nav-item {
+  --padding-start: 46px;
+  --min-height: 38px;
+  --color: var(--ion-color-medium);
+  font-size: 0.85rem;
+  margin-bottom: 2px;
+}
+
 .logout-item {
   margin: 4px 12px 12px;
   --color: var(--ion-color-danger);
@@ -195,6 +203,30 @@ ion-menu ion-item.active-nav-item ion-icon {
 
   &.logout {
     color: var(--ion-color-danger);
+  }
+}
+
+.side-nav-sublist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 4px;
+}
+
+.side-nav-subitem {
+  display: flex;
+  align-items: center;
+  padding: 7px 14px 7px 44px;
+  border-radius: 10px;
+  color: var(--ion-color-medium);
+  font-weight: 400;
+  font-size: 0.85rem;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--app-surface-hover);
   }
 }
 

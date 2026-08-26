@@ -1,5 +1,5 @@
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   IonButton,
   IonButtons,
@@ -114,13 +114,18 @@ export class HomePage implements OnInit, OnDestroy {
   readonly porMesChartData = computed(() => buildPorMesChartData(this.resumoGeral()));
   readonly porMesChartOptions = computed(() => this.maskChartOptions(GERAL_CHART_OPTIONS, ['y']));
 
+  /** Chave da barra de percentual com o tooltip de valor em R$ aberto por clique (null = nenhuma). */
+  readonly activeTooltip = signal<string | null>(null);
+
   private refreshSubscription?: Subscription;
+  private fragmentSubscription?: Subscription;
 
   constructor(
     readonly auth: AuthService,
     private readonly resumoService: ResumoService,
     private readonly modalCtrl: ModalController,
     private readonly homeRefresh: HomeRefreshService,
+    private readonly route: ActivatedRoute,
   ) {
     addIcons({
       removeCircleOutline,
@@ -139,10 +144,35 @@ export class HomePage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.refreshSubscription = this.homeRefresh.refresh$.subscribe(() => this.reloadAll().subscribe());
+    this.fragmentSubscription = this.route.fragment.subscribe((fragment) => this.scrollToFragment(fragment));
   }
 
   ngOnDestroy(): void {
     this.refreshSubscription?.unsubscribe();
+    this.fragmentSubscription?.unsubscribe();
+  }
+
+  /** Navegação vinda dos subitens do menu ("Resumo mensal"/"Resumo anual"/"Relatório geral") -- rola até a seção. */
+  private scrollToFragment(fragment: string | null, attemptsLeft = 20): void {
+    if (!fragment) return;
+    const el = document.getElementById(fragment);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (attemptsLeft <= 0) return;
+    requestAnimationFrame(() => this.scrollToFragment(fragment, attemptsLeft - 1));
+  }
+
+  /** Abre/fecha o tooltip de valor em R$ de uma barra de percentual (clique, pra suportar toque). */
+  toggleTooltip(key: string, event: Event): void {
+    event.stopPropagation();
+    this.activeTooltip.update((current) => (current === key ? null : key));
+  }
+
+  @HostListener('document:click')
+  closeTooltip(): void {
+    this.activeTooltip.set(null);
   }
 
   /**

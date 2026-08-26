@@ -20,14 +20,30 @@ import { carSportOutline, homeOutline, logOutOutline, pin, pinOutline } from 'io
 import { AuthService } from '../core/auth.service';
 import { HomeRefreshService } from '../core/home-refresh.service';
 
+interface NavSubItem {
+  label: string;
+  route: string;
+  fragment: string;
+}
+
 interface NavItem {
   label: string;
   icon: string;
   route: string;
+  children?: NavSubItem[];
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Início', icon: 'home-outline', route: '/home' },
+  {
+    label: 'Início',
+    icon: 'home-outline',
+    route: '/home',
+    children: [
+      { label: 'Resumo mensal', route: '/home', fragment: 'resumo-mensal' },
+      { label: 'Resumo anual', route: '/home', fragment: 'resumo-anual' },
+      { label: 'Relatório geral', route: '/home', fragment: 'relatorio-geral' },
+    ],
+  },
   { label: 'Manutenção Veículos', icon: 'car-sport-outline', route: '/veiculos' },
 ];
 
@@ -58,7 +74,8 @@ export class MainLayoutComponent {
   readonly navItems = NAV_ITEMS;
 
   readonly isDesktop = signal(MainLayoutComponent.checkDesktop());
-  readonly pinned = signal(false);
+  /** Fixado por padrão no desktop -- o usuário ainda pode desafixar pelo botão de pin. */
+  readonly pinned = signal(true);
   readonly hovering = signal(false);
   readonly expanded = computed(() => this.pinned() || this.hovering());
 
