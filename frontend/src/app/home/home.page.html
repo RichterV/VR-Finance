@@ -78,11 +78,8 @@
             Ver detalhes
           </ion-button>
         </div>
-        <label class="cutoff-toggle">
-          <ion-checkbox
-            [checked]="limitarAteMesSelecionado()"
-            (ionChange)="setLimitarAteMesSelecionado($any($event.detail.checked))"
-          ></ion-checkbox>
+        <label class="cutoff-toggle" (click)="$event.preventDefault(); setLimitarAteMesSelecionado(!limitarAteMesSelecionado())">
+          <ion-checkbox [checked]="limitarAteMesSelecionado()"></ion-checkbox>
           <span>Mostrar apenas até o mês selecionado</span>
         </label>
       </div>
@@ -175,11 +172,8 @@
     <section class="dashboard-section">
       <div class="section-header">
         <h2>Resumo anual <span class="section-subtitle">({{ anoMensal() }})</span></h2>
-        <label class="cutoff-toggle">
-          <ion-checkbox
-            [checked]="limitarAteMesSelecionado()"
-            (ionChange)="setLimitarAteMesSelecionado($any($event.detail.checked))"
-          ></ion-checkbox>
+        <label class="cutoff-toggle" (click)="$event.preventDefault(); setLimitarAteMesSelecionado(!limitarAteMesSelecionado())">
+          <ion-checkbox [checked]="limitarAteMesSelecionado()"></ion-checkbox>
           <span>Mostrar apenas até o mês selecionado</span>
         </label>
       </div>
@@ -297,11 +291,8 @@
     <section class="dashboard-section">
       <div class="section-header">
         <h2>Relatório geral</h2>
-        <label class="cutoff-toggle">
-          <ion-checkbox
-            [checked]="limitarAteMesSelecionado()"
-            (ionChange)="setLimitarAteMesSelecionado($any($event.detail.checked))"
-          ></ion-checkbox>
+        <label class="cutoff-toggle" (click)="$event.preventDefault(); setLimitarAteMesSelecionado(!limitarAteMesSelecionado())">
+          <ion-checkbox [checked]="limitarAteMesSelecionado()"></ion-checkbox>
           <span>Mostrar apenas até o mês selecionado</span>
         </label>
       </div>
