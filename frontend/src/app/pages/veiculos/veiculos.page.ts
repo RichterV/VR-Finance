@@ -1,5 +1,5 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import {
   AlertController,
   IonBackButton,
@@ -57,7 +57,7 @@ const PAGE_SIZE = 25;
     LoadingStateComponent,
   ],
 })
-export class VeiculosPage implements OnInit {
+export class VeiculosPage {
   readonly serviceTypeLabels = SERVICE_TYPE_LABELS;
 
   /** Verdadeiro até a primeira carga de veículos+resumo+serviços terminar. */
@@ -92,7 +92,13 @@ export class VeiculosPage implements OnInit {
     addIcons({ addCircleOutline, carSportOutline, buildOutline, create, trash });
   }
 
-  ngOnInit(): void {
+  /**
+   * O ion-router-outlet mantém a instância da página em cache (mesma razão documentada no login) --
+   * usar ionViewWillEnter (não ngOnInit) garante que os dados são recarregados toda vez que a página
+   * reaparece, não só na primeira criação da instância. Sem isso, trocar de conta mostrava os dados
+   * da conta anterior até um F5 manual.
+   */
+  ionViewWillEnter(): void {
     this.reload();
   }
 

@@ -1,0 +1,12 @@
+<ion-content [fullscreen]="true" class="offline-content">
+  <div class="offline-wrap">
+    <div class="offline-face">😢</div>
+    <h1>O servidor foi de vasco...</h1>
+    <p class="offline-subtitle">
+      Não foi possível conectar ao servidor. Verifique se ele está ligado e se a conexão (Wi-Fi/Tailscale) está OK.
+    </p>
+    <ion-button (click)="tentarNovamente()" [disabled]="retrying()">
+      {{ retrying() ? 'Tentando...' : 'Tentar novamente' }}
+    </ion-button>
+  </div>
+</ion-content>

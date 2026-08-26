@@ -222,6 +222,68 @@ def test_delete_gasto(client, auth_headers):
     assert listed["total"] == 0
 
 
+def test_antecipar_gasto_moves_future_installment_to_current_month(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    rows = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={
+            "priority": "essencial",
+            "item_id": item["id"],
+            "value": 100.0,
+            "is_installment": True,
+            "installment_count": 3,
+        },
+    ).json()
+    future_row = rows[1]
+
+    response = client.post(f"/gastos/{future_row['id']}/antecipar", headers=auth_headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["date"] == date.today().isoformat()
+    assert body["is_installment"] is True
+    assert body["installment_number"] == future_row["installment_number"]
+    assert body["installment_group_id"] == future_row["installment_group_id"]
+
+
+def test_antecipar_gasto_rejects_current_month(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    created = client.post(
+        "/gastos", headers=auth_headers, json={"priority": "essencial", "item_id": item["id"], "value": 100.0}
+    ).json()[0]
+
+    response = client.post(f"/gastos/{created['id']}/antecipar", headers=auth_headers)
+    assert response.status_code == 400
+
+
+def test_antecipar_gasto_not_owned_returns_404(client, auth_headers, db_session):
+    from app import models
+    from app.security import hash_password
+
+    other = models.User(username="outro3", password_hash=hash_password("senha123"), role="user")
+    db_session.add(other)
+    db_session.commit()
+    login = client.post("/auth/login", data={"username": "outro3", "password": "senha123"})
+    other_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    item = _create_item(client, other_headers, priority="essencial", name="Casa")
+    rows = client.post(
+        "/gastos",
+        headers=other_headers,
+        json={
+            "priority": "essencial",
+            "item_id": item["id"],
+            "value": 100.0,
+            "is_installment": True,
+            "installment_count": 2,
+        },
+    ).json()
+    future_row = rows[1]
+
+    response = client.post(f"/gastos/{future_row['id']}/antecipar", headers=auth_headers)
+    assert response.status_code == 404
+
+
 def test_delete_gasto_not_owned_returns_404(client, auth_headers, db_session):
     from app import models
     from app.security import hash_password

@@ -8,6 +8,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/login/login.page').then((m) => m.LoginPage),
   },
   {
+    path: 'servidor-indisponivel',
+    loadComponent: () =>
+      import('./pages/servidor-indisponivel/servidor-indisponivel.page').then((m) => m.ServidorIndisponivelPage),
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () => import('./layout/main-layout.component').then((m) => m.MainLayoutComponent),

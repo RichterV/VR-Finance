@@ -77,6 +77,11 @@
                     <td>{{ gasto.is_installment ? gasto.installment_number + '/' + gasto.installment_count : '-' }}</td>
                     <td class="description">{{ gasto.description || '-' }}</td>
                     <td class="actions-col">
+                      @if (isAntecipavel(gasto)) {
+                        <button class="icon-btn highlight" title="Antecipar pra este mês" (click)="anteciparGasto(gasto)">
+                          <ion-icon name="today-outline"></ion-icon>
+                        </button>
+                      }
                       <button class="icon-btn" (click)="editarGasto(gasto)">
                         <ion-icon name="create"></ion-icon>
                       </button>

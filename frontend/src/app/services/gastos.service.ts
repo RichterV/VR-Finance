@@ -71,6 +71,10 @@ export class GastosService {
     return this.http.put<Gasto>(`${this.baseUrl}/${id}`, payload);
   }
 
+  antecipar(id: number): Observable<Gasto> {
+    return this.http.post<Gasto>(`${this.baseUrl}/${id}/antecipar`, {});
+  }
+
   remove(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }

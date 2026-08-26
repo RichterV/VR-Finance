@@ -1,5 +1,5 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import {
   AlertController,
   IonBackButton,
@@ -18,7 +18,7 @@ import {
   ToastController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { create, trash } from 'ionicons/icons';
+import { create, todayOutline, trash } from 'ionicons/icons';
 import { forkJoin } from 'rxjs';
 
 import { isDesktopViewport, slideInFromRight, slideOutToRight, SIDE_MODAL_CSS_CLASS } from '../../modals/side-modal.animations';
@@ -58,7 +58,7 @@ const PAGE_SIZE = 25;
     LoadingStateComponent,
   ],
 })
-export class DadosPage implements OnInit {
+export class DadosPage {
   readonly meses = MESES_COMPLETOS;
   readonly anos: number[];
 
@@ -91,12 +91,18 @@ export class DadosPage implements OnInit {
     private readonly toastCtrl: ToastController,
     private readonly modalCtrl: ModalController,
   ) {
-    addIcons({ create, trash });
+    addIcons({ create, trash, todayOutline });
     const currentYear = new Date().getFullYear();
     this.anos = Array.from({ length: 6 }, (_, i) => currentYear - i);
   }
 
-  ngOnInit(): void {
+  /**
+   * O ion-router-outlet mantém a instância da página em cache (mesma razão documentada no login) --
+   * usar ionViewWillEnter (não ngOnInit) garante que os dados são recarregados toda vez que a página
+   * reaparece, não só na primeira criação da instância. Sem isso, trocar de conta mostrava os dados
+   * da conta anterior até um F5 manual.
+   */
+  ionViewWillEnter(): void {
     this.reload();
   }
 
@@ -162,6 +168,41 @@ export class DadosPage implements OnInit {
     if (role === 'saved') {
       this.reload();
     }
+  }
+
+  /** Só permite antecipar gastos de meses futuros em relação ao mês/ano atual (ex: parcelas ainda não vencidas). */
+  isAntecipavel(gasto: Gasto): boolean {
+    const [ano, mes] = gasto.date.split('-').map(Number);
+    const hoje = new Date();
+    const anoAtual = hoje.getFullYear();
+    const mesAtual = hoje.getMonth() + 1;
+    return ano > anoAtual || (ano === anoAtual && mes > mesAtual);
+  }
+
+  async anteciparGasto(gasto: Gasto): Promise<void> {
+    const hoje = new Date();
+    const dia = Math.min(Number(gasto.date.split('-')[2]), new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate());
+    const novaData = new Date(hoje.getFullYear(), hoje.getMonth(), dia).toLocaleDateString('pt-BR');
+    const dataOriginal = new Date(gasto.date + 'T00:00:00').toLocaleDateString('pt-BR');
+
+    const alert = await this.alertCtrl.create({
+      header: 'Antecipar gasto',
+      message: `Trazer "${gasto.item_name}" (${formatBRL(gasto.value)}) de ${dataOriginal} pra ${novaData}, virando um gasto deste mês? Essa ação não pode ser desfeita.`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Antecipar',
+          handler: () => {
+            this.gastosService.antecipar(gasto.id).subscribe(async () => {
+              this.reload();
+              const toast = await this.toastCtrl.create({ message: 'Gasto antecipado pra este mês.', duration: 2000, color: 'success' });
+              await toast.present();
+            });
+          },
+        },
+      ],
+    });
+    await alert.present();
   }
 
   async excluirGasto(gasto: Gasto): Promise<void> {

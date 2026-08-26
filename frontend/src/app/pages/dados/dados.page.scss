@@ -176,4 +176,8 @@ td.actions-col {
   &.danger:hover {
     color: var(--ion-color-danger);
   }
+
+  &.highlight:hover {
+    color: var(--ion-color-primary);
+  }
 }

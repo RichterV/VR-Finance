@@ -1,0 +1,40 @@
+.offline-content {
+  --background: radial-gradient(circle at 50% 0%, rgba(239, 68, 68, 0.14), transparent 60%), var(--ion-background-color);
+}
+
+.offline-wrap {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 16px;
+  text-align: center;
+}
+
+.offline-face {
+  font-size: 4rem;
+  line-height: 1;
+}
+
+.offline-wrap h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--app-text-primary);
+}
+
+.offline-subtitle {
+  margin: 0;
+  max-width: 340px;
+  color: var(--app-text-secondary);
+  font-size: 0.9rem;
+}
+
+.offline-wrap ion-button {
+  --border-radius: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+  min-width: 200px;
+}

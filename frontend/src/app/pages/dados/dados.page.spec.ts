@@ -46,6 +46,9 @@ describe('DadosPage', () => {
     fixture = TestBed.createComponent(DadosPage);
     component = fixture.componentInstance;
     fixture.detectChanges();
+    // A carga de dados mora em ionViewWillEnter (não ngOnInit) desde o fix de "trocar de conta" --
+    // fixture.detectChanges() sozinho não dispara esse hook do Ionic, é preciso chamar direto.
+    component.ionViewWillEnter();
   });
 
   it('should create and load gastos on init', () => {

@@ -1,7 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { IonCheckbox, IonContent, IonItem, IonInput, IonButton, IonText } from '@ionic/angular';
 import { SecureStorage } from '@aparajita/capacitor-secure-storage';
 import { timeout } from 'rxjs';
@@ -37,7 +36,6 @@ export class LoginPage {
   constructor(
     private readonly fb: FormBuilder,
     private readonly auth: AuthService,
-    private readonly router: Router,
   ) {}
 
   /**
@@ -74,9 +72,13 @@ export class LoginPage {
             .pipe(timeout(LOGIN_TIMEOUT_MS))
             .subscribe({
               next: () => {
-                void this.saveOrClearCredentials(username, password);
-                this.loading.set(false);
-                this.router.navigateByUrl('/home');
+                void this.saveOrClearCredentials(username, password).then(() => {
+                  // Navegação "dura" (não via Router) -- garante um boot novo da SPA, sem nenhum
+                  // estado (signals, instâncias de página cacheadas pelo IonicRouteStrategy) que
+                  // possa ter sobrado de uma conta anterior nesta mesma aba/app (ex: depois de sair
+                  // da conta "teste" sem passar pelo reload que "Mudar pra conta teste" já faz).
+                  window.location.href = '/home';
+                });
               },
               error: (err: unknown) => {
                 this.errorMessage.set(this.describeError(err));

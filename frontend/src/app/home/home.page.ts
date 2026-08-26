@@ -138,12 +138,21 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.reloadAll().subscribe();
     this.refreshSubscription = this.homeRefresh.refresh$.subscribe(() => this.reloadAll().subscribe());
   }
 
   ngOnDestroy(): void {
     this.refreshSubscription?.unsubscribe();
+  }
+
+  /**
+   * O ion-router-outlet mantém a instância da Home em cache (mesma razão documentada no login) --
+   * sem isso, trocar de conta (logout + login de novo, ou "Mudar pra conta teste") reaproveitava a
+   * instância antiga e continuava mostrando os dados da conta anterior até um F5 manual, já que
+   * ngOnInit só roda uma vez por instância.
+   */
+  ionViewWillEnter(): void {
+    this.reloadAll().subscribe();
   }
 
   /** Clicar em "Início" ja na Home (menu lateral do desktop) ou puxar a tela pra baixo (pull-to-refresh no app) cai aqui. */

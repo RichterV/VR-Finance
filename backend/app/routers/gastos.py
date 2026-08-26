@@ -1,3 +1,4 @@
+import calendar
 import uuid
 from datetime import date
 from typing import Optional
@@ -138,6 +139,28 @@ def update_gasto(
     gasto.item_id = payload.item_id
     gasto.value = payload.value
     gasto.description = payload.description
+    db.commit()
+    db.refresh(gasto)
+    return gasto
+
+
+@router.post("/{gasto_id}/antecipar", response_model=schemas.GastoOut)
+def antecipar_gasto(
+    gasto_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    gasto = _get_owned_gasto(db, current_user, gasto_id)
+
+    today = date.today()
+    if (gasto.date.year, gasto.date.month) <= (today.year, today.month):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Só é possível antecipar gastos de meses futuros",
+        )
+
+    day = min(gasto.date.day, calendar.monthrange(today.year, today.month)[1])
+    gasto.date = date(today.year, today.month, day)
     db.commit()
     db.refresh(gasto)
     return gasto

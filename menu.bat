@@ -750,6 +750,11 @@ goto servidor_menu
 :servidor_ram
 echo.
 ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "free -h" < NUL
+echo.
+echo Percentual livre (relativo ao total):
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "free | awk '/^Mem:/{print int($4/$2*1000+0.5)/10}'" < NUL
+echo Percentual disponivel (relativo ao total):
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "free | awk '/^Mem:/{print int($7/$2*1000+0.5)/10}'" < NUL
 pause
 goto servidor_menu
 
