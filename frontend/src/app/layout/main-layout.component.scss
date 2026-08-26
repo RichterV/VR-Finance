@@ -234,7 +234,12 @@ ion-menu ion-item.active-nav-item ion-icon {
   padding: 8px 12px 16px;
 }
 
-.main-content {
+.desktop-shell .main-content {
+  /* Ionic's global .ion-page rule sets position: absolute + inset: 0, which pulls this
+     element out of the flex flow entirely (it fills the nearest positioned ancestor
+     instead of the space the flexbox actually gives it) — that's what made the side
+     rail overlap the page instead of pushing it when pinned. */
+  position: relative;
   flex: 1;
   min-width: 0;
   overflow: hidden;
