@@ -5,6 +5,10 @@ from pydantic import BaseModel, Field
 
 Priority = Literal["essencial", "nao_essencial"]
 ServiceType = Literal["peca", "peca_mao_de_obra", "peca_mao_de_obra_propria"]
+BolsaOperation = Literal["compra", "venda", "compra_dolar", "venda_dolar"]
+BolsaCurrency = Literal["BRL", "USD"]
+DevedorStatus = Literal["pago", "nao_pago"]
+EntityType = Literal["gasto", "receita", "servico_veiculo"]
 
 
 # --- Auth ---
@@ -75,6 +79,10 @@ class GastoUpdate(BaseModel):
     item_id: int
     value: float = Field(gt=0)
     description: Optional[str] = None
+
+
+class GastoAntecipar(BaseModel):
+    value: Optional[float] = Field(default=None, gt=0)
 
 
 class GastoOut(BaseModel):
@@ -266,3 +274,28 @@ class ResumoGeral(BaseModel):
     total_receita: float
     total_caixa_pretendido: float
     total_caixa_real: float
+
+
+# --- Anexos ---
+
+class AttachmentOut(BaseModel):
+    id: int
+    entity_type: EntityType
+    entity_id: str
+    original_filename: str
+    content_type: str
+    size_bytes: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AttachmentExistsOut(BaseModel):
+    entity_ids_with_attachments: list[str]
+
+
+# --- Backup ---
+
+class BackupStatusOut(BaseModel):
+    last_backup_at: Optional[datetime] = None

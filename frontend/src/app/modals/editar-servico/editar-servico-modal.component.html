@@ -62,6 +62,8 @@
       </ion-select>
     </ion-item>
 
+    <app-attachment-picker entityType="servico_veiculo" [entityId]="servico.id" mode="edit"></app-attachment-picker>
+
     @if (errorMessage()) {
       <ion-text color="danger">
         <p>{{ errorMessage() }}</p>

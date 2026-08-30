@@ -1,4 +1,4 @@
-import { Component, HostListener, computed, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
   IonContent,
@@ -15,10 +15,11 @@ import {
   MenuController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { carSportOutline, homeOutline, logOutOutline, pin, pinOutline } from 'ionicons/icons';
+import { carSportOutline, homeOutline, logOutOutline, peopleOutline, pin, pinOutline, trendingUpOutline } from 'ionicons/icons';
 
 import { AuthService } from '../core/auth.service';
 import { HomeRefreshService } from '../core/home-refresh.service';
+import { BackupWarningBannerComponent } from '../shared/backup-warning-banner.component';
 
 interface NavSubItem {
   label: string;
@@ -45,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   { label: 'Manutenção Veículos', icon: 'car-sport-outline', route: '/veiculos' },
+  { label: 'Operações Bolsa', icon: 'trending-up-outline', route: '/operacoes-bolsa' },
 ];
 
 /** Below this width we keep the classic always-visible/hamburger split-pane menu (touch-friendly, no hover). */
@@ -68,6 +70,7 @@ const DESKTOP_BREAKPOINT = 992;
     IonLabel,
     IonIcon,
     IonRouterOutlet,
+    BackupWarningBannerComponent,
   ],
 })
 export class MainLayoutComponent {
@@ -85,7 +88,7 @@ export class MainLayoutComponent {
     private readonly router: Router,
     private readonly homeRefresh: HomeRefreshService,
   ) {
-    addIcons({ homeOutline, carSportOutline, logOutOutline, pin, pinOutline });
+    addIcons({ homeOutline, carSportOutline, logOutOutline, peopleOutline, pin, pinOutline, trendingUpOutline });
   }
 
   @HostListener('window:resize')

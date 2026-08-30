@@ -231,6 +231,7 @@ def test_antecipar_gasto_moves_future_installment_to_current_month(client, auth_
             "priority": "essencial",
             "item_id": item["id"],
             "value": 100.0,
+            "description": "Blazer",
             "is_installment": True,
             "installment_count": 3,
         },
@@ -244,6 +245,53 @@ def test_antecipar_gasto_moves_future_installment_to_current_month(client, auth_
     assert body["is_installment"] is True
     assert body["installment_number"] == future_row["installment_number"]
     assert body["installment_group_id"] == future_row["installment_group_id"]
+    assert body["value"] == 100.0
+    assert body["description"] == "Blazer - Parcela Antecipada"
+
+
+def test_antecipar_gasto_without_description_sets_default(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    rows = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={
+            "priority": "essencial",
+            "item_id": item["id"],
+            "value": 100.0,
+            "is_installment": True,
+            "installment_count": 2,
+        },
+    ).json()
+    future_row = rows[1]
+
+    response = client.post(f"/gastos/{future_row['id']}/antecipar", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json()["description"] == "Parcela Antecipada"
+
+
+def test_antecipar_gasto_accepts_discounted_value(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    rows = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={
+            "priority": "essencial",
+            "item_id": item["id"],
+            "value": 149.98,
+            "description": "Blazer",
+            "is_installment": True,
+            "installment_count": 2,
+        },
+    ).json()
+    future_row = rows[1]
+
+    response = client.post(
+        f"/gastos/{future_row['id']}/antecipar", headers=auth_headers, json={"value": 148.73}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["value"] == 148.73
+    assert body["description"] == "Blazer - Parcela Antecipada"
 
 
 def test_antecipar_gasto_rejects_current_month(client, auth_headers):

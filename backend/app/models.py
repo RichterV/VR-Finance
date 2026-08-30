@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, Date, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, Date, DateTime, Float, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -93,3 +93,19 @@ class VehicleService(Base):
     @property
     def vehicle_name(self) -> str:
         return self.vehicle.name
+
+
+class Attachment(Base):
+    __tablename__ = "attachments"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    entity_type = Column(String, nullable=False)  # "gasto" | "receita" | "servico_veiculo" | "operacao_bolsa" | "devedor"
+    entity_id = Column(String, nullable=False)  # str(id) do registro, OU installment_group_id (grupo parcelado)
+    original_filename = Column(String, nullable=False)
+    stored_filename = Column(String, nullable=False, unique=True)  # uuid4().hex + extensao, nome real em disco
+    content_type = Column(String, nullable=False)
+    size_bytes = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (Index("ix_attachments_entity", "entity_type", "entity_id"),)

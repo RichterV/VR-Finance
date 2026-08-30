@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, ViewChild, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   IonButton,
@@ -22,6 +22,8 @@ import { close } from 'ionicons/icons';
 
 import { ServiceType, ServicosVeiculosService } from '../../services/servicos-veiculos.service';
 import { Vehicle, VeiculosService } from '../../services/veiculos.service';
+import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
+import { extractHttpErrorMessage } from '../../shared/attachment-types';
 import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
 
 export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
@@ -49,9 +51,12 @@ export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
     IonInput,
     IonTextarea,
     IonText,
+    AttachmentPickerComponent,
   ],
 })
 export class AdicionarServicoModalComponent implements OnInit {
+  @ViewChild(AttachmentPickerComponent) attachmentPicker!: AttachmentPickerComponent;
+
   readonly vehicles = signal<Vehicle[]>([]);
   readonly saving = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -109,12 +114,27 @@ export class AdicionarServicoModalComponent implements OnInit {
         mileage: mileage ?? undefined,
       })
       .subscribe({
-        next: async () => {
-          this.saving.set(false);
+        next: (servico) => {
           this.savedAny.set(true);
-          const toast = await this.toastCtrl.create({ message: 'Serviço salvo.', duration: 2000, color: 'success' });
-          await toast.present();
-          this.resetForm();
+          this.attachmentPicker.commit(servico.id).subscribe({
+            next: async () => {
+              this.saving.set(false);
+              const toast = await this.toastCtrl.create({ message: 'Serviço salvo.', duration: 2000, color: 'success' });
+              await toast.present();
+              this.resetForm();
+            },
+            error: async (err) => {
+              this.saving.set(false);
+              console.error('Erro ao enviar anexos do serviço', err);
+              const toast = await this.toastCtrl.create({
+                message: `Serviço salvo, mas houve erro ao enviar os anexos: ${extractHttpErrorMessage(err)}`,
+                duration: 4000,
+                color: 'warning',
+              });
+              await toast.present();
+              this.resetForm();
+            },
+          });
         },
         error: async () => {
           this.saving.set(false);
@@ -139,5 +159,6 @@ export class AdicionarServicoModalComponent implements OnInit {
       mileage: null,
     });
     this.valorDisplay.set('');
+    this.attachmentPicker.reset();
   }
 }

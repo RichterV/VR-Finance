@@ -68,6 +68,8 @@
       ></ion-textarea>
     </ion-item>
 
+    <app-attachment-picker entityType="gasto" mode="create"></app-attachment-picker>
+
     @if (errorMessage()) {
       <ion-text color="danger">
         <p>{{ errorMessage() }}</p>

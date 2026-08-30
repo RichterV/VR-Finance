@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.deps import get_current_user, get_db, require_master
+from app.routers.attachments import delete_all_attachments_for_user
 from app.security import create_access_token, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -127,5 +128,6 @@ def delete_user(
     db.query(models.Gasto).filter(models.Gasto.user_id == user_id).delete(synchronize_session=False)
     db.query(models.Receita).filter(models.Receita.user_id == user_id).delete(synchronize_session=False)
     db.query(models.DropdownOption).filter(models.DropdownOption.user_id == user_id).delete(synchronize_session=False)
+    delete_all_attachments_for_user(db, user_id)
     db.delete(user)
     db.commit()

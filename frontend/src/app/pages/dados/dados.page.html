@@ -77,6 +77,11 @@
                     <td>{{ gasto.is_installment ? gasto.installment_number + '/' + gasto.installment_count : '-' }}</td>
                     <td class="description">{{ gasto.description || '-' }}</td>
                     <td class="actions-col">
+                      @if (gastoAttachmentKeys().has(rowKeyGasto(gasto))) {
+                        <button class="icon-btn" title="Baixar anexos" (click)="abrirAnexosGasto($event, gasto)">
+                          <ion-icon name="attach-outline"></ion-icon>
+                        </button>
+                      }
                       @if (isAntecipavel(gasto)) {
                         <button class="icon-btn highlight" title="Antecipar pra este mês" (click)="anteciparGasto(gasto)">
                           <ion-icon name="today-outline"></ion-icon>
@@ -130,6 +135,11 @@
                     <td class="num">{{ receita.cash_value | currency: 'BRL' }}</td>
                     <td class="description">{{ receita.description || '-' }}</td>
                     <td class="actions-col">
+                      @if (receitaAttachmentKeys().has(rowKeyReceita(receita))) {
+                        <button class="icon-btn" title="Baixar anexos" (click)="abrirAnexosReceita($event, receita)">
+                          <ion-icon name="attach-outline"></ion-icon>
+                        </button>
+                      }
                       <button class="icon-btn" (click)="editarReceita(receita)">
                         <ion-icon name="create"></ion-icon>
                       </button>

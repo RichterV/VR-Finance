@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, ViewChild, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   IonButton,
@@ -26,6 +26,8 @@ import { close } from 'ionicons/icons';
 
 import { DropdownOption, DropdownOptionsService, Priority } from '../../services/dropdown-options.service';
 import { GastosService } from '../../services/gastos.service';
+import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
+import { extractHttpErrorMessage } from '../../shared/attachment-types';
 import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
 
 @Component({
@@ -51,9 +53,12 @@ import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask
     IonToggle,
     IonTextarea,
     IonText,
+    AttachmentPickerComponent,
   ],
 })
 export class AdicionarGastoModalComponent implements OnInit {
+  @ViewChild(AttachmentPickerComponent) attachmentPicker!: AttachmentPickerComponent;
+
   readonly items = signal<DropdownOption[]>([]);
   readonly saving = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -123,16 +128,32 @@ export class AdicionarGastoModalComponent implements OnInit {
         installment_count: isInstallment ? installmentCount! : undefined,
       })
       .subscribe({
-        next: async (rows) => {
-          this.saving.set(false);
+        next: (rows) => {
           this.savedAny.set(true);
-          const toast = await this.toastCtrl.create({
-            message: isInstallment ? `Gasto parcelado em ${rows.length}x salvo.` : 'Gasto salvo.',
-            duration: 2000,
-            color: 'success',
+          const entityId = rows[0].installment_group_id ?? rows[0].id;
+          this.attachmentPicker.commit(entityId).subscribe({
+            next: async () => {
+              this.saving.set(false);
+              const toast = await this.toastCtrl.create({
+                message: isInstallment ? `Gasto parcelado em ${rows.length}x salvo.` : 'Gasto salvo.',
+                duration: 2000,
+                color: 'success',
+              });
+              await toast.present();
+              this.resetForm();
+            },
+            error: async (err) => {
+              this.saving.set(false);
+              console.error('Erro ao enviar anexos do gasto', err);
+              const toast = await this.toastCtrl.create({
+                message: `Gasto salvo, mas houve erro ao enviar os anexos: ${extractHttpErrorMessage(err)}`,
+                duration: 4000,
+                color: 'warning',
+              });
+              await toast.present();
+              this.resetForm();
+            },
           });
-          await toast.present();
-          this.resetForm();
         },
         error: async () => {
           this.saving.set(false);
@@ -161,5 +182,6 @@ export class AdicionarGastoModalComponent implements OnInit {
       installmentCount: null,
     });
     this.valorDisplay.set('');
+    this.attachmentPicker.reset();
   }
 }

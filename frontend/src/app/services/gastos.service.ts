@@ -21,6 +21,10 @@ export interface GastoUpdatePayload {
   description?: string;
 }
 
+export interface GastoAntecipacaoPayload {
+  value?: number;
+}
+
 export interface GastoListParams {
   ano?: number;
   mes?: number;
@@ -71,8 +75,8 @@ export class GastosService {
     return this.http.put<Gasto>(`${this.baseUrl}/${id}`, payload);
   }
 
-  antecipar(id: number): Observable<Gasto> {
-    return this.http.post<Gasto>(`${this.baseUrl}/${id}/antecipar`, {});
+  antecipar(id: number, payload: GastoAntecipacaoPayload = {}): Observable<Gasto> {
+    return this.http.post<Gasto>(`${this.baseUrl}/${id}/antecipar`, payload);
   }
 
   remove(id: number): Observable<void> {

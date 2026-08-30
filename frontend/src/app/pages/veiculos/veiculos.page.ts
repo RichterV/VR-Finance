@@ -13,15 +13,17 @@ import {
   IonTitle,
   IonToolbar,
   ModalController,
+  PopoverController,
   ToastController,
 } from '@ionic/angular';
 import { BaseChartDirective } from 'ng2-charts';
 import { addIcons } from 'ionicons';
-import { addCircleOutline, buildOutline, carSportOutline, create, trash } from 'ionicons/icons';
-import { forkJoin } from 'rxjs';
+import { addCircleOutline, attachOutline, buildOutline, carSportOutline, create, trash } from 'ionicons/icons';
+import { firstValueFrom, forkJoin } from 'rxjs';
 
 import { SERVICE_TYPE_LABELS } from '../../modals/adicionar-servico/adicionar-servico-modal.component';
 import { isDesktopViewport, slideInFromRight, slideOutToRight, SIDE_MODAL_CSS_CLASS } from '../../modals/side-modal.animations';
+import { AttachmentsService } from '../../services/attachments.service';
 import { ServiceType, ServicoVeiculo, ServicosVeiculosService } from '../../services/servicos-veiculos.service';
 import { Vehicle, VeiculosService, VehiclesResumo } from '../../services/veiculos.service';
 import { LoadingStateComponent } from '../../shared/loading-state.component';
@@ -68,6 +70,7 @@ export class VeiculosPage {
   readonly services = signal<ServicoVeiculo[]>([]);
   readonly totalServices = signal(0);
   readonly filtroVeiculoId = signal<number | null>(null);
+  readonly serviceAttachmentKeys = signal<Set<string>>(new Set());
 
   readonly vehiclesSort = signal<SortState>(UNSORTED);
   readonly servicesSort = signal<SortState>(UNSORTED);
@@ -85,11 +88,13 @@ export class VeiculosPage {
   constructor(
     private readonly veiculosService: VeiculosService,
     private readonly servicosService: ServicosVeiculosService,
+    private readonly attachmentsService: AttachmentsService,
     private readonly alertCtrl: AlertController,
     private readonly toastCtrl: ToastController,
     private readonly modalCtrl: ModalController,
+    private readonly popoverCtrl: PopoverController,
   ) {
-    addIcons({ addCircleOutline, carSportOutline, buildOutline, create, trash });
+    addIcons({ addCircleOutline, carSportOutline, buildOutline, create, trash, attachOutline });
   }
 
   /**
@@ -119,6 +124,7 @@ export class VeiculosPage {
       this.services.set(servicesPage.items);
       this.totalServices.set(servicesPage.total);
       this.initialLoading.set(false);
+      this.refreshServiceAttachmentKeys();
     });
   }
 
@@ -127,6 +133,7 @@ export class VeiculosPage {
     this.servicosService.list({ vehicle_id: vehicleId, limit: PAGE_SIZE, offset: 0 }).subscribe((page) => {
       this.services.set(page.items);
       this.totalServices.set(page.total);
+      this.refreshServiceAttachmentKeys();
     });
   }
 
@@ -137,7 +144,34 @@ export class VeiculosPage {
       .subscribe((page) => {
         this.services.set([...this.services(), ...page.items]);
         this.totalServices.set(page.total);
+        this.refreshServiceAttachmentKeys();
       });
+  }
+
+  rowKeyServico(servico: ServicoVeiculo): string {
+    return String(servico.id);
+  }
+
+  private refreshServiceAttachmentKeys(): void {
+    const keys = Array.from(new Set(this.services().map((s) => this.rowKeyServico(s))));
+    if (!keys.length) {
+      this.serviceAttachmentKeys.set(new Set());
+      return;
+    }
+    this.attachmentsService
+      .exists('servico_veiculo', keys)
+      .subscribe((res) => this.serviceAttachmentKeys.set(new Set(res.entity_ids_with_attachments)));
+  }
+
+  async abrirAnexosServico(ev: Event, servico: ServicoVeiculo): Promise<void> {
+    const { AttachmentsPopoverComponent } = await import('../../shared/attachments-popover.component');
+    const files = await firstValueFrom(this.attachmentsService.list('servico_veiculo', servico.id));
+    const popover = await this.popoverCtrl.create({
+      component: AttachmentsPopoverComponent,
+      componentProps: { files },
+      event: ev,
+    });
+    await popover.present();
   }
 
   serviceTypeLabel(type: ServiceType | null): string {

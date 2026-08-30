@@ -48,6 +48,8 @@
       ></ion-textarea>
     </ion-item>
 
+    <app-attachment-picker entityType="receita" [entityId]="receita.id" mode="edit"></app-attachment-picker>
+
     @if (errorMessage()) {
       <ion-text color="danger">
         <p>{{ errorMessage() }}</p>

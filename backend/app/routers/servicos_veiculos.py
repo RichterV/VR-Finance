@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.deps import get_current_user, get_db
+from app.routers.attachments import delete_attachments_for_key
 
 router = APIRouter(prefix="/servicos-veiculos", tags=["servicos-veiculos"])
 
@@ -103,5 +104,6 @@ def delete_service(
     current_user: models.User = Depends(get_current_user),
 ):
     service = _get_owned_service(db, current_user, service_id)
+    delete_attachments_for_key(db, "servico_veiculo", str(service.id))
     db.delete(service)
     db.commit()

@@ -25,6 +25,7 @@ import { close } from 'ionicons/icons';
 
 import { DropdownOption, DropdownOptionsService, Priority } from '../../services/dropdown-options.service';
 import { Gasto, GastosService } from '../../services/gastos.service';
+import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
 import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
 
 @Component({
@@ -49,10 +50,15 @@ import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask
     IonInput,
     IonTextarea,
     IonText,
+    AttachmentPickerComponent,
   ],
 })
 export class EditarGastoModalComponent implements OnInit {
   @Input({ required: true }) gasto!: Gasto;
+
+  get attachmentEntityId(): string | number {
+    return this.gasto.installment_group_id ?? this.gasto.id;
+  }
 
   readonly items = signal<DropdownOption[]>([]);
   readonly saving = signal(false);

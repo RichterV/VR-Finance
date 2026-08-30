@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, computed, signal } from '@angular/core';
+import { Component, ViewChild, computed, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
@@ -22,6 +22,8 @@ import { addIcons } from 'ionicons';
 import { close } from 'ionicons/icons';
 
 import { ReceitasService } from '../../services/receitas.service';
+import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
+import { extractHttpErrorMessage } from '../../shared/attachment-types';
 import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
 
 @Component({
@@ -43,9 +45,12 @@ import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask
     IonRange,
     IonTextarea,
     IonText,
+    AttachmentPickerComponent,
   ],
 })
 export class AdicionarReceitaModalComponent {
+  @ViewChild(AttachmentPickerComponent) attachmentPicker!: AttachmentPickerComponent;
+
   readonly saving = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly valorDisplay = signal('');
@@ -96,17 +101,35 @@ export class AdicionarReceitaModalComponent {
         description: description || undefined,
       })
       .subscribe({
-        next: async () => {
-          this.saving.set(false);
+        next: (receita) => {
           this.savedAny.set(true);
-          const toast = await this.toastCtrl.create({
-            message: 'Receita salva.',
-            duration: 2000,
-            color: 'success',
+          this.attachmentPicker.commit(receita.id).subscribe({
+            next: async () => {
+              this.saving.set(false);
+              const toast = await this.toastCtrl.create({
+                message: 'Receita salva.',
+                duration: 2000,
+                color: 'success',
+              });
+              await toast.present();
+              this.form.reset({ value: null, cashPercentage: 50, description: '' });
+              this.valorDisplay.set('');
+              this.attachmentPicker.reset();
+            },
+            error: async (err) => {
+              this.saving.set(false);
+              console.error('Erro ao enviar anexos da receita', err);
+              const toast = await this.toastCtrl.create({
+                message: `Receita salva, mas houve erro ao enviar os anexos: ${extractHttpErrorMessage(err)}`,
+                duration: 4000,
+                color: 'warning',
+              });
+              await toast.present();
+              this.form.reset({ value: null, cashPercentage: 50, description: '' });
+              this.valorDisplay.set('');
+              this.attachmentPicker.reset();
+            },
           });
-          await toast.present();
-          this.form.reset({ value: null, cashPercentage: 50, description: '' });
-          this.valorDisplay.set('');
         },
         error: async () => {
           this.saving.set(false);

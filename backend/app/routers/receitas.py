@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.deps import get_current_user, get_db
+from app.routers.attachments import delete_attachments_for_key
 
 router = APIRouter(prefix="/receitas", tags=["receitas"])
 
@@ -91,5 +92,6 @@ def delete_receita(
     current_user: models.User = Depends(get_current_user),
 ):
     receita = _get_owned_receita(db, current_user, receita_id)
+    delete_attachments_for_key(db, "receita", str(receita.id))
     db.delete(receita)
     db.commit()

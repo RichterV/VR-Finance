@@ -4,6 +4,9 @@
 **/*.pyc
 **/*.db
 **/*.db.bak-*
+backend/uploads/
+backend/uploads.bak-*/
+backend/last_backup.txt
 **/node_modules/
 **/www/
 **/.angular/

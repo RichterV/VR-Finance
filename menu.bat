@@ -1,27 +1,28 @@
 @echo off
 setlocal enabledelayedexpansion
 
-rem Pressupoe acesso SSH sem senha ja configurado (ver doc/docs/deploy-android-tailscale.md, secao "1. Acesso SSH sem senha").
-set "REMOTE_USER=u0_a000"
-set "REMOTE_PORT=8022"
-rem Usa o hostname MagicDNS do Tailscale por padrao (funciona de qualquer lugar, nao so na Wi-Fi de
-rem casa) -- so precisa do Tailscale ativo neste PC e no celular. "server-ip.txt" permite sobrescrever
+rem Pressupoe acesso SSH sem senha ja configurado (chave publica em ~/.ssh/authorized_keys do
+rem servidor) e o setup inicial ja rodado la (ver scripts/setup_ubuntu_server.sh).
+set "REMOTE_USER=usuario-servidor"
+set "REMOTE_PORT=22"
+rem Usa o hostname MagicDNS do Tailscale por padrao (funciona de qualquer lugar, nao so na mesma
+rem rede) -- so precisa do Tailscale ativo neste PC e no servidor. "server-ip.txt" permite sobrescrever
 rem (ex: forcar o IP da rede local) sem editar o menu.bat, que nao pode se auto-editar em execucao.
 set "SERVER_IP_FILE=%~dp0server-ip.txt"
-set "REMOTE_HOST=seu-celular.seu-tailnet.ts.net"
+set "REMOTE_HOST=seu-servidor.seu-tailnet.ts.net"
 if exist "%SERVER_IP_FILE%" (
     for /f "usebackq delims=" %%i in ("%SERVER_IP_FILE%") do set "REMOTE_HOST=%%i"
 )
 set "MOBILE_ENV_FILE=%~dp0frontend\src\environments\environment.mobile.ts"
 set "NETWORK_SECURITY_CONFIG_FILE=%~dp0frontend\android\app\src\main\res\xml\network_security_config.xml"
-set "REMOTE_BACKEND_DIR=/data/data/com.termux/files/home/vrfinance/backend"
-set "REMOTE_FRONTEND_DIR=/data/data/com.termux/files/home/vrfinance/frontend-www"
-set "REMOTE_SERVICE=/data/data/com.termux/files/usr/var/service/vrfinance-backend"
-rem Nivel de API do SEU celular servidor (rode "getprop ro.build.version.sdk" nele pra saber o
-rem valor certo -- varia por aparelho, o de baixo e so um exemplo). So usado no deploy do backend
-rem pro Termux (opcao 2), nao afeta o build do APK em si.
-set "ANDROID_API_LEVEL=27"
-set "DEST_DIR=%~dp0Termux"
+set "REMOTE_BACKEND_DIR=/home/usuario-servidor/vrfinance/backend"
+rem Fora do home (/home/usuario-servidor tem permissao 750 -- o nginx, rodando como www-data, nao
+rem conseguiria atravessar o diretorio pra servir os arquivos). /var/www e' o padrao do nginx.
+set "REMOTE_FRONTEND_DIR=/var/www/vrfinance"
+rem Nome do servico systemd (nao um caminho -- gerenciado via "sudo systemctl", ver
+rem scripts/setup_ubuntu_server.sh, que ja libera esses comandos especificos sem senha).
+set "REMOTE_SERVICE=vrfinance-backend"
+set "DEST_DIR=%~dp0Backups"
 rem Ajuste os dois caminhos abaixo pra onde voce instalou o JDK 21 e o Android SDK nesta maquina
 rem (ver doc/docs/build-app.md) -- os valores de baixo sao so os caminhos usados na maquina original.
 set "BUILD_JAVA_HOME=C:\Program Files\Microsoft\jdk-21.0.12.101-hotspot"
@@ -34,9 +35,9 @@ echo   VR Finance - Menu principal
 echo ============================================
 echo.
 echo   1. Aplicacao e testes (iniciar app, testes de backend/frontend)
-echo   2. Deploy para o servidor (enviar frontend/backend pro celular)
-echo   3. Ligar / desligar / status do servidor no celular
-echo   4. Copiar imagem do Termux (backup completo do celular)
+echo   2. Deploy para o servidor (enviar frontend/backend pro notebook)
+echo   3. Ligar / desligar / status do servidor no notebook
+echo   4. Backup do servidor (projeto + configuracoes)
 echo   5. Criar build APP (gerar APK Android)
 echo   6. Mudar IP do servidor
 echo   7. Servidor (SSH / bateria / armazenamento / RAM)
@@ -123,7 +124,7 @@ echo.
 echo   1. Deploy completo (frontend + backend)
 echo   2. Deploy so o frontend
 echo   3. Deploy so o backend
-echo   4. Enviar banco de dados local pro celular (sobrescreve os dados de la)
+echo   4. Enviar banco de dados local pro servidor (sobrescreve os dados de la)
 echo   5. Sincronizar dados locais com os dados do servidor (traz o banco de la pro PC)
 echo   0. Voltar
 echo.
@@ -175,18 +176,19 @@ goto deploy_menu
 :deploy_banco
 echo.
 echo ============================================
-echo   ATENCAO - Enviar banco de dados local pro celular
+echo   ATENCAO - Enviar banco de dados local pro servidor
 echo ============================================
 echo.
-echo Isso vai SUBSTITUIR o banco de dados do celular (backend\vrfinance.db de
-echo la) pelo banco local (backend\vrfinance.db daqui). Qualquer lancamento
-echo que exista SO no celular (e nao no seu banco local) sera perdido.
+echo Isso vai SUBSTITUIR o banco de dados do servidor (backend\vrfinance.db de
+echo la) pelo banco local (backend\vrfinance.db daqui), e tambem a pasta de
+echo anexos (backend\uploads\), se existir localmente. Qualquer lancamento ou
+echo anexo que exista SO no servidor (e nao aqui) sera perdido.
 echo.
 echo Use isso apenas quando o banco local estiver mais atualizado que o do
-echo celular (ex: depois de importar/editar dados so localmente). NAO e uma
+echo servidor (ex: depois de importar/editar dados so localmente). NAO e uma
 echo etapa de rotina do deploy -- normalmente o deploy so envia codigo.
 echo.
-echo Por seguranca, o banco atual do celular sera copiado com backup antes de
+echo Por seguranca, o banco atual do servidor sera copiado com backup antes de
 echo ser sobrescrito.
 echo.
 set /p confirma="Digite SIM para confirmar: "
@@ -200,37 +202,50 @@ if not "%confirma%"=="SIM" (
 for /f %%t in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmmss"') do set "TIMESTAMP=%%t"
 
 echo.
-echo [1/4] Parando o backend no celular...
-ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sv down %REMOTE_SERVICE%" < NUL
+echo [1/4] Parando o backend no servidor...
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sudo systemctl stop %REMOTE_SERVICE%" < NUL
 
-echo [2/4] Fazendo backup do banco atual do celular (vrfinance.db.bak-!TIMESTAMP!)...
+echo [2/4] Fazendo backup do banco atual do servidor (vrfinance.db.bak-!TIMESTAMP!)...
 ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "cp %REMOTE_BACKEND_DIR%/vrfinance.db %REMOTE_BACKEND_DIR%/vrfinance.db.bak-!TIMESTAMP!" < NUL
 if errorlevel 1 (
-    echo ERRO: falha ao fazer backup do banco no celular. Nada foi sobrescrito.
-    ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sv up %REMOTE_SERVICE%" < NUL
+    echo ERRO: falha ao fazer backup do banco no servidor. Nada foi sobrescrito.
+    ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sudo systemctl start %REMOTE_SERVICE%" < NUL
     pause
     goto deploy_menu
 )
 
-echo [3/4] Enviando o banco local pro celular...
+echo [3/4] Enviando o banco local pro servidor...
 pushd "%~dp0backend"
 scp -P %REMOTE_PORT% vrfinance.db %REMOTE_USER%@%REMOTE_HOST%:%REMOTE_BACKEND_DIR%/vrfinance.db
 if errorlevel 1 (
     echo ERRO: falha ao enviar o banco. O backup de antes continua em
     echo   %REMOTE_BACKEND_DIR%/vrfinance.db.bak-!TIMESTAMP!
     popd
-    ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sv up %REMOTE_SERVICE%" < NUL
+    ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sudo systemctl start %REMOTE_SERVICE%" < NUL
     pause
     goto deploy_menu
+)
+
+if exist "uploads" (
+    echo [3b] Sincronizando anexos ^(pasta uploads\^) pro servidor...
+    ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "[ -d %REMOTE_BACKEND_DIR%/uploads ] && mv %REMOTE_BACKEND_DIR%/uploads %REMOTE_BACKEND_DIR%/uploads.bak-!TIMESTAMP! || true" < NUL
+    scp -P %REMOTE_PORT% -r uploads %REMOTE_USER%@%REMOTE_HOST%:%REMOTE_BACKEND_DIR%/
+    if errorlevel 1 (
+        echo AVISO: falha ao enviar a pasta de anexos. O banco ja foi enviado; se o
+        echo servidor tinha anexos antigos, o backup ficou em
+        echo   %REMOTE_BACKEND_DIR%/uploads.bak-!TIMESTAMP!
+    )
+) else (
+    echo [3b] Nenhuma pasta local de anexos ^(backend\uploads^) -- nada a sincronizar.
 )
 popd
 
 echo [4/4] Reiniciando o backend...
-ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sv up %REMOTE_SERVICE%" < NUL
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sudo systemctl start %REMOTE_SERVICE%" < NUL
 call :deploy_verificar
 
 echo.
-echo Banco enviado. Backup do banco anterior do celular ficou salvo em:
+echo Banco enviado. Backup do banco anterior do servidor ficou salvo em:
 echo   %REMOTE_BACKEND_DIR%/vrfinance.db.bak-!TIMESTAMP!
 echo (apague manualmente quando confirmar que nao precisa mais dele).
 echo.
@@ -244,11 +259,12 @@ echo   ATENCAO - Sincronizar dados locais com o servidor
 echo ============================================
 echo.
 echo Isso vai SUBSTITUIR o banco de dados local (backend\vrfinance.db daqui)
-echo pelo banco do celular (que e o servidor real, acessado via Tailscale).
-echo Qualquer lancamento que exista SO localmente sera perdido.
+echo pelo banco do servidor (o notebook, acessado via Tailscale), e tambem a
+echo pasta de anexos (backend\uploads\), se existir no servidor. Qualquer
+echo lancamento ou anexo que exista SO localmente sera perdido.
 echo.
 echo Use isso pra trazer pro PC os dados mais recentes lancados direto no
-echo celular (ou por outro dispositivo via Tailscale), por exemplo pra
+echo servidor (ou por outro dispositivo via Tailscale), por exemplo pra
 echo testar/depurar localmente com dados atuais.
 echo.
 echo Por seguranca, o banco local atual sera copiado com backup antes de ser
@@ -275,23 +291,36 @@ if errorlevel 1 (
     goto deploy_menu
 )
 
-echo [2/4] Parando o backend no celular (pra copiar um banco consistente)...
-ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sv down %REMOTE_SERVICE%" < NUL
+echo [2/4] Parando o backend no servidor (pra copiar um banco consistente)...
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sudo systemctl stop %REMOTE_SERVICE%" < NUL
 
-echo [3/4] Baixando o banco do celular pro PC...
+echo [3/4] Baixando o banco do servidor pro PC...
 scp -P %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST%:%REMOTE_BACKEND_DIR%/vrfinance.db vrfinance.db
 if errorlevel 1 (
-    echo ERRO: falha ao baixar o banco do celular. O backup local continua em
+    echo ERRO: falha ao baixar o banco do servidor. O backup local continua em
     echo   backend\vrfinance.db.bak-!TIMESTAMP!
     popd
-    ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sv up %REMOTE_SERVICE%" < NUL
+    ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sudo systemctl start %REMOTE_SERVICE%" < NUL
     pause
     goto deploy_menu
 )
+
+echo [3b] Sincronizando anexos (pasta uploads\) do servidor pro PC...
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "[ -d %REMOTE_BACKEND_DIR%/uploads ]" < NUL
+if not errorlevel 1 (
+    if exist "uploads" move /y "uploads" "uploads.bak-!TIMESTAMP!" >NUL
+    scp -P %REMOTE_PORT% -r %REMOTE_USER%@%REMOTE_HOST%:%REMOTE_BACKEND_DIR%/uploads .
+    if errorlevel 1 (
+        echo AVISO: falha ao baixar a pasta de anexos. O banco ja foi baixado; se o PC
+        echo tinha anexos antigos, o backup ficou em backend\uploads.bak-!TIMESTAMP!
+    )
+) else (
+    echo [3b] Servidor nao tem pasta de anexos ^(uploads/^) ainda -- nada a sincronizar.
+)
 popd
 
-echo [4/4] Reiniciando o backend no celular...
-ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sv up %REMOTE_SERVICE%" < NUL
+echo [4/4] Reiniciando o backend no servidor...
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sudo systemctl start %REMOTE_SERVICE%" < NUL
 call :deploy_verificar
 
 echo.
@@ -314,7 +343,12 @@ if errorlevel 1 (
 )
 
 echo [Frontend] Limpando pasta remota...
-ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "rm -rf %REMOTE_FRONTEND_DIR% && mkdir -p %REMOTE_FRONTEND_DIR%" < NUL
+rem So limpa o CONTEUDO (find -mindepth 1 -delete), nunca o diretorio em si -- /var/www e' dono
+rem de root, entao o usuario usuario-servidor (dono so de /var/www/vrfinance) nao tem permissao pra apagar
+rem a entrada do diretorio no pai, so o que esta dentro dele. Um "rm -rf %REMOTE_FRONTEND_DIR%"
+rem direto falha nesse ultimo passo (com "Permission denied") depois de ja ter apagado tudo la
+rem dentro -- ja aconteceu uma vez e deixou o site sem frontend ate o proximo deploy corrigir isso.
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "mkdir -p %REMOTE_FRONTEND_DIR% && find %REMOTE_FRONTEND_DIR% -mindepth 1 -delete" < NUL
 if errorlevel 1 (
     echo ERRO: nao consegui limpar a pasta remota do frontend.
     popd
@@ -359,14 +393,14 @@ if errorlevel 1 (
 popd
 
 echo [Backend] Instalando dependencias (rapido se nada mudou)...
-ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "cd %REMOTE_BACKEND_DIR% && ANDROID_API_LEVEL=%ANDROID_API_LEVEL% venv/bin/pip install -r requirements.txt" < NUL
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "cd %REMOTE_BACKEND_DIR% && venv/bin/pip install -r requirements.txt" < NUL
 if errorlevel 1 (
-    echo ERRO: falha ao instalar dependencias no celular.
+    echo ERRO: falha ao instalar dependencias no servidor.
     exit /b 1
 )
 
 echo [Backend] Reiniciando o servico...
-ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sv restart %REMOTE_SERVICE%" < NUL
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sudo systemctl restart %REMOTE_SERVICE%" < NUL
 exit /b 0
 
 :deploy_verificar
@@ -406,7 +440,7 @@ if "%opcao%"=="0" goto menu
 goto server_menu
 
 :server_iniciar
-ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sv up %REMOTE_SERVICE%" < NUL
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sudo systemctl start %REMOTE_SERVICE%" < NUL
 echo.
 echo Backend iniciado.
 call :server_status_rapido
@@ -414,14 +448,14 @@ pause
 goto server_menu
 
 :server_parar
-ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sv down %REMOTE_SERVICE%" < NUL
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sudo systemctl stop %REMOTE_SERVICE%" < NUL
 echo.
 echo Backend parado. O site vai parar de responder em /api ate voce iniciar de novo.
 pause
 goto server_menu
 
 :server_reiniciar
-ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sv restart %REMOTE_SERVICE%" < NUL
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sudo systemctl restart %REMOTE_SERVICE%" < NUL
 echo.
 echo Backend reiniciado.
 call :server_status_rapido
@@ -429,7 +463,7 @@ pause
 goto server_menu
 
 :server_status
-ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sv status %REMOTE_SERVICE%" < NUL
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "sudo systemctl status %REMOTE_SERVICE% --no-pager" < NUL
 call :server_status_rapido
 pause
 goto server_menu
@@ -441,25 +475,23 @@ curl -s -o NUL -w "  Backend   http://%REMOTE_HOST%:8080/api/docs    -> HTTP %%{
 exit /b 0
 
 rem ================================================================
-rem  4) Copiar imagem do Termux (backup)
+rem  4) Backup do servidor (projeto + configuracoes)
 rem ================================================================
 :backup_menu
 cls
 echo ============================================
-echo   VR Finance - Copiar imagem do Termux
+echo   VR Finance - Backup do servidor
 echo ============================================
 echo.
-echo Isso empacota TODO o ambiente Termux do celular (pacotes instalados,
-echo configuracoes do nginx/sshd, codigo do backend, banco de dados, build
-echo do frontend etc.) num unico arquivo .tar.gz, salvo em:
+echo Isso empacota a pasta do projeto no servidor (~/vrfinance -- codigo,
+echo banco de dados, build do frontend, .env) mais os arquivos de configuracao
+echo do systemd e do nginx, num unico .tar.gz, salvo em:
 echo   %DEST_DIR%
 echo.
-echo Pode demorar varios minutos e o arquivo pode ter alguns GB, dependendo
-echo do que estiver instalado no celular. Serve pra restaurar tudo de uma vez
-echo em outro celular no futuro, sem repetir boa parte do passo a passo manual.
-echo O venv do backend e o cache de pip NAO entram no backup (sao facilmente
-echo reconstruidos e so aumentam o tamanho/tempo do tar) -- apos restaurar,
-echo e preciso recriar o venv (ver instrucoes no final).
+echo O venv do backend NAO entra no backup (facilmente reconstruido e so
+echo aumenta o tamanho/tempo do tar) -- apos restaurar, e preciso recria-lo
+echo (ver instrucoes no final). Isso NAO e um backup do Ubuntu inteiro (pra
+echo isso, reinstalar o SO e rodar scripts/setup_ubuntu_server.sh de novo).
 echo.
 set /p confirma="Continuar? (S/N): "
 if /i not "%confirma%"=="S" goto menu
@@ -467,41 +499,36 @@ if /i not "%confirma%"=="S" goto menu
 if not exist "%DEST_DIR%" mkdir "%DEST_DIR%"
 
 for /f %%t in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmmss"') do set "TIMESTAMP=%%t"
-set "REMOTE_FILE=termux-backup-!TIMESTAMP!.tar.gz"
+set "REMOTE_FILE=vrfinance-backup-!TIMESTAMP!.tar.gz"
 set "LOCAL_FILE=%DEST_DIR%\!REMOTE_FILE!"
 
-rem O arquivo temporario fica em /data/data/com.termux/files (irmao de ./home e ./usr, NAO dentro de
-rem nenhum dos dois) -- se ficasse dentro de ~ (que e ./home/<user>), o tar reclamaria de "file changed
-rem as we read it" por estar escrevendo o proprio arquivo de saida dentro da pasta que esta lendo.
-set "REMOTE_TMP=/data/data/com.termux/files/!REMOTE_FILE!"
+rem O arquivo temporario fica em /tmp (fora de ~/vrfinance) pra nao dar "file changed as we read it"
+rem por escrever o proprio arquivo de saida dentro da pasta que esta sendo lida.
+set "REMOTE_TMP=/tmp/!REMOTE_FILE!"
 
 echo.
-echo [1/3] Empacotando o Termux no celular (pode demorar)...
-rem tar retorna 1 (nao 0) quando um arquivo muda durante a leitura (ex: runsvdir.log, escrito
-rem continuamente pelo runit) -- isso nao invalida o backup, so avisa que aquele arquivo especifico
-rem pode estar levemente inconsistente. So codigo >=2 e erro fatal de verdade (--exclude cobre o caso
-rem mais comum, e o "if errorlevel 2" tolera outros arquivos ativos que apareçam no futuro).
-ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "cd /data/data/com.termux/files && tar czpf !REMOTE_TMP! --exclude=./home/storage --exclude=./home/runsvdir.log --exclude=./usr/var/cache/apt/archives --exclude=./home/.cache --exclude=./home/vrfinance/backend/venv ./home ./usr" < NUL
-if errorlevel 2 (
+echo [1/3] Empacotando o projeto e as configuracoes no servidor...
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "tar czf !REMOTE_TMP! --exclude=vrfinance/backend/venv -C /home/%REMOTE_USER% vrfinance --transform 's,^,vrfinance/,S' -C /etc/systemd/system %REMOTE_SERVICE%.service --transform 's,^,etc-systemd/,S' -C /etc/nginx/sites-available vrfinance --transform 's,^,etc-nginx/,S'" < NUL
+if errorlevel 1 (
     echo.
-    echo ERRO: falha ao empacotar o Termux no celular.
+    echo ERRO: falha ao empacotar o backup no servidor.
     pause
     goto backup_menu
 )
 
 echo.
-echo [2/3] Copiando o arquivo pro PC (pode demorar, e um arquivo grande)...
+echo [2/3] Copiando o arquivo pro PC...
 scp -P %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST%:!REMOTE_TMP! "!LOCAL_FILE!"
 if errorlevel 1 (
     echo.
-    echo ERRO: falha ao copiar o arquivo do celular. O arquivo remoto NAO foi
+    echo ERRO: falha ao copiar o arquivo do servidor. O arquivo remoto NAO foi
     echo apagado, pra voce poder tentar copiar de novo manualmente:
     echo   !REMOTE_TMP!
     pause
     goto backup_menu
 )
 
-rem So apaga do celular depois de confirmar que a copia chegou inteira no PC
+rem So apaga do servidor depois de confirmar que a copia chegou inteira no PC
 rem (mesmo tamanho dos dois lados) -- nunca apaga o original as ciegas.
 for %%f in ("!LOCAL_FILE!") do set "LOCAL_SIZE=%%~zf"
 for /f %%s in ('ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "stat -c %%s !REMOTE_TMP!" ^< NUL') do set "REMOTE_SIZE=%%s"
@@ -509,7 +536,7 @@ for /f %%s in ('ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "stat -c %%s !R
 if not "!LOCAL_SIZE!"=="!REMOTE_SIZE!" (
     echo.
     echo ERRO: o arquivo copiado (!LOCAL_SIZE! bytes^) nao bate com o tamanho do
-    echo arquivo no celular (!REMOTE_SIZE! bytes^). O arquivo remoto NAO foi
+    echo arquivo no servidor (!REMOTE_SIZE! bytes^). O arquivo remoto NAO foi
     echo apagado, por seguranca:
     echo   !REMOTE_TMP!
     pause
@@ -517,8 +544,15 @@ if not "!LOCAL_SIZE!"=="!REMOTE_SIZE!" (
 )
 
 echo.
-echo [3/3] Copia confirmada (!LOCAL_SIZE! bytes^). Limpando o arquivo temporario no celular...
+echo [3/3] Copia confirmada (!LOCAL_SIZE! bytes^). Limpando o arquivo temporario no servidor...
 ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "rm !REMOTE_TMP!" < NUL
+
+rem Grava a hora deste backup num arquivo simples no servidor -- e o que GET /backup-status (app)
+rem le pra saber ha quantos dias foi o ultimo backup e mostrar (ou nao) o aviso pro usuario master.
+rem Sem isso o app nao tem como saber que um backup acabou de acontecer (o menu.bat roda no PC,
+rem nao tem login na API). Formato ISO 8601 com offset explicito (+00:00, nao "Z") porque o
+rem Python do backend usa datetime.fromisoformat, que so aceita "Z" a partir do 3.11.
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "date -u +%%Y-%%m-%%dT%%H:%%M:%%S+00:00 > %REMOTE_BACKEND_DIR%/last_backup.txt" < NUL
 
 echo.
 echo ============================================
@@ -526,16 +560,16 @@ echo Copia salva em:
 echo   !LOCAL_FILE!
 echo ============================================
 echo.
-echo Para restaurar em outro celular (Termux recem-instalado, mesma arquitetura
-echo do processador):
-echo   1. Copie o .tar.gz pro celular novo (ex: scp, ou compartilhar o arquivo)
-echo   2. Abra o Termux novo e rode:
-echo      tar xzpf termux-backup-....tar.gz -C /data/data/com.termux/files --recursive-unlink --preserve-permissions
+echo Para restaurar num servidor novo (Ubuntu Server, mesmo usuario "usuario-servidor"):
+echo   1. Rode scripts/setup_ubuntu_server.sh la (cria pastas, servico, nginx)
+echo   2. Copie o .tar.gz pro servidor novo e extraia:
+echo      tar xzf vrfinance-backup-....tar.gz -C /tmp/restore
+echo      cp -r /tmp/restore/vrfinance/. ~/vrfinance/
+echo      sudo cp /tmp/restore/etc-systemd/*.service /etc/systemd/system/
+echo      sudo cp /tmp/restore/etc-nginx/vrfinance /etc/nginx/sites-available/
 echo   3. Recrie o venv do backend (nao entra no backup):
-echo      cd ~/vrfinance/backend ^&^& python -m venv venv
-echo      ANDROID_API_LEVEL=$(getprop ro.build.version.sdk) venv/bin/pip install -r requirements.txt
-echo   4. Feche e abra o Termux de novo (ou rode "exit" e reabra) pra tudo
-echo      recarregar (nginx, sshd, o backend via termux-services, etc.)
+echo      cd ~/vrfinance/backend ^&^& python3 -m venv venv ^&^& venv/bin/pip install -r requirements.txt
+echo   4. sudo systemctl daemon-reload ^&^& sudo systemctl restart %REMOTE_SERVICE% ^&^& sudo systemctl reload nginx
 echo.
 pause
 goto menu
@@ -633,9 +667,9 @@ echo   Sao dois enderecos separados, cada um usado numa situacao diferente:
 echo   - Deploy/SSH (este menu.bat): por padrao usa o hostname MagicDNS do
 echo     Tailscale (funciona de qualquer lugar, nao so em casa). So muda se
 echo     voce quiser forcar outro endereco (ex: IP da rede local).
-echo   - App Android nativo (o APK instalado no celular): tambem usa o
-echo     hostname do Tailscale, embutido no build -- so muda se voce
-echo     renomear o celular no Tailscale.
+echo   - App Android nativo (o APK instalado no celular): aponta pro backend
+echo     no servidor (notebook) via o hostname do Tailscale, embutido no
+echo     build -- so muda se voce renomear o servidor no Tailscale.
 echo.
 echo   1. Mudar o endereco usado pelo deploy/SSH (este menu.bat)
 echo   2. Mudar o endereco usado pelo app Android nativo (precisa gerar novo APK depois)
@@ -651,7 +685,7 @@ goto ip_menu
 :ip_mudar_local
 echo.
 echo Endereco atual: %REMOTE_HOST%
-set /p novo_ip="Novo endereco (IP ou hostname do celular), ou Enter para cancelar: "
+set /p novo_ip="Novo endereco (IP ou hostname do servidor), ou Enter para cancelar: "
 if "%novo_ip%"=="" (
     echo.
     echo Cancelado.
@@ -737,13 +771,13 @@ goto servidor_menu
 :servidor_bateria
 echo.
 echo Bateria (capacidade %% / status):
-ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "cat /sys/class/power_supply/battery/capacity; cat /sys/class/power_supply/battery/status" < NUL
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "bat=$(ls /sys/class/power_supply/ | grep -m1 BAT); cat /sys/class/power_supply/$bat/capacity; cat /sys/class/power_supply/$bat/status" < NUL
 pause
 goto servidor_menu
 
 :servidor_armazenamento
 echo.
-ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "df -h /data" < NUL
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "df -h /" < NUL
 pause
 goto servidor_menu
 

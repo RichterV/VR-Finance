@@ -6,32 +6,52 @@
       <p class="brand-subtitle">Controle financeiro pessoal</p>
     </div>
 
-    <form class="login-card" [formGroup]="form" (ngSubmit)="submit()">
-      <ion-item>
-        <ion-input label="Usuário" labelPlacement="stacked" formControlName="username" type="text" autocomplete="username"></ion-input>
-      </ion-item>
+    @if (showBiometricGate()) {
+      <div class="login-card biometric-card">
+        <div class="biometric-icon" [class.busy]="biometricBusy()">
+          <ion-icon name="finger-print"></ion-icon>
+        </div>
+        <p class="biometric-user">{{ form.controls.username.value }}</p>
 
-      <ion-item>
-        <ion-input label="Senha" labelPlacement="stacked" formControlName="password" type="password" autocomplete="current-password"></ion-input>
-      </ion-item>
+        @if (errorMessage()) {
+          <ion-text color="danger">
+            <p>{{ errorMessage() }}</p>
+          </ion-text>
+        }
 
-      <label class="remember-toggle">
-        <ion-checkbox
-          [checked]="lembrarCredenciais()"
-          (ionChange)="lembrarCredenciais.set($any($event.detail.checked))"
-        ></ion-checkbox>
-        <span>Lembrar usuário e senha</span>
-      </label>
+        <ion-button expand="block" class="ion-margin-top" [disabled]="biometricBusy()" (click)="unlockWithBiometrics()">
+          {{ biometricBusy() ? 'Verificando...' : 'Entrar com digital' }}
+        </ion-button>
+        <button type="button" class="link-button" (click)="useManualLogin()">Entrar com usuário e senha</button>
+      </div>
+    } @else {
+      <form class="login-card" [formGroup]="form" (ngSubmit)="submit()">
+        <ion-item>
+          <ion-input label="Usuário" labelPlacement="stacked" formControlName="username" type="text" autocomplete="username"></ion-input>
+        </ion-item>
 
-      @if (errorMessage()) {
-        <ion-text color="danger">
-          <p>{{ errorMessage() }}</p>
-        </ion-text>
-      }
+        <ion-item>
+          <ion-input label="Senha" labelPlacement="stacked" formControlName="password" type="password" autocomplete="current-password"></ion-input>
+        </ion-item>
 
-      <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="form.invalid || loading()">
-        {{ loading() ? 'Entrando...' : 'Entrar' }}
-      </ion-button>
-    </form>
+        <label class="remember-toggle">
+          <ion-checkbox
+            [checked]="lembrarCredenciais()"
+            (ionChange)="lembrarCredenciais.set($any($event.detail.checked))"
+          ></ion-checkbox>
+          <span>Lembrar usuário e senha</span>
+        </label>
+
+        @if (errorMessage()) {
+          <ion-text color="danger">
+            <p>{{ errorMessage() }}</p>
+          </ion-text>
+        }
+
+        <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="form.invalid || loading()">
+          {{ loading() ? 'Entrando...' : 'Entrar' }}
+        </ion-button>
+      </form>
+    }
   </div>
 </ion-content>

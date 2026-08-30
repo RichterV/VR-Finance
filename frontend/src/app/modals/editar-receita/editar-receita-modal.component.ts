@@ -22,6 +22,7 @@ import { addIcons } from 'ionicons';
 import { close } from 'ionicons/icons';
 
 import { Receita, ReceitasService } from '../../services/receitas.service';
+import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
 import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
 
 @Component({
@@ -43,6 +44,7 @@ import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask
     IonRange,
     IonTextarea,
     IonText,
+    AttachmentPickerComponent,
   ],
 })
 export class EditarReceitaModalComponent implements OnInit {

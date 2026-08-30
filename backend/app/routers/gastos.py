@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.deps import get_current_user, get_db
+from app.routers.attachments import delete_attachments_for_key
 from app.utils import add_months
 
 router = APIRouter(prefix="/gastos", tags=["gastos"])
@@ -147,6 +148,7 @@ def update_gasto(
 @router.post("/{gasto_id}/antecipar", response_model=schemas.GastoOut)
 def antecipar_gasto(
     gasto_id: int,
+    payload: Optional[schemas.GastoAntecipar] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -161,6 +163,9 @@ def antecipar_gasto(
 
     day = min(gasto.date.day, calendar.monthrange(today.year, today.month)[1])
     gasto.date = date(today.year, today.month, day)
+    if payload is not None and payload.value is not None:
+        gasto.value = payload.value
+    gasto.description = f"{gasto.description} - Parcela Antecipada" if gasto.description else "Parcela Antecipada"
     db.commit()
     db.refresh(gasto)
     return gasto
@@ -173,5 +178,23 @@ def delete_gasto(
     current_user: models.User = Depends(get_current_user),
 ):
     gasto = _get_owned_gasto(db, current_user, gasto_id)
+    group_id = gasto.installment_group_id
+
+    # Sempre limpa o que estava vinculado direto ao id desta parcela (nada mais pode referenciar
+    # esse id depois que ela some).
+    delete_attachments_for_key(db, "gasto", str(gasto.id))
+
+    # Só limpa o anexo do grupo se essa era a ultima parcela restante -- exclui o proprio id da
+    # contagem (em vez de depender do autoflush, que esta desligado nesta sessao) pra funcionar
+    # independente de quando o delete abaixo e de fato aplicado no banco.
+    if group_id:
+        remaining_siblings = (
+            db.query(models.Gasto)
+            .filter(models.Gasto.installment_group_id == group_id, models.Gasto.id != gasto.id)
+            .count()
+        )
+        if remaining_siblings == 0:
+            delete_attachments_for_key(db, "gasto", group_id)
+
     db.delete(gasto)
     db.commit()

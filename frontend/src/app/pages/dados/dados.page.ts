@@ -15,15 +15,18 @@ import {
   IonTitle,
   IonToolbar,
   ModalController,
+  PopoverController,
   ToastController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { create, todayOutline, trash } from 'ionicons/icons';
-import { forkJoin } from 'rxjs';
+import { attachOutline, create, todayOutline, trash } from 'ionicons/icons';
+import { firstValueFrom, forkJoin } from 'rxjs';
 
 import { isDesktopViewport, slideInFromRight, slideOutToRight, SIDE_MODAL_CSS_CLASS } from '../../modals/side-modal.animations';
+import { AttachmentsService } from '../../services/attachments.service';
 import { Gasto, GastosService } from '../../services/gastos.service';
 import { Receita, ReceitasService } from '../../services/receitas.service';
+import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
 import { LoadingStateComponent } from '../../shared/loading-state.component';
 import { MESES_COMPLETOS } from '../../shared/months';
 import { SortState, sortItems, toggleSortState, UNSORTED } from '../../shared/sortable';
@@ -77,6 +80,9 @@ export class DadosPage {
   readonly gastosSort = signal<SortState>(UNSORTED);
   readonly receitasSort = signal<SortState>(UNSORTED);
 
+  readonly gastoAttachmentKeys = signal<Set<string>>(new Set());
+  readonly receitaAttachmentKeys = signal<Set<string>>(new Set());
+
   readonly sortedGastos = computed(() =>
     sortItems(this.gastos(), this.gastosSort(), (g, column) => this.gastoSortValue(g, column)),
   );
@@ -87,11 +93,13 @@ export class DadosPage {
   constructor(
     private readonly gastosService: GastosService,
     private readonly receitasService: ReceitasService,
+    private readonly attachmentsService: AttachmentsService,
     private readonly alertCtrl: AlertController,
     private readonly toastCtrl: ToastController,
     private readonly modalCtrl: ModalController,
+    private readonly popoverCtrl: PopoverController,
   ) {
-    addIcons({ create, trash, todayOutline });
+    addIcons({ create, trash, todayOutline, attachOutline });
     const currentYear = new Date().getFullYear();
     this.anos = Array.from({ length: 6 }, (_, i) => currentYear - i);
   }
@@ -131,6 +139,8 @@ export class DadosPage {
       this.receitas.set(receitasPage.items);
       this.totalReceitas.set(receitasPage.total);
       this.initialLoading.set(false);
+      this.refreshGastoAttachmentKeys();
+      this.refreshReceitaAttachmentKeys();
     });
   }
 
@@ -139,6 +149,7 @@ export class DadosPage {
     this.gastosService.list(params).subscribe((page) => {
       this.gastos.set([...this.gastos(), ...page.items]);
       this.totalGastos.set(page.total);
+      this.refreshGastoAttachmentKeys();
     });
   }
 
@@ -147,7 +158,62 @@ export class DadosPage {
     this.receitasService.list(params).subscribe((page) => {
       this.receitas.set([...this.receitas(), ...page.items]);
       this.totalReceitas.set(page.total);
+      this.refreshReceitaAttachmentKeys();
     });
+  }
+
+  /** Chave usada tanto pra chamar a API de anexos quanto no template -- grupo de parcelamento
+   * quando existe, senão o próprio id (mesma convenção usada pro upload nos modais). */
+  rowKeyGasto(gasto: Gasto): string {
+    return gasto.installment_group_id ?? String(gasto.id);
+  }
+
+  rowKeyReceita(receita: Receita): string {
+    return String(receita.id);
+  }
+
+  private refreshGastoAttachmentKeys(): void {
+    const keys = Array.from(new Set(this.gastos().map((g) => this.rowKeyGasto(g))));
+    if (!keys.length) {
+      this.gastoAttachmentKeys.set(new Set());
+      return;
+    }
+    this.attachmentsService
+      .exists('gasto', keys)
+      .subscribe((res) => this.gastoAttachmentKeys.set(new Set(res.entity_ids_with_attachments)));
+  }
+
+  private refreshReceitaAttachmentKeys(): void {
+    const keys = Array.from(new Set(this.receitas().map((r) => this.rowKeyReceita(r))));
+    if (!keys.length) {
+      this.receitaAttachmentKeys.set(new Set());
+      return;
+    }
+    this.attachmentsService
+      .exists('receita', keys)
+      .subscribe((res) => this.receitaAttachmentKeys.set(new Set(res.entity_ids_with_attachments)));
+  }
+
+  async abrirAnexosGasto(ev: Event, gasto: Gasto): Promise<void> {
+    const { AttachmentsPopoverComponent } = await import('../../shared/attachments-popover.component');
+    const files = await firstValueFrom(this.attachmentsService.list('gasto', this.rowKeyGasto(gasto)));
+    const popover = await this.popoverCtrl.create({
+      component: AttachmentsPopoverComponent,
+      componentProps: { files },
+      event: ev,
+    });
+    await popover.present();
+  }
+
+  async abrirAnexosReceita(ev: Event, receita: Receita): Promise<void> {
+    const { AttachmentsPopoverComponent } = await import('../../shared/attachments-popover.component');
+    const files = await firstValueFrom(this.attachmentsService.list('receita', receita.id));
+    const popover = await this.popoverCtrl.create({
+      component: AttachmentsPopoverComponent,
+      componentProps: { files },
+      event: ev,
+    });
+    await popover.present();
   }
 
   private sideModalOptions() {
@@ -187,13 +253,24 @@ export class DadosPage {
 
     const alert = await this.alertCtrl.create({
       header: 'Antecipar gasto',
-      message: `Trazer "${gasto.item_name}" (${formatBRL(gasto.value)}) de ${dataOriginal} pra ${novaData}, virando um gasto deste mês? Essa ação não pode ser desfeita.`,
+      message: `Trazer "${gasto.item_name}" de ${dataOriginal} pra ${novaData}, virando um gasto deste mês? A descrição ganha "- Parcela Antecipada". Essa ação não pode ser desfeita.`,
+      inputs: [
+        {
+          name: 'value',
+          type: 'text',
+          value: formatCurrencyValue(gasto.value),
+          label: 'Valor (ajuste caso tenha tido desconto ao antecipar)',
+          placeholder: '0,00',
+        },
+      ],
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
         {
           text: 'Antecipar',
-          handler: () => {
-            this.gastosService.antecipar(gasto.id).subscribe(async () => {
+          handler: (data) => {
+            const novoValor = parseCentsInput(data.value ?? '');
+            const payload = novoValor > 0 && novoValor !== gasto.value ? { value: novoValor } : {};
+            this.gastosService.antecipar(gasto.id, payload).subscribe(async () => {
               this.reload();
               const toast = await this.toastCtrl.create({ message: 'Gasto antecipado pra este mês.', duration: 2000, color: 'success' });
               await toast.present();

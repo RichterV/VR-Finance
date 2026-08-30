@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
 import { of } from 'rxjs';
 
+import { AttachmentsService } from '../../services/attachments.service';
 import { Gasto, GastosService } from '../../services/gastos.service';
 import { ReceitasService } from '../../services/receitas.service';
 import { DadosPage } from './dados.page';
@@ -41,6 +42,7 @@ describe('DadosPage', () => {
         provideRouter([]),
         { provide: GastosService, useValue: { list: () => of({ items: gastos, total: gastos.length }) } },
         { provide: ReceitasService, useValue: { list: () => of({ items: [], total: 0 }) } },
+        { provide: AttachmentsService, useValue: { exists: () => of({ entity_ids_with_attachments: [] }) } },
       ],
     });
     fixture = TestBed.createComponent(DadosPage);
@@ -54,6 +56,16 @@ describe('DadosPage', () => {
   it('should create and load gastos on init', () => {
     expect(component).toBeTruthy();
     expect(component.gastos().map((g) => g.id)).toEqual([1, 2]);
+  });
+
+  it('marks only gastos with attachments after checking in bulk', () => {
+    const attachmentsService = TestBed.inject(AttachmentsService);
+    vi.spyOn(attachmentsService, 'exists').mockReturnValue(of({ entity_ids_with_attachments: ['1'] }));
+    component.ionViewWillEnter();
+
+    expect(attachmentsService.exists).toHaveBeenCalledWith('gasto', ['1', '2']);
+    expect(component.gastoAttachmentKeys().has(component.rowKeyGasto(gastos[0]))).toBe(true);
+    expect(component.gastoAttachmentKeys().has(component.rowKeyGasto(gastos[1]))).toBe(false);
   });
 
   it('leaves the list in server order until a column header is clicked', () => {

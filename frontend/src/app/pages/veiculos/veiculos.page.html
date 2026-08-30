@@ -128,6 +128,11 @@
                   <td>{{ serviceTypeLabel(servico.service_type) }}</td>
                   <td class="num">{{ servico.mileage ?? '-' }}</td>
                   <td class="actions-col">
+                    @if (serviceAttachmentKeys().has(rowKeyServico(servico))) {
+                      <button class="icon-btn" title="Baixar anexos" (click)="abrirAnexosServico($event, servico)">
+                        <ion-icon name="attach-outline"></ion-icon>
+                      </button>
+                    }
                     <button class="icon-btn" (click)="editarServico(servico)">
                       <ion-icon name="create"></ion-icon>
                     </button>

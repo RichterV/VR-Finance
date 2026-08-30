@@ -23,6 +23,7 @@ import { close } from 'ionicons/icons';
 import { SERVICE_TYPE_LABELS } from '../adicionar-servico/adicionar-servico-modal.component';
 import { ServiceType, ServicoVeiculo, ServicosVeiculosService } from '../../services/servicos-veiculos.service';
 import { Vehicle, VeiculosService } from '../../services/veiculos.service';
+import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
 import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
 
 @Component({
@@ -44,6 +45,7 @@ import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask
     IonInput,
     IonTextarea,
     IonText,
+    AttachmentPickerComponent,
   ],
 })
 export class EditarServicoModalComponent implements OnInit {

@@ -192,6 +192,11 @@ ion-menu ion-item.active-nav-item ion-icon {
     flex-shrink: 0;
   }
 
+  .pendencias-badge {
+    margin-left: auto;
+    font-size: 0.7rem;
+  }
+
   &:hover {
     background: var(--app-surface-hover);
   }
