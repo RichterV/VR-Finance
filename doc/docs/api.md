@@ -78,3 +78,51 @@ para itens já removidos por soft delete (`active=false`), já que a relação c
 
 Cada item retornado (`VehicleServiceOut`) inclui `vehicle_name`, resolvido via `VehicleService.vehicle.name`
 (mesma lógica do `item_name` de `GastoOut`).
+
+## Operações Bolsa
+
+Sem relação com `gastos`/`receitas`/`dropdown_options` — seção logicamente isolada, mesmo banco físico.
+
+| método | rota | descrição |
+|---|---|---|
+| GET | `/operacoes-bolsa?ticker=&operation=&limit=&offset=` | lista paginada (`{items, total}`), ordenada por data decrescente. `ticker` filtra por substring case-insensitive (`ilike`), `operation` por igualdade, `limit` default 25 |
+| POST | `/operacoes-bolsa` | cria operação — valida campos conforme `operation` (ticker/quantidade obrigatórios só em `compra`/`venda`; cotação obrigatória sempre que envolver dólar) e deriva o valor não informado (`value_brl` a partir de `value_usd × cotacao` ou vice-versa) |
+| PUT | `/operacoes-bolsa/{id}` | edita uma operação (mesma validação/derivação do create; data não é editável) |
+| DELETE | `/operacoes-bolsa/{id}` | exclui a operação |
+
+## Devedores
+
+Sem relação com `gastos`/`receitas`/`dropdown_options` — seção logicamente isolada. Toda dívida é
+sempre parcelada (mínimo 1x); `POST` gera as N linhas de parcela de uma vez.
+
+| método | rota | descrição |
+|---|---|---|
+| GET | `/devedores?devedor=&status=&ano=&mes=&limit=&offset=` | lista paginada (`{items, total}`) de parcelas, ordenada por data decrescente. `devedor` filtra por substring case-insensitive, demais filtros opcionais, `limit` default 25 |
+| GET | `/devedores/pendencias` | `{count}` de parcelas `nao_pago` com data em qualquer mês anterior ao atual (atraso acumulado, não só o mês imediatamente anterior) — alimenta o badge de aviso no menu lateral |
+| POST | `/devedores` | cria devedor — gera as N linhas de parcela e retorna todas |
+| PUT | `/devedores/{id}` | edita `devedor`/`description`/`value`/`status` de uma parcela específica (não afeta as demais parcelas do grupo) |
+| DELETE | `/devedores/{id}` | exclui uma parcela específica |
+
+## Anexos
+
+Comprovantes (imagem/PDF) opcionais em gastos, receitas, serviços de veículo, operações bolsa e
+devedores — ver [Modelo de dados](modelo-de-dados.md#attachments). Router genérico único cobrindo os
+5 módulos via `entity_type` + `entity_id`.
+
+| método | rota | descrição |
+|---|---|---|
+| POST | `/attachments/upload` | cria anexo (multipart: `entity_type`, `entity_id`, `file`). Valida tipo (`image/jpeg`, `image/png`, `image/webp`, `image/heic`, `application/pdf`) e tamanho (máx. 10MB), confere posse do registro pai, grava em disco (`backend/uploads/<entity_type>/<uuid>.<ext>`) e insere o metadado |
+| GET | `/attachments?entity_type=&entity_id=` | lista anexos de um registro (404 se o registro pai não for do usuário) |
+| GET | `/attachments/exists?entity_type=&entity_ids=` | (`entity_ids` repetido na query) `{entity_ids_with_attachments}` em lote — usado pelas telas de listagem pra saber quais linhas mostram o ícone de anexo sem uma requisição por linha |
+| GET | `/attachments/{id}/download` | baixa o arquivo (`FileResponse`, 404 se o anexo não for do usuário) |
+| DELETE | `/attachments/{id}` | exclui um anexo específico |
+
+Para gasto (quando parcelado) e devedor (sempre parcelado), `entity_id` é o `installment_group_id` do
+grupo inteiro, não o `id` de uma parcela — todas as parcelas do mesmo grupo compartilham os mesmos
+anexos.
+
+## Backup
+
+| método | rota | descrição |
+|---|---|---|
+| GET | `/backup-status` | `{last_backup_at}` (ISO 8601 ou `null`) — lido de um arquivo simples no servidor, gravado pelo `menu.bat` logo após um backup confirmado. Restrito ao master; alimenta o banner de aviso quando fazem 30 dias ou mais desde o último backup |

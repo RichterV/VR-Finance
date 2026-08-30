@@ -5,7 +5,9 @@ Aplicativo pessoal de controle financeiro.
 - **Backend**: FastAPI + SQLAlchemy, banco SQLite
 - **Frontend**: Ionic (Angular)
 - **Autenticação**: login obrigatório, JWT, cadastro de novos usuários restrito a um usuário master
-- **Hospedagem prevista**: celular Android (Termux) + nginx, acesso remoto via Tailscale
+- **Anexos**: upload opcional de comprovante (imagem/PDF) em gastos, receitas, serviços de veículo,
+  operações bolsa e devedores, com download depois
+- **Hospedagem**: notebook Ubuntu Server + nginx, acesso remoto via Tailscale
 
 ## Estrutura do repositório
 

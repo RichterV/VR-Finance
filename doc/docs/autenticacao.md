@@ -7,7 +7,8 @@ por um usuário **master**, autenticado, através de um endpoint restrito.
 
 - Usuário master: username e senha definidos em `backend/.env` (`MASTER_USERNAME`/`MASTER_PASSWORD`),
   criado no banco via `seed_master.py` — ver [Setup - Backend](setup-backend.md)
-- Dados financeiros (`gastos`, `receitas`, `dropdown_options`) são **separados por usuário**
+- Dados financeiros (`gastos`, `receitas`, `dropdown_options`, `operacoes_bolsa`, `devedores`,
+  `attachments`, além de `vehicles`/`vehicle_services`) são **separados por usuário**
 - O master também usa o app normalmente (cadastra os próprios gastos/receitas), além de poder criar
   novos usuários
 - Somente o master pode criar, editar (username e/ou resetar senha) ou excluir outros usuários — regra
@@ -15,7 +16,8 @@ por um usuário **master**, autenticado, através de um endpoint restrito.
 - O usuário master não pode ser excluído, nem por ele mesmo — validado pelo `role`, não pelo username,
   então vale pra qualquer usuário que algum dia tenha `role == master`
 - Excluir um usuário apaga em cascata todos os dados dele (`gastos`, `receitas`, `dropdown_options`,
-  `vehicles`, `vehicle_services`) — diferente do soft delete de item/veículo, aqui é exclusão real
+  `vehicles`, `vehicle_services`, `operacoes_bolsa`, `devedores`, `attachments`) — diferente do soft
+  delete de item/veículo, aqui é exclusão real
 - Usuários comuns podem trocar a própria senha; só o master pode criar contas novas
 - Senhas são sempre armazenadas com hash (bcrypt) — nunca em texto puro no banco
 
