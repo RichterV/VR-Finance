@@ -63,6 +63,18 @@ def test_list_receitas_filters_by_ano_e_mes(client, auth_headers):
     assert not_matching["total"] == 0
 
 
+def test_list_receitas_filters_by_busca_na_descricao(client, auth_headers):
+    client.post("/receitas", headers=auth_headers, json={"value": 100.0, "cash_percentage": 10, "description": "Salário"})
+    client.post("/receitas", headers=auth_headers, json={"value": 50.0, "cash_percentage": 10, "description": "Freelance"})
+
+    matching = client.get("/receitas", headers=auth_headers, params={"busca": "salário"}).json()
+    assert matching["total"] == 1
+    assert matching["items"][0]["description"] == "Salário"
+
+    not_matching = client.get("/receitas", headers=auth_headers, params={"busca": "inexistente"}).json()
+    assert not_matching["total"] == 0
+
+
 def test_list_receitas_e_paginado(client, auth_headers):
     for i in range(30):
         client.post("/receitas", headers=auth_headers, json={"value": 100.0 + i, "cash_percentage": 10})

@@ -7,6 +7,7 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
+  IonInput,
   IonLabel,
   IonSegment,
   IonSegmentButton,
@@ -52,6 +53,7 @@ const PAGE_SIZE = 25;
     IonTitle,
     IonContent,
     IonIcon,
+    IonInput,
     IonSelect,
     IonSelectOption,
     IonSegment,
@@ -68,6 +70,8 @@ export class DadosPage {
   readonly aba = signal<'gastos' | 'receitas'>('gastos');
   readonly mes = signal<number | null>(null);
   readonly ano = signal<number | null>(null);
+  readonly buscaGastos = signal<string>('');
+  readonly buscaReceitas = signal<string>('');
 
   /** Verdadeiro até a primeira carga de gastos+receitas terminar. */
   readonly initialLoading = signal(true);
@@ -128,11 +132,28 @@ export class DadosPage {
     this.reload();
   }
 
+  onBuscaGastosInput(ev: CustomEvent): void {
+    this.buscaGastos.set(String((ev.detail as { value?: string })?.value ?? '').trim());
+    this.reload();
+  }
+
+  onBuscaReceitasInput(ev: CustomEvent): void {
+    this.buscaReceitas.set(String((ev.detail as { value?: string })?.value ?? '').trim());
+    this.reload();
+  }
+
+  private gastosListParams() {
+    return { ano: this.ano() ?? undefined, mes: this.mes() ?? undefined, busca: this.buscaGastos() || undefined };
+  }
+
+  private receitasListParams() {
+    return { ano: this.ano() ?? undefined, mes: this.mes() ?? undefined, busca: this.buscaReceitas() || undefined };
+  }
+
   private reload(): void {
-    const params = { ano: this.ano() ?? undefined, mes: this.mes() ?? undefined };
     forkJoin([
-      this.gastosService.list({ ...params, limit: PAGE_SIZE, offset: 0 }),
-      this.receitasService.list({ ...params, limit: PAGE_SIZE, offset: 0 }),
+      this.gastosService.list({ ...this.gastosListParams(), limit: PAGE_SIZE, offset: 0 }),
+      this.receitasService.list({ ...this.receitasListParams(), limit: PAGE_SIZE, offset: 0 }),
     ]).subscribe(([gastosPage, receitasPage]) => {
       this.gastos.set(gastosPage.items);
       this.totalGastos.set(gastosPage.total);
@@ -145,7 +166,7 @@ export class DadosPage {
   }
 
   carregarMaisGastos(): void {
-    const params = { ano: this.ano() ?? undefined, mes: this.mes() ?? undefined, limit: PAGE_SIZE, offset: this.gastos().length };
+    const params = { ...this.gastosListParams(), limit: PAGE_SIZE, offset: this.gastos().length };
     this.gastosService.list(params).subscribe((page) => {
       this.gastos.set([...this.gastos(), ...page.items]);
       this.totalGastos.set(page.total);
@@ -154,7 +175,7 @@ export class DadosPage {
   }
 
   carregarMaisReceitas(): void {
-    const params = { ano: this.ano() ?? undefined, mes: this.mes() ?? undefined, limit: PAGE_SIZE, offset: this.receitas().length };
+    const params = { ...this.receitasListParams(), limit: PAGE_SIZE, offset: this.receitas().length };
     this.receitasService.list(params).subscribe((page) => {
       this.receitas.set([...this.receitas(), ...page.items]);
       this.totalReceitas.set(page.total);

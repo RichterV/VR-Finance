@@ -28,6 +28,7 @@ export interface GastoAntecipacaoPayload {
 export interface GastoListParams {
   ano?: number;
   mes?: number;
+  busca?: string;
   limit?: number;
   offset?: number;
 }
@@ -63,9 +64,10 @@ export class GastosService {
   }
 
   list(params: GastoListParams = {}): Observable<GastoPage> {
-    const query: Record<string, number> = {};
+    const query: Record<string, number | string> = {};
     if (params.ano != null) query['ano'] = params.ano;
     if (params.mes != null) query['mes'] = params.mes;
+    if (params.busca) query['busca'] = params.busca;
     query['limit'] = params.limit ?? 25;
     query['offset'] = params.offset ?? 0;
     return this.http.get<GastoPage>(this.baseUrl, { params: query });

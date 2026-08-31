@@ -4,7 +4,7 @@ from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import extract
+from sqlalchemy import extract, or_
 from sqlalchemy.orm import Session
 
 from app import models, schemas
@@ -30,6 +30,7 @@ def _get_owned_gasto(db: Session, current_user: models.User, gasto_id: int) -> m
 def list_gastos(
     ano: Optional[int] = Query(None, ge=2000, le=2100),
     mes: Optional[int] = Query(None, ge=1, le=12),
+    busca: Optional[str] = Query(None),
     limit: int = Query(25, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
@@ -40,6 +41,11 @@ def list_gastos(
         query = query.filter(extract("year", models.Gasto.date) == ano)
     if mes is not None:
         query = query.filter(extract("month", models.Gasto.date) == mes)
+    if busca:
+        termo = f"%{busca.strip()}%"
+        query = query.join(models.DropdownOption, models.Gasto.item_id == models.DropdownOption.id).filter(
+            or_(models.Gasto.description.ilike(termo), models.DropdownOption.name.ilike(termo))
+        )
     total = query.count()
     items = (
         query.order_by(models.Gasto.date.desc(), models.Gasto.id.desc())

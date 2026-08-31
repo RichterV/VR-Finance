@@ -129,6 +129,38 @@ def test_list_gastos_filters_by_ano_e_mes(client, auth_headers):
     assert not_matching["total"] == 0
 
 
+def test_list_gastos_filters_by_busca_na_descricao(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": item["id"], "value": 100.0, "description": "Compra no mercado"},
+    )
+    client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": item["id"], "value": 50.0, "description": "Farmácia"},
+    )
+
+    matching = client.get("/gastos", headers=auth_headers, params={"busca": "mercado"}).json()
+    assert matching["total"] == 1
+    assert matching["items"][0]["description"] == "Compra no mercado"
+
+    not_matching = client.get("/gastos", headers=auth_headers, params={"busca": "inexistente"}).json()
+    assert not_matching["total"] == 0
+
+
+def test_list_gastos_filters_by_busca_na_categoria(client, auth_headers):
+    carro = _create_item(client, auth_headers, name="Carro")
+    casa = _create_item(client, auth_headers, name="Casa")
+    client.post("/gastos", headers=auth_headers, json={"priority": "essencial", "item_id": carro["id"], "value": 100.0})
+    client.post("/gastos", headers=auth_headers, json={"priority": "essencial", "item_id": casa["id"], "value": 50.0})
+
+    matching = client.get("/gastos", headers=auth_headers, params={"busca": "carro"}).json()
+    assert matching["total"] == 1
+    assert matching["items"][0]["item_name"] == "Carro"
+
+
 def test_list_gastos_e_paginado(client, auth_headers):
     item = _create_item(client, auth_headers)
     client.post(

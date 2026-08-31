@@ -53,6 +53,13 @@
     } @else if (aba() === 'gastos') {
       <section class="data-section">
         <h2>Gastos <span class="count">({{ gastos().length }} de {{ totalGastos() }})</span></h2>
+        <ion-input
+          [value]="buscaGastos()"
+          (ionInput)="onBuscaGastosInput($event)"
+          fill="outline"
+          placeholder="Buscar por descrição ou categoria"
+          class="busca-filter"
+        ></ion-input>
         <div class="table-card">
           <div class="table-scroll">
             <table>
@@ -113,6 +120,13 @@
     } @else {
       <section class="data-section">
         <h2>Receitas <span class="count">({{ receitas().length }} de {{ totalReceitas() }})</span></h2>
+        <ion-input
+          [value]="buscaReceitas()"
+          (ionInput)="onBuscaReceitasInput($event)"
+          fill="outline"
+          placeholder="Buscar por descrição"
+          class="busca-filter"
+        ></ion-input>
         <div class="table-card">
           <div class="table-scroll">
             <table>

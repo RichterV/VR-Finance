@@ -61,6 +61,17 @@
       font-size: 0.9rem;
     }
   }
+
+  .busca-filter {
+    max-width: 320px;
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .data-section .busca-filter {
+    max-width: none;
+  }
 }
 
 .load-more-btn {

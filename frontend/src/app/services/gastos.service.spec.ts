@@ -37,6 +37,18 @@ describe('GastosService', () => {
     req.flush({ items: [], total: 0 });
   });
 
+  it('only includes busca in the query when it is provided', () => {
+    service.list().subscribe();
+    let req = httpMock.expectOne((r) => r.url === baseUrl);
+    expect(req.request.params.has('busca')).toBe(false);
+    req.flush({ items: [], total: 0 });
+
+    service.list({ busca: 'mercado' }).subscribe();
+    req = httpMock.expectOne((r) => r.url === baseUrl);
+    expect(req.request.params.get('busca')).toBe('mercado');
+    req.flush({ items: [], total: 0 });
+  });
+
   it('posts the payload as-is when creating a gasto', () => {
     const payload = { priority: 'essencial' as const, item_id: 1, value: 100, is_installment: false };
     service.create(payload).subscribe();

@@ -27,6 +27,7 @@ def _get_owned_receita(db: Session, current_user: models.User, receita_id: int) 
 def list_receitas(
     ano: Optional[int] = Query(None, ge=2000, le=2100),
     mes: Optional[int] = Query(None, ge=1, le=12),
+    busca: Optional[str] = Query(None),
     limit: int = Query(25, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
@@ -37,6 +38,8 @@ def list_receitas(
         query = query.filter(extract("year", models.Receita.date) == ano)
     if mes is not None:
         query = query.filter(extract("month", models.Receita.date) == mes)
+    if busca:
+        query = query.filter(models.Receita.description.ilike(f"%{busca.strip()}%"))
     total = query.count()
     items = (
         query.order_by(models.Receita.date.desc(), models.Receita.id.desc())

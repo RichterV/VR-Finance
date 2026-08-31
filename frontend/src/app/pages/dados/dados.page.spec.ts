@@ -68,6 +68,25 @@ describe('DadosPage', () => {
     expect(component.gastoAttachmentKeys().has(component.rowKeyGasto(gastos[1]))).toBe(false);
   });
 
+  it('typing in the gastos search box reloads with the busca param', () => {
+    const gastosService = TestBed.inject(GastosService);
+    const listSpy = vi.spyOn(gastosService, 'list').mockReturnValue(of({ items: gastos, total: gastos.length }));
+
+    component.onBuscaGastosInput({ detail: { value: 'mercado' } } as CustomEvent);
+
+    expect(listSpy).toHaveBeenCalledWith(expect.objectContaining({ busca: 'mercado', limit: 25, offset: 0 }));
+  });
+
+  it('typing in the receitas search box reloads with the busca param, not affecting gastos', () => {
+    const receitasService = TestBed.inject(ReceitasService);
+    const listSpy = vi.spyOn(receitasService, 'list').mockReturnValue(of({ items: [], total: 0 }));
+
+    component.onBuscaReceitasInput({ detail: { value: 'salário' } } as CustomEvent);
+
+    expect(listSpy).toHaveBeenCalledWith(expect.objectContaining({ busca: 'salário' }));
+    expect(component.buscaGastos()).toBe('');
+  });
+
   it('leaves the list in server order until a column header is clicked', () => {
     expect(component.sortedGastos().map((g) => g.id)).toEqual([1, 2]);
   });
