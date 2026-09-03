@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output, computed, signal } from '@angular/core';
-import { IonIcon, IonLabel, IonText, ToastController } from '@ionic/angular';
+import { AlertController, IonIcon, IonLabel, IonText, ToastController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { add, documentOutline, trashOutline } from 'ionicons/icons';
 import { Observable, forkJoin, of } from 'rxjs';
@@ -62,7 +62,7 @@ interface DisplayItem {
               <span class="name">{{ item.name }}</span>
               <span class="size">{{ item.sizeLabel }}</span>
               @if (item.removable) {
-                <button type="button" class="remove-btn" (click)="remove(item.key)" [disabled]="uploading()">
+                <button type="button" class="remove-btn" (click)="remove(item)" [disabled]="uploading()">
                   <ion-icon name="trash-outline"></ion-icon>
                 </button>
               }
@@ -197,6 +197,7 @@ export class AttachmentPickerComponent implements OnInit {
   constructor(
     private readonly attachmentsService: AttachmentsService,
     private readonly toastCtrl: ToastController,
+    private readonly alertCtrl: AlertController,
   ) {
     addIcons({ documentOutline, trashOutline, add });
   }
@@ -251,18 +252,33 @@ export class AttachmentPickerComponent implements OnInit {
     });
   }
 
-  remove(key: string): void {
-    if (key.startsWith('pending-')) {
-      const index = Number(key.slice('pending-'.length));
+  async remove(item: DisplayItem): Promise<void> {
+    if (item.key.startsWith('pending-')) {
+      // Ainda não foi enviado pra nenhum lugar -- só descarta da seleção local, nada irreversível.
+      const index = Number(item.key.slice('pending-'.length));
       this.pendingFiles.update((current) => current.filter((_, i) => i !== index));
       return;
     }
 
-    const id = Number(key.slice('existing-'.length));
-    this.attachmentsService.remove(id).subscribe(() => {
-      this.existingFiles.update((current) => current.filter((a) => a.id !== id));
-      this.filesChanged.emit();
+    const id = Number(item.key.slice('existing-'.length));
+    const alert = await this.alertCtrl.create({
+      header: 'Excluir anexo',
+      message: `Excluir o anexo "${item.name}"? Essa ação não pode ser desfeita.`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Excluir',
+          role: 'destructive',
+          handler: () => {
+            this.attachmentsService.remove(id).subscribe(() => {
+              this.existingFiles.update((current) => current.filter((a) => a.id !== id));
+              this.filesChanged.emit();
+            });
+          },
+        },
+      ],
     });
+    await alert.present();
   }
 
   /** Chamado pelo modal de Adicionar depois que create() resolve e o id/group id já é conhecido. */

@@ -21,6 +21,7 @@ import {
 import { addIcons } from 'ionicons';
 import { close } from 'ionicons/icons';
 
+import { HomeRefreshService } from '../../core/home-refresh.service';
 import { ReceitasService } from '../../services/receitas.service';
 import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
 import { extractHttpErrorMessage } from '../../shared/attachment-types';
@@ -74,6 +75,7 @@ export class AdicionarReceitaModalComponent {
     private readonly receitasService: ReceitasService,
     private readonly toastCtrl: ToastController,
     private readonly modalCtrl: ModalController,
+    private readonly homeRefresh: HomeRefreshService,
   ) {
     addIcons({ close });
   }
@@ -103,6 +105,10 @@ export class AdicionarReceitaModalComponent {
       .subscribe({
         next: (receita) => {
           this.savedAny.set(true);
+          // Atualiza a Home na hora (ela continua viva por baixo deste modal) -- nao espera
+          // o usuario fechar o modal, que aqui fica aberto de proposito pra permitir salvar
+          // varias receitas em sequencia.
+          this.homeRefresh.request();
           this.attachmentPicker.commit(receita.id).subscribe({
             next: async () => {
               this.saving.set(false);

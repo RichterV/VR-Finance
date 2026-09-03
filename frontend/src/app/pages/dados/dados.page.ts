@@ -251,10 +251,11 @@ export class DadosPage {
       ...this.sideModalOptions(),
     });
     await modal.present();
-    const { role } = await modal.onWillDismiss();
-    if (role === 'saved') {
-      this.reload();
-    }
+    // Recarrega sempre, independente do role -- fechar batendo no fundo ou arrastando (em
+    // vez do X) pula o dismiss() do proprio componente e o role nunca chega como 'saved',
+    // mesmo com a edicao ja salva de verdade.
+    await modal.onWillDismiss();
+    this.reload();
   }
 
   /** Só permite antecipar gastos de meses futuros em relação ao mês/ano atual (ex: parcelas ainda não vencidas). */
@@ -333,10 +334,9 @@ export class DadosPage {
       ...this.sideModalOptions(),
     });
     await modal.present();
-    const { role } = await modal.onWillDismiss();
-    if (role === 'saved') {
-      this.reload();
-    }
+    // Mesmo motivo do editarGasto acima.
+    await modal.onWillDismiss();
+    this.reload();
   }
 
   async excluirReceita(receita: Receita): Promise<void> {

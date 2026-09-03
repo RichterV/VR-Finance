@@ -316,24 +316,20 @@ export class HomePage implements OnInit, OnDestroy {
     const { AdicionarGastoModalComponent } = await import(
       '../modals/adicionar-gasto/adicionar-gasto-modal.component'
     );
+    // O proprio modal chama HomeRefreshService assim que o gasto e' salvo (nao precisa
+    // esperar o modal fechar, que aqui fica aberto de proposito pra permitir salvar varios
+    // em sequencia).
     const modal = await this.modalCtrl.create({ component: AdicionarGastoModalComponent, ...this.sideModalOptions() });
     await modal.present();
-    const { role } = await modal.onWillDismiss();
-    if (role === 'saved') {
-      this.reloadAll().subscribe();
-    }
   }
 
   async abrirAdicionarReceita(): Promise<void> {
     const { AdicionarReceitaModalComponent } = await import(
       '../modals/adicionar-receita/adicionar-receita-modal.component'
     );
+    // Mesmo motivo do abrirAdicionarGasto acima.
     const modal = await this.modalCtrl.create({ component: AdicionarReceitaModalComponent, ...this.sideModalOptions() });
     await modal.present();
-    const { role } = await modal.onWillDismiss();
-    if (role === 'saved') {
-      this.reloadAll().subscribe();
-    }
   }
 
   async abrirItens(): Promise<void> {

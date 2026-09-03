@@ -9,9 +9,6 @@ import {
   IonHeader,
   IonIcon,
   IonItem,
-  IonItemOption,
-  IonItemOptions,
-  IonItemSliding,
   IonLabel,
   IonList,
   IonSegment,
@@ -42,9 +39,6 @@ import { DropdownOption, DropdownOptionsService, Priority } from '../../services
     IonLabel,
     IonList,
     IonItem,
-    IonItemSliding,
-    IonItemOptions,
-    IonItemOption,
     IonFab,
     IonFabButton,
   ],
@@ -100,8 +94,7 @@ export class ItensModalComponent implements OnInit {
     await alert.present();
   }
 
-  async editItem(item: DropdownOption, slidingItem: IonItemSliding): Promise<void> {
-    await slidingItem.close();
+  async editItem(item: DropdownOption): Promise<void> {
     const alert = await this.alertCtrl.create({
       header: 'Editar categoria',
       inputs: [{ name: 'name', type: 'text', value: item.name }],
@@ -123,8 +116,7 @@ export class ItensModalComponent implements OnInit {
     await alert.present();
   }
 
-  async deleteItem(item: DropdownOption, slidingItem: IonItemSliding): Promise<void> {
-    await slidingItem.close();
+  async deleteItem(item: DropdownOption): Promise<void> {
     const alert = await this.alertCtrl.create({
       header: 'Excluir categoria',
       message: `Remover "${item.name}"? Gastos já lançados com essa categoria continuam válidos.`,

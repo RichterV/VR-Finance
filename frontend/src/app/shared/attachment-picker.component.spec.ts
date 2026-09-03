@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideIonicAngular } from '@ionic/angular';
+import { AlertController, provideIonicAngular } from '@ionic/angular';
 import { of } from 'rxjs';
 
 import { Attachment, AttachmentsService } from '../services/attachments.service';
@@ -30,12 +30,16 @@ describe('AttachmentPickerComponent', () => {
   let uploadSpy: ReturnType<typeof vi.fn>;
   let listSpy: ReturnType<typeof vi.fn>;
   let removeSpy: ReturnType<typeof vi.fn>;
+  let alertCreateSpy: ReturnType<typeof vi.fn>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let lastAlertConfig: any;
 
   function createComponent(mode: 'create' | 'edit', entityId: string | number | null = null) {
     TestBed.configureTestingModule({
       providers: [
         provideIonicAngular(),
         { provide: AttachmentsService, useValue: { upload: uploadSpy, list: listSpy, remove: removeSpy } },
+        { provide: AlertController, useValue: { create: alertCreateSpy } },
       ],
     });
     const fixture = TestBed.createComponent(AttachmentPickerComponent);
@@ -50,6 +54,11 @@ describe('AttachmentPickerComponent', () => {
     uploadSpy = vi.fn();
     listSpy = vi.fn(() => of([]));
     removeSpy = vi.fn(() => of(undefined));
+    lastAlertConfig = null;
+    alertCreateSpy = vi.fn((config: unknown) => {
+      lastAlertConfig = config;
+      return Promise.resolve({ present: vi.fn().mockResolvedValue(undefined) });
+    });
   });
 
   it('stages valid files without uploading in create mode', () => {
@@ -119,17 +128,47 @@ describe('AttachmentPickerComponent', () => {
     expect(changed).toBe(1);
   });
 
-  it('removing an existing attachment calls remove() and drops it from the list', () => {
+  it('removing an existing attachment asks for confirmation before calling the API', async () => {
     listSpy.mockReturnValue(of([attachment({ id: 5, original_filename: 'comprovante.jpg' })]));
     const fixture = createComponent('edit', 42);
     const component = fixture.componentInstance;
     let changed = 0;
     component.filesChanged.subscribe(() => changed++);
 
-    component.remove('existing-5');
+    await component.remove(component.displayItems()[0]);
+
+    expect(alertCreateSpy).toHaveBeenCalled();
+    expect(lastAlertConfig.message).toContain('comprovante.jpg');
+    expect(lastAlertConfig.message).toContain('não pode ser desfeita');
+    expect(removeSpy).not.toHaveBeenCalled();
+
+    const confirmButton = lastAlertConfig.buttons.find((b: { role?: string }) => b.role === 'destructive');
+    confirmButton.handler();
 
     expect(removeSpy).toHaveBeenCalledWith(5);
     expect(component.displayItems()).toEqual([]);
     expect(changed).toBe(1);
+  });
+
+  it('cancelling the confirmation keeps the attachment and never calls the API', async () => {
+    listSpy.mockReturnValue(of([attachment({ id: 5, original_filename: 'comprovante.jpg' })]));
+    const fixture = createComponent('edit', 42);
+    const component = fixture.componentInstance;
+
+    await component.remove(component.displayItems()[0]);
+
+    expect(removeSpy).not.toHaveBeenCalled();
+    expect(component.displayItems().map((i) => i.name)).toEqual(['comprovante.jpg']);
+  });
+
+  it('removing a not-yet-uploaded file skips the confirmation entirely', async () => {
+    const fixture = createComponent('create');
+    const component = fixture.componentInstance;
+    component.onFilesSelected(fileEvent([makeFile('nota.pdf', 'application/pdf')]));
+
+    await component.remove(component.displayItems()[0]);
+
+    expect(alertCreateSpy).not.toHaveBeenCalled();
+    expect(component.displayItems()).toEqual([]);
   });
 });
