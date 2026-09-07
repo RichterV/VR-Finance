@@ -8,6 +8,7 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
+  IonInput,
   IonSelect,
   IonSelectOption,
   IonTitle,
@@ -52,6 +53,7 @@ const PAGE_SIZE = 25;
     IonTitle,
     IonContent,
     IonIcon,
+    IonInput,
     IonSelect,
     IonSelectOption,
     BaseChartDirective,
@@ -70,6 +72,7 @@ export class VeiculosPage {
   readonly services = signal<ServicoVeiculo[]>([]);
   readonly totalServices = signal(0);
   readonly filtroVeiculoId = signal<number | null>(null);
+  readonly buscaServicos = signal<string>('');
   readonly serviceAttachmentKeys = signal<Set<string>>(new Set());
 
   readonly vehiclesSort = signal<SortState>(UNSORTED);
@@ -112,12 +115,20 @@ export class VeiculosPage {
     this.reloadServices();
   }
 
+  onBuscaServicosInput(ev: CustomEvent): void {
+    this.buscaServicos.set(String((ev.detail as { value?: string })?.value ?? '').trim());
+    this.reloadServices();
+  }
+
+  private servicesListParams() {
+    return { vehicle_id: this.filtroVeiculoId() ?? undefined, busca: this.buscaServicos() || undefined };
+  }
+
   private reload(): void {
-    const vehicleId = this.filtroVeiculoId() ?? undefined;
     forkJoin([
       this.veiculosService.list(),
       this.veiculosService.resumo(),
-      this.servicosService.list({ vehicle_id: vehicleId, limit: PAGE_SIZE, offset: 0 }),
+      this.servicosService.list({ ...this.servicesListParams(), limit: PAGE_SIZE, offset: 0 }),
     ]).subscribe(([vehicles, resumo, servicesPage]) => {
       this.vehicles.set(vehicles);
       this.resumo.set(resumo);
@@ -129,8 +140,7 @@ export class VeiculosPage {
   }
 
   private reloadServices(): void {
-    const vehicleId = this.filtroVeiculoId() ?? undefined;
-    this.servicosService.list({ vehicle_id: vehicleId, limit: PAGE_SIZE, offset: 0 }).subscribe((page) => {
+    this.servicosService.list({ ...this.servicesListParams(), limit: PAGE_SIZE, offset: 0 }).subscribe((page) => {
       this.services.set(page.items);
       this.totalServices.set(page.total);
       this.refreshServiceAttachmentKeys();
@@ -138,9 +148,8 @@ export class VeiculosPage {
   }
 
   carregarMaisServicos(): void {
-    const vehicleId = this.filtroVeiculoId() ?? undefined;
     this.servicosService
-      .list({ vehicle_id: vehicleId, limit: PAGE_SIZE, offset: this.services().length })
+      .list({ ...this.servicesListParams(), limit: PAGE_SIZE, offset: this.services().length })
       .subscribe((page) => {
         this.services.set([...this.services(), ...page.items]);
         this.totalServices.set(page.total);

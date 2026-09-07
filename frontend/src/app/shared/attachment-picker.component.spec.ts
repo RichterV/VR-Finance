@@ -13,6 +13,13 @@ function fileEvent(files: File[]): Event {
   return { target: { files, value: '' } } as unknown as Event;
 }
 
+function pasteEvent(items: Array<{ type: string; file: File | null }>): ClipboardEvent {
+  return {
+    clipboardData: { items: items.map((i) => ({ type: i.type, getAsFile: () => i.file })) },
+    preventDefault: vi.fn(),
+  } as unknown as ClipboardEvent;
+}
+
 function attachment(overrides: Partial<Attachment>): Attachment {
   return {
     id: 1,
@@ -169,6 +176,44 @@ describe('AttachmentPickerComponent', () => {
     await component.remove(component.displayItems()[0]);
 
     expect(alertCreateSpy).not.toHaveBeenCalled();
+    expect(component.displayItems()).toEqual([]);
+  });
+
+  it('pasting a copied image stages it in create mode and blocks the default paste', () => {
+    const fixture = createComponent('create');
+    const component = fixture.componentInstance;
+    const image = makeFile('image.png', 'image/png');
+    const event = pasteEvent([{ type: 'image/png', file: image }]);
+
+    component.onPaste(event);
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(uploadSpy).not.toHaveBeenCalled();
+    expect(component.displayItems()).toHaveLength(1);
+    expect(component.displayItems()[0].name).toMatch(/^colado-.*\.png$/);
+  });
+
+  it('pasting a copied image in edit mode uploads it immediately', () => {
+    const fixture = createComponent('edit', 42);
+    const component = fixture.componentInstance;
+    uploadSpy.mockReturnValue(of(attachment({ id: 9, original_filename: 'colado.jpg' })));
+    const image = makeFile('blob', 'image/jpeg');
+    const event = pasteEvent([{ type: 'image/jpeg', file: image }]);
+
+    component.onPaste(event);
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(uploadSpy).toHaveBeenCalledWith('gasto', 42, expect.objectContaining({ type: 'image/jpeg' }));
+  });
+
+  it('pasting plain text (no image item) is left untouched', () => {
+    const fixture = createComponent('create');
+    const component = fixture.componentInstance;
+    const event = pasteEvent([{ type: 'text/plain', file: null }]);
+
+    component.onPaste(event);
+
+    expect(event.preventDefault).not.toHaveBeenCalled();
     expect(component.displayItems()).toEqual([]);
   });
 });

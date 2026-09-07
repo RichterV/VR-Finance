@@ -2,6 +2,7 @@ from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app import models, schemas
@@ -36,6 +37,7 @@ def _get_owned_vehicle(db: Session, current_user: models.User, vehicle_id: int) 
 @router.get("", response_model=schemas.VehicleServicePage)
 def list_services(
     vehicle_id: Optional[int] = Query(None),
+    busca: Optional[str] = Query(None),
     limit: int = Query(25, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
@@ -44,6 +46,11 @@ def list_services(
     query = db.query(models.VehicleService).filter(models.VehicleService.user_id == current_user.id)
     if vehicle_id is not None:
         query = query.filter(models.VehicleService.vehicle_id == vehicle_id)
+    if busca:
+        termo = f"%{busca.strip()}%"
+        query = query.filter(
+            or_(models.VehicleService.description.ilike(termo), models.VehicleService.notes.ilike(termo))
+        )
     total = query.count()
     items = (
         query.order_by(models.VehicleService.date.desc(), models.VehicleService.id.desc())

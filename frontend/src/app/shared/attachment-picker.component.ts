@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, computed, signal } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnInit, Output, computed, signal } from '@angular/core';
 import { AlertController, IonIcon, IonLabel, IonText, ToastController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { add, documentOutline, trashOutline } from 'ionicons/icons';
@@ -7,6 +7,7 @@ import { Observable, forkJoin, of } from 'rxjs';
 import { Attachment, AttachmentsService, EntityType } from '../services/attachments.service';
 import {
   ALLOWED_ATTACHMENT_TYPES,
+  buildPastedFileName,
   extractHttpErrorMessage,
   formatFileSize,
   isAllowedAttachmentFile,
@@ -32,7 +33,7 @@ interface DisplayItem {
   imports: [IonLabel, IonIcon, IonText],
   template: `
     <div class="attachment-picker">
-      <ion-label class="picker-label">Anexos (opcional)</ion-label>
+      <ion-label class="picker-label">Anexos (opcional) — cole uma imagem copiada com Ctrl+V</ion-label>
 
       <button type="button" class="add-attachment-btn" [disabled]="uploading()" (click)="fileInput.click()">
         <ion-icon name="add"></ion-icon>
@@ -209,10 +210,27 @@ export class AttachmentPickerComponent implements OnInit {
   }
 
   onFilesSelected(ev: Event): void {
-    this.errorMessage.set(null);
     const input = ev.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
     input.value = '';
+    this.addFiles(files);
+  }
+
+  /** Cola uma imagem da área de transferência como anexo -- funciona em qualquer campo do
+   * formulário, não só com o picker em foco, já que ele não tem nenhum campo de texto próprio. */
+  @HostListener('document:paste', ['$event'])
+  onPaste(ev: ClipboardEvent): void {
+    if (this.uploading()) return;
+    const item = Array.from(ev.clipboardData?.items ?? []).find((i) => i.type.startsWith('image/'));
+    if (!item) return;
+    const blob = item.getAsFile();
+    if (!blob) return;
+    ev.preventDefault();
+    this.addFiles([new File([blob], buildPastedFileName(item.type), { type: item.type })]);
+  }
+
+  private addFiles(files: File[]): void {
+    this.errorMessage.set(null);
     if (!files.length) return;
 
     const valid: File[] = [];

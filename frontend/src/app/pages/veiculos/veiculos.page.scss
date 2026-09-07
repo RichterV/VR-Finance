@@ -105,6 +105,12 @@
   ion-select {
     max-width: 220px;
   }
+
+  .busca-filter {
+    max-width: 280px;
+    flex: 1;
+    border-radius: 8px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -125,7 +131,8 @@
     height: 220px;
   }
 
-  .section-header ion-select {
+  .section-header ion-select,
+  .section-header .busca-filter {
     max-width: none;
     width: 100%;
   }

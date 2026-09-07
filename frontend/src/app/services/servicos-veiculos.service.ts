@@ -30,6 +30,7 @@ export interface ServicoVeiculo {
 
 export interface ServicoVeiculoListParams {
   vehicle_id?: number;
+  busca?: string;
   limit?: number;
   offset?: number;
 }
@@ -46,8 +47,9 @@ export class ServicosVeiculosService {
   constructor(private readonly http: HttpClient) {}
 
   list(params: ServicoVeiculoListParams = {}): Observable<ServicoVeiculoPage> {
-    const query: Record<string, number> = {};
+    const query: Record<string, number | string> = {};
     if (params.vehicle_id != null) query['vehicle_id'] = params.vehicle_id;
+    if (params.busca) query['busca'] = params.busca;
     query['limit'] = params.limit ?? 25;
     query['offset'] = params.offset ?? 0;
     return this.http.get<ServicoVeiculoPage>(this.baseUrl, { params: query });

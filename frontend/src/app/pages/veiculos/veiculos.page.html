@@ -88,6 +88,13 @@
     <section class="data-section">
       <div class="section-header">
         <h2>Serviços <span class="count">({{ services().length }} de {{ totalServices() }})</span></h2>
+        <ion-input
+          [value]="buscaServicos()"
+          (ionInput)="onBuscaServicosInput($event)"
+          fill="outline"
+          placeholder="Buscar por descrição ou observação"
+          class="busca-filter"
+        ></ion-input>
         <ion-select
           [value]="filtroVeiculoId()"
           (ionChange)="onFiltroVeiculoChange($any($event.detail.value))"

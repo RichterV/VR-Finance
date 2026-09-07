@@ -117,6 +117,31 @@ def test_list_services_filters_by_vehicle_and_is_paginated(client, auth_headers)
     assert len(segunda_pagina["items"]) == 5
 
 
+def test_list_services_busca_matches_description_or_notes(client, auth_headers):
+    vehicle = _create_vehicle(client, auth_headers)
+    client.post(
+        "/servicos-veiculos",
+        headers=auth_headers,
+        json={"vehicle_id": vehicle["id"], "description": "Troca de óleo", "notes": "Mobil 20w50", "value": 35.9},
+    )
+    client.post(
+        "/servicos-veiculos",
+        headers=auth_headers,
+        json={"vehicle_id": vehicle["id"], "description": "Pneu novo", "notes": "Pirelli", "value": 400.0},
+    )
+
+    por_descricao = client.get("/servicos-veiculos", headers=auth_headers, params={"busca": "óleo"}).json()
+    assert por_descricao["total"] == 1
+    assert por_descricao["items"][0]["description"] == "Troca de óleo"
+
+    por_observacao = client.get("/servicos-veiculos", headers=auth_headers, params={"busca": "pirelli"}).json()
+    assert por_observacao["total"] == 1
+    assert por_observacao["items"][0]["description"] == "Pneu novo"
+
+    sem_match = client.get("/servicos-veiculos", headers=auth_headers, params={"busca": "inexistente"}).json()
+    assert sem_match["total"] == 0
+
+
 def test_update_service(client, auth_headers):
     v1 = _create_vehicle(client, auth_headers, "Voyage", 2011)
     v2 = _create_vehicle(client, auth_headers, "Biz", 2010)

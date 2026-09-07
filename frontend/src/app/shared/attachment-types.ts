@@ -13,6 +13,21 @@ export function isAllowedAttachmentFile(file: File): boolean {
   return ALLOWED_ATTACHMENT_TYPES.includes(file.type) && file.size <= MAX_ATTACHMENT_SIZE_BYTES;
 }
 
+const EXTENSION_BY_TYPE: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/heic': 'heic',
+  'application/pdf': 'pdf',
+};
+
+/** Imagem colada (Ctrl+V) chega sem nome de arquivo -- gera um baseado no tipo/horário. */
+export function buildPastedFileName(mimeType: string): string {
+  const ext = EXTENSION_BY_TYPE[mimeType] ?? 'png';
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return `colado-${stamp}.${ext}`;
+}
+
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
