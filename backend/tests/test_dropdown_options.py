@@ -8,6 +8,7 @@ def test_create_and_list_option(client, auth_headers):
     body = create.json()
     assert body["name"] == "Casa"
     assert body["active"] is True
+    assert body["include_in_inflation"] is False
 
     listed = client.get("/dropdown-options", headers=auth_headers, params={"priority": "essencial"})
     assert listed.status_code == 200
@@ -36,6 +37,28 @@ def test_update_option_name(client, auth_headers):
     )
     assert updated.status_code == 200
     assert updated.json()["name"] == "Moradia"
+
+
+def test_update_option_toggles_include_in_inflation(client, auth_headers):
+    created = client.post(
+        "/dropdown-options", headers=auth_headers, json={"priority": "essencial", "name": "Casa"}
+    ).json()
+
+    updated = client.put(
+        f"/dropdown-options/{created['id']}",
+        headers=auth_headers,
+        json={"name": "Casa", "include_in_inflation": True},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["include_in_inflation"] is True
+
+    # Sem o campo no payload (fluxo de so renomear), o flag nao deve mudar.
+    renamed = client.put(
+        f"/dropdown-options/{created['id']}", headers=auth_headers, json={"name": "Moradia"}
+    )
+    assert renamed.status_code == 200
+    assert renamed.json()["name"] == "Moradia"
+    assert renamed.json()["include_in_inflation"] is True
 
 
 def test_soft_delete_removes_from_list_but_not_from_db(client, auth_headers):

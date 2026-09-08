@@ -339,6 +339,60 @@
         }
       }
     </section>
+
+    <section class="dashboard-section" id="analise-inflacionaria">
+      <div class="section-header">
+        <h2>Análise inflacionária <span class="section-subtitle">(últimos 12 meses)</span></h2>
+        <label class="cutoff-toggle" (click)="$event.preventDefault(); setLimitarAteMesSelecionado(!limitarAteMesSelecionado())">
+          <ion-checkbox [checked]="limitarAteMesSelecionado()"></ion-checkbox>
+          <span>Mostrar apenas até o mês selecionado</span>
+        </label>
+      </div>
+
+      @if (resumoInflacao(); as ri) {
+        @if (ri.possui_cesta) {
+          <p class="inflacao-cesta">Cesta: {{ ri.cesta.join(', ') }}</p>
+
+          <ion-segment [value]="inflacaoJanela()" (ionChange)="onInflacaoJanelaChange($any($event.detail.value))" class="inflacao-segment">
+            <ion-segment-button value="mensal">
+              <ion-label>Mês a mês</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="anual">
+              <ion-label>Ano a ano</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <div class="stats-grid">
+            <div class="stat-card stat-card--highlight" [class.negativo]="(inflacaoHeadline() ?? 0) > 0">
+              <span class="stat-label">{{ inflacaoJanela() === 'mensal' ? 'Inflação no último mês' : 'Inflação nos últimos 12 meses' }}</span>
+              <span class="stat-value">
+                @if (inflacaoHeadline() === null) {
+                  Sem dado suficiente
+                } @else if (valoresOcultos()) {
+                  ••%
+                } @else {
+                  {{ inflacaoHeadline()! > 0 ? '+' : '' }}{{ inflacaoHeadline()!.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) }}%
+                }
+              </span>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <h3>Inflação vs. Caixa real / Gastos ({{ inflacaoJanela() === 'mensal' ? 'mês a mês' : 'ano a ano' }})</h3>
+            </div>
+            <div class="chart-wrap">
+              <canvas baseChart [type]="'line'" [data]="inflacaoChartData()" [options]="inflacaoChartOptions()"></canvas>
+            </div>
+          </div>
+        } @else {
+          <p class="empty-state">
+            Marque pelo menos uma categoria essencial como parte da cesta de inflação na tela de
+            <a href="javascript:void(0)" (click)="abrirItens()">Categorias</a> pra habilitar esta seção.
+          </p>
+        }
+      }
+    </section>
   </div>
   }
 </ion-content>

@@ -14,12 +14,14 @@ import {
   IonSegment,
   IonSegmentButton,
   IonTitle,
+  IonToggle,
   IonToolbar,
   ModalController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { add, close, create, trash } from 'ionicons/icons';
 
+import { HomeRefreshService } from '../../core/home-refresh.service';
 import { DropdownOption, DropdownOptionsService, Priority } from '../../services/dropdown-options.service';
 
 @Component({
@@ -41,6 +43,7 @@ import { DropdownOption, DropdownOptionsService, Priority } from '../../services
     IonItem,
     IonFab,
     IonFabButton,
+    IonToggle,
   ],
 })
 export class ItensModalComponent implements OnInit {
@@ -51,6 +54,7 @@ export class ItensModalComponent implements OnInit {
     private readonly service: DropdownOptionsService,
     private readonly alertCtrl: AlertController,
     private readonly modalCtrl: ModalController,
+    private readonly homeRefresh: HomeRefreshService,
   ) {
     addIcons({ add, create, trash, close });
   }
@@ -107,13 +111,25 @@ export class ItensModalComponent implements OnInit {
             if (!name) {
               return false;
             }
-            this.service.update(item.id, name).subscribe(() => this.reload());
+            this.service.update(item.id, { name }).subscribe(() => this.reload());
             return true;
           },
         },
       ],
     });
     await alert.present();
+  }
+
+  toggleInflacao(item: DropdownOption): void {
+    this.service
+      .update(item.id, { name: item.name, include_in_inflation: !item.include_in_inflation })
+      .subscribe(() => {
+        this.reload();
+        // A cesta de inflação é lida na Home (seção "Análise inflacionária") -- sem isso, a
+        // Home só refletiria a mudança num F5 manual ou pull-to-refresh, já que esse modal
+        // não fica "por baixo" da Home como os modais de Adicionar.
+        this.homeRefresh.request();
+      });
   }
 
   async deleteItem(item: DropdownOption): Promise<void> {

@@ -24,6 +24,7 @@ class DropdownOption(Base):
     priority = Column(String, nullable=False)  # "essencial" | "nao_essencial"
     name = Column(String, nullable=False)
     active = Column(Boolean, default=True, nullable=False)
+    include_in_inflation = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

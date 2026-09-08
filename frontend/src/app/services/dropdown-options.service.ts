@@ -11,6 +11,12 @@ export interface DropdownOption {
   priority: Priority;
   name: string;
   active: boolean;
+  include_in_inflation: boolean;
+}
+
+export interface DropdownOptionUpdate {
+  name: string;
+  include_in_inflation?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -27,8 +33,8 @@ export class DropdownOptionsService {
     return this.http.post<DropdownOption>(this.baseUrl, { priority, name });
   }
 
-  update(id: number, name: string): Observable<DropdownOption> {
-    return this.http.put<DropdownOption>(`${this.baseUrl}/${id}`, { name });
+  update(id: number, payload: DropdownOptionUpdate): Observable<DropdownOption> {
+    return this.http.put<DropdownOption>(`${this.baseUrl}/${id}`, payload);
   }
 
   remove(id: number): Observable<void> {

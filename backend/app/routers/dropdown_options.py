@@ -62,6 +62,8 @@ def update_option(
 ):
     option = _get_owned_option(db, current_user, option_id)
     option.name = payload.name
+    if payload.include_in_inflation is not None:
+        option.include_in_inflation = payload.include_in_inflation
     db.commit()
     db.refresh(option)
     return option

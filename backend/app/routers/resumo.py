@@ -91,6 +91,111 @@ def _percentuais_itens(
     ]
 
 
+def _basket_month_total(db: Session, user_id: int, ano: int, mes: int, item_ids: list[int]) -> float:
+    if not item_ids:
+        return 0.0
+    total = (
+        db.query(func.sum(models.Gasto.value))
+        .filter(
+            models.Gasto.user_id == user_id,
+            models.Gasto.item_id.in_(item_ids),
+            extract("year", models.Gasto.date) == ano,
+            extract("month", models.Gasto.date) == mes,
+        )
+        .scalar()
+    )
+    return total or 0.0
+
+
+@router.get("/inflacao", response_model=schemas.ResumoInflacao)
+def resumo_inflacao(
+    meses: int = Query(12, ge=1, le=36),
+    ate_ano: Optional[int] = Query(None, ge=2000, le=2100),
+    ate_mes: Optional[int] = Query(None, ge=1, le=12),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    cesta_options = (
+        db.query(models.DropdownOption)
+        .filter(
+            models.DropdownOption.user_id == current_user.id,
+            models.DropdownOption.priority == "essencial",
+            models.DropdownOption.active.is_(True),
+            models.DropdownOption.include_in_inflation.is_(True),
+        )
+        .order_by(models.DropdownOption.name)
+        .all()
+    )
+    item_ids = [o.id for o in cesta_options]
+
+    if not item_ids:
+        return schemas.ResumoInflacao(
+            possui_cesta=False, cesta=[], mensal=[], anual=[], headline_mom_pct=None, headline_yoy_pct=None
+        )
+
+    if ate_ano is not None and ate_mes is not None:
+        mes_referencia = date(ate_ano, ate_mes, 1)
+    else:
+        today = date.today()
+        mes_referencia = date(today.year, today.month, 1)
+
+    def _totais_cesta(qtd_meses_extra: int) -> list[tuple[int, int, float]]:
+        """(ano, mes, total_cesta) dos ultimos `meses + qtd_meses_extra` meses, do mais antigo
+        pro mais recente, terminando em mes_referencia -- os meses extras servem so de base de
+        comparacao pros primeiros pontos "de verdade" da serie."""
+        pontos = []
+        for i in range(meses + qtd_meses_extra - 1, -1, -1):
+            ref = add_months(mes_referencia, -i)
+            total = _basket_month_total(db, current_user.id, ref.year, ref.month, item_ids)
+            pontos.append((ref.year, ref.month, total))
+        return pontos
+
+    def _variacao_pct(atual: float, base: float) -> Optional[float]:
+        # None em vez de ZeroDivisionError/infinito -- um mes sem nenhum gasto na cesta nao tem
+        # base de comparacao valida.
+        return (atual - base) / base * 100 if base else None
+
+    def _caixa_real_pct(ano: int, mes: int) -> float:
+        m = _month_totals(db, current_user.id, ano, mes)
+        return (m["total_caixa_real"] / m["total_gastos"] * 100) if m["total_gastos"] else 0
+
+    # Mes a mes: 1 mes extra de base pra comparar o primeiro ponto da serie.
+    serie_mom = _totais_cesta(1)
+    mensal = [
+        schemas.InflacaoPonto(
+            ano=ano,
+            mes=mes,
+            total_cesta=total,
+            variacao_pct=_variacao_pct(total, base_total),
+            caixa_real_pct=_caixa_real_pct(ano, mes),
+        )
+        for (_, _, base_total), (ano, mes, total) in zip(serie_mom, serie_mom[1:])
+    ]
+
+    # Ano a ano: 12 meses extras de base -- cada ponto compara com o mesmo mes do ano anterior,
+    # que e' exatamente 12 posicoes atras nessa mesma serie (cada passo = 1 mes).
+    serie_yoy = _totais_cesta(12)
+    anual = [
+        schemas.InflacaoPonto(
+            ano=ano,
+            mes=mes,
+            total_cesta=total,
+            variacao_pct=_variacao_pct(total, base_total),
+            caixa_real_pct=_caixa_real_pct(ano, mes),
+        )
+        for (_, _, base_total), (ano, mes, total) in zip(serie_yoy, serie_yoy[12:])
+    ]
+
+    return schemas.ResumoInflacao(
+        possui_cesta=True,
+        cesta=[o.name for o in cesta_options],
+        mensal=mensal,
+        anual=anual,
+        headline_mom_pct=mensal[-1].variacao_pct if mensal else None,
+        headline_yoy_pct=anual[-1].variacao_pct if anual else None,
+    )
+
+
 @router.get("/anual", response_model=schemas.ResumoAnual)
 def resumo_anual(
     ano: int = Query(..., ge=2000, le=2100),

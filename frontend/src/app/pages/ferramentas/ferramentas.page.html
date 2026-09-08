@@ -1,0 +1,289 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Início"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Ferramentas</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="ferramentas">
+    <ion-segment [value]="tab()" (ionChange)="onTabChange($any($event.detail.value))">
+      <ion-segment-button value="juros-compostos">
+        <ion-label>Juros compostos</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="vista-prazo">
+        <ion-label>À vista x prazo</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+
+    @if (tab() === 'juros-compostos') {
+      <p class="tool-hint">
+        Simula o crescimento de um investimento com aporte mensal, reajustado uma vez por ano. Não salva nada -- é só
+        pra cálculo esporádico.
+      </p>
+
+      <form class="tool-card" (ngSubmit)="calcularJuros()" [formGroup]="jurosForm">
+        <ion-item fill="outline">
+          <ion-input
+            label="Valor inicial"
+            labelPlacement="stacked"
+            type="text"
+            inputmode="decimal"
+            [value]="valorInicialDisplay()"
+            (ionInput)="onValorInicialInput($event)"
+            placeholder="0,00"
+          >
+            <div slot="start" class="currency-prefix">R$</div>
+          </ion-input>
+        </ion-item>
+
+        <div class="field-row">
+          <ion-item fill="outline" class="col-grow">
+            <ion-input
+              label="Rentabilidade anual"
+              labelPlacement="stacked"
+              type="number"
+              inputmode="decimal"
+              formControlName="taxaAnualPct"
+              placeholder="Ex: 12"
+            >
+              <div slot="end" class="unit-suffix">%</div>
+            </ion-input>
+          </ion-item>
+          <ion-item fill="outline" class="col-grow">
+            <ion-input
+              label="Período"
+              labelPlacement="stacked"
+              type="number"
+              inputmode="numeric"
+              formControlName="anos"
+              placeholder="Ex: 10"
+            >
+              <div slot="end" class="unit-suffix">anos</div>
+            </ion-input>
+          </ion-item>
+        </div>
+
+        <ion-item fill="outline">
+          <ion-input
+            label="Aporte mensal inicial"
+            labelPlacement="stacked"
+            type="text"
+            inputmode="decimal"
+            [value]="aporteDisplay()"
+            (ionInput)="onAporteInput($event)"
+            placeholder="0,00"
+          >
+            <div slot="start" class="currency-prefix">R$</div>
+          </ion-input>
+        </ion-item>
+
+        <ion-item fill="outline">
+          <ion-input
+            label="Crescimento anual do aporte"
+            labelPlacement="stacked"
+            type="number"
+            inputmode="decimal"
+            formControlName="crescimentoAnualAportePct"
+            placeholder="Ex: 5 (opcional, padrão 0)"
+          >
+            <div slot="end" class="unit-suffix">%</div>
+          </ion-input>
+        </ion-item>
+
+        @if (jurosErro()) {
+          <ion-text color="danger"><p class="form-error">{{ jurosErro() }}</p></ion-text>
+        }
+
+        <ion-button type="submit" expand="block" class="ion-margin-top">Calcular</ion-button>
+      </form>
+
+      @if (jurosResultado(); as r) {
+        <div class="tool-card result-card">
+          <div class="result-row highlight">
+            <span>Valor acumulado</span>
+            <strong>{{ r.valorAcumulado | currency: 'BRL' }}</strong>
+          </div>
+          <div class="result-row">
+            <span>Total investido</span>
+            <strong>{{ r.totalInvestido | currency: 'BRL' }}</strong>
+          </div>
+          <div class="result-row">
+            <span>Rendimento</span>
+            <strong>{{ r.rendimento | currency: 'BRL' }}</strong>
+          </div>
+          <div class="result-row secondary">
+            <span>Taxa mensal equivalente</span>
+            <strong>{{ r.taxaMensalEquivalentePct | number: '1.4-4' }}%</strong>
+          </div>
+        </div>
+      }
+    }
+
+    @if (tab() === 'vista-prazo') {
+      <p class="tool-hint">
+        Compara pagar à vista com um desconto, ou a prazo investindo o valor à vista e rendendo enquanto paga as
+        parcelas. Não salva nada -- é só pra cálculo esporádico.
+      </p>
+
+      <form class="tool-card" (ngSubmit)="calcularVista()" [formGroup]="vistaForm">
+        <div class="field-row">
+          <ion-item fill="outline" class="col-grow">
+            <ion-input
+              label="Valor à vista"
+              labelPlacement="stacked"
+              type="text"
+              inputmode="decimal"
+              [value]="valorAVistaDisplay()"
+              (ionInput)="onValorAVistaInput($event)"
+              placeholder="0,00"
+            >
+              <div slot="start" class="currency-prefix">R$</div>
+            </ion-input>
+          </ion-item>
+          <ion-item fill="outline" class="col-grow">
+            <ion-input
+              label="Valor final a prazo"
+              labelPlacement="stacked"
+              type="text"
+              inputmode="decimal"
+              [value]="valorAPrazoDisplay()"
+              (ionInput)="onValorAPrazoInput($event)"
+              placeholder="0,00"
+            >
+              <div slot="start" class="currency-prefix">R$</div>
+            </ion-input>
+          </ion-item>
+        </div>
+
+        <div class="field-row">
+          <ion-item fill="outline" class="col-grow">
+            <ion-input
+              label="Número de parcelas"
+              labelPlacement="stacked"
+              type="number"
+              inputmode="numeric"
+              formControlName="numeroParcelas"
+              placeholder="Ex: 12"
+            ></ion-input>
+          </ion-item>
+          <ion-item fill="outline" class="col-grow">
+            <ion-input
+              label="CDI anual"
+              labelPlacement="stacked"
+              type="number"
+              inputmode="decimal"
+              formControlName="cdiAnualPct"
+              placeholder="Ex: 14.78"
+            >
+              <div slot="end" class="unit-suffix">%</div>
+            </ion-input>
+          </ion-item>
+        </div>
+
+        <ion-item lines="none" class="toggle-item">
+          <ion-toggle [checked]="vistaForm.controls.aliquotaManual.value" (ionChange)="toggleAliquotaManual()">
+            Definir alíquota de IR manualmente
+          </ion-toggle>
+        </ion-item>
+
+        @if (vistaForm.controls.aliquotaManual.value) {
+          <ion-item fill="outline">
+            <ion-input
+              label="Alíquota de IR"
+              labelPlacement="stacked"
+              type="number"
+              inputmode="decimal"
+              formControlName="aliquotaManualPct"
+              placeholder="Ex: 15"
+            >
+              <div slot="end" class="unit-suffix">%</div>
+            </ion-input>
+          </ion-item>
+        } @else {
+          <p class="tool-hint small">
+            Sem alíquota manual, é usada a tabela regressiva do Tesouro Direto pelo prazo informado.
+          </p>
+        }
+
+        @if (vistaErro()) {
+          <ion-text color="danger"><p class="form-error">{{ vistaErro() }}</p></ion-text>
+        }
+
+        <ion-button type="submit" expand="block" class="ion-margin-top">Calcular</ion-button>
+      </form>
+
+      @if (vistaResultado(); as r) {
+        <div class="tool-card result-card">
+          <div class="conclusao-banner" [class.vista]="r.conclusao === 'vista'" [class.prazo]="r.conclusao === 'prazo'">
+            @switch (r.conclusao) {
+              @case ('vista') { Vale a pena pagar à vista! }
+              @case ('prazo') { Vale a pena pagar a prazo e investir o valor! }
+              @default { Não faz diferença pagar à vista ou a prazo. }
+            }
+          </div>
+
+          @if (r.saldoEsgotado) {
+            <ion-text color="warning">
+              <p class="form-error">
+                Aviso: o saldo investido se esgotaria antes do fim das parcelas -- o resultado acima considera só até
+                esse ponto.
+              </p>
+            </ion-text>
+          }
+
+          <div class="result-row">
+            <span>Parcela</span>
+            <strong>{{ r.parcela | currency: 'BRL' }}</strong>
+          </div>
+          <div class="result-row">
+            <span>Economia pagando à vista</span>
+            <strong>{{ r.economiaAVista | currency: 'BRL' }}</strong>
+          </div>
+          <div class="result-row">
+            <span>Juros líquidos (investindo a prazo)</span>
+            <strong>{{ r.jurosLiquidos | currency: 'BRL' }}</strong>
+          </div>
+          <div class="result-row secondary">
+            <span>Alíquota de IR aplicada</span>
+            <strong>{{ r.aliquotaIrPct | number: '1.1-1' }}%</strong>
+          </div>
+
+          <button type="button" class="toggle-tabela-btn" (click)="toggleTabelaMensal()">
+            {{ mostrarTabelaMensal() ? 'Ocultar' : 'Ver' }} evolução mês a mês
+            <ion-icon [name]="mostrarTabelaMensal() ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+          </button>
+
+          @if (mostrarTabelaMensal()) {
+            <div class="table-card">
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Mês</th>
+                      <th class="num">Juros do mês</th>
+                      <th class="num">Juros acumulados</th>
+                      <th class="num">Montante restante</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (m of r.meses; track m.mes) {
+                      <tr [class.esgotado]="m.saldoEsgotado">
+                        <td>{{ m.mes }}</td>
+                        <td class="num">{{ m.juros | currency: 'BRL' }}</td>
+                        <td class="num">{{ m.jurosAcumulados | currency: 'BRL' }}</td>
+                        <td class="num">{{ m.montanteRestante | currency: 'BRL' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+</ion-content>

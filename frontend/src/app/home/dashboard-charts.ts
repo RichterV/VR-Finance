@@ -1,6 +1,6 @@
 import { ChartConfiguration } from 'chart.js';
 
-import { CaixaMes, EvolucaoMes } from '../services/resumo.service';
+import { CaixaMes, EvolucaoMes, InflacaoPonto } from '../services/resumo.service';
 import { linearTrend } from '../shared/linear-regression';
 import { MESES_ABREV } from '../shared/months';
 
@@ -13,6 +13,7 @@ export const COLOR_CAIXA_REAL = '#16a34a';
 export const COLOR_RECEITA = '#fbbf24';
 export const COLOR_CAIXA_PRETENDIDO = '#86efac';
 export const COLOR_PROPORCAO = '#818cf8';
+export const COLOR_INFLACAO = '#f87171';
 
 export const CHART_TEXT_COLOR = '#94a3b8';
 export const CHART_GRID_COLOR = 'rgba(148, 163, 184, 0.12)';
@@ -201,3 +202,67 @@ export const COMBO_CHART_OPTIONS = {
     },
   },
 } as unknown as ChartConfiguration<'bar'>['options'];
+
+// pontos com variacao_pct: null (mes sem base de comparacao) viram gap real no grafico -- Chart.js
+// nao interpola um `null` no meio de um dataset de linha a menos que spanGaps:true seja setado,
+// o que nunca fazemos aqui de proposito (mostrar a ausencia de dado é mais honesto que inventar).
+export function buildInflacaoChartData(pontos: InflacaoPonto[]): ChartConfiguration<'line'>['data'] {
+  return {
+    labels: pontos.map((p) => MESES_ABREV[p.mes - 1]),
+    datasets: [
+      {
+        label: 'Inflação (%)',
+        data: pontos.map((p) => p.variacao_pct),
+        borderColor: COLOR_INFLACAO,
+        backgroundColor: COLOR_INFLACAO,
+        pointStyle: 'circle',
+        pointRadius: 4,
+        borderWidth: 2,
+        tension: 0.4,
+        yAxisID: 'y',
+        fill: false,
+      },
+      {
+        label: 'Caixa real / Gastos (%)',
+        data: pontos.map((p) => p.caixa_real_pct),
+        borderColor: COLOR_PROPORCAO,
+        backgroundColor: COLOR_PROPORCAO,
+        pointStyle: 'circle',
+        pointRadius: 4,
+        borderWidth: 2,
+        tension: 0.4,
+        yAxisID: 'y1',
+        fill: false,
+      },
+    ],
+  };
+}
+
+export const INFLACAO_CHART_OPTIONS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: { mode: 'index', intersect: false },
+  scales: {
+    x: { grid: { display: false }, ticks: { color: CHART_TEXT_COLOR } },
+    y: {
+      type: 'linear',
+      position: 'left',
+      grid: { color: CHART_GRID_COLOR },
+      ticks: { color: CHART_TEXT_COLOR, callback: (value: number) => `${formatComma(Number(value))}%` },
+      title: { display: true, text: 'Inflação (%)', color: CHART_TEXT_COLOR },
+    },
+    y1: {
+      type: 'linear',
+      position: 'right',
+      grid: { drawOnChartArea: false },
+      ticks: { color: CHART_TEXT_COLOR, callback: (value: number) => `${formatComma(Number(value))}%` },
+      title: { display: true, text: 'Caixa real / Gastos (%)', color: CHART_TEXT_COLOR },
+    },
+  },
+  plugins: {
+    legend: {
+      position: 'top',
+      labels: { usePointStyle: true, color: CHART_TEXT_COLOR },
+    },
+  },
+} as unknown as ChartConfiguration<'line'>['options'];

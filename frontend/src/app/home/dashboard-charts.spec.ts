@@ -1,5 +1,5 @@
-import { CaixaMes, EvolucaoMes } from '../services/resumo.service';
-import { buildComboChartData, buildLineChartData, formatComma } from './dashboard-charts';
+import { CaixaMes, EvolucaoMes, InflacaoPonto } from '../services/resumo.service';
+import { buildComboChartData, buildInflacaoChartData, buildLineChartData, formatComma } from './dashboard-charts';
 
 describe('formatComma', () => {
   it('uses a comma as the decimal separator with one digit', () => {
@@ -62,5 +62,39 @@ describe('buildComboChartData', () => {
     const data = buildComboChartData(rows);
     const linha = data.datasets.find((d: any) => d.label === 'Caixa real / Gastos') as any;
     expect(linha.data).toEqual([1.5]);
+  });
+});
+
+describe('buildInflacaoChartData', () => {
+  const pontos: InflacaoPonto[] = [
+    { ano: 2026, mes: 1, total_cesta: 800, variacao_pct: null, caixa_real_pct: 20 },
+    { ano: 2026, mes: 2, total_cesta: 880, variacao_pct: 10, caixa_real_pct: 25 },
+  ];
+
+  it('labels each point with the abbreviated month', () => {
+    const data = buildInflacaoChartData(pontos);
+    expect(data.labels).toEqual(['Jan', 'Fev']);
+  });
+
+  it('puts inflação on the left axis and caixa real/gastos on the right axis', () => {
+    const data = buildInflacaoChartData(pontos);
+    const byLabel = Object.fromEntries(data.datasets.map((d: any) => [d.label, d]));
+
+    expect(byLabel['Inflação (%)'].yAxisID).toBe('y');
+    expect(byLabel['Inflação (%)'].data).toEqual([null, 10]);
+    expect(byLabel['Caixa real / Gastos (%)'].yAxisID).toBe('y1');
+    expect(byLabel['Caixa real / Gastos (%)'].data).toEqual([20, 25]);
+  });
+
+  it('keeps a null point as a real gap instead of coercing it to 0', () => {
+    const data = buildInflacaoChartData(pontos);
+    const linha = data.datasets.find((d: any) => d.label === 'Inflação (%)') as any;
+    expect(linha.data[0]).toBeNull();
+  });
+
+  it('handles an empty window without throwing', () => {
+    const data = buildInflacaoChartData([]);
+    expect(data.labels).toEqual([]);
+    expect(data.datasets[0].data).toEqual([]);
   });
 });

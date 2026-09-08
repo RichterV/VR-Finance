@@ -4,6 +4,19 @@
   gap: 4px;
 }
 
+.inflacao-toggle-row {
+  margin: 4px 0 0;
+  display: flex;
+  align-items: center;
+
+  ion-toggle {
+    font-size: 0.78rem;
+    color: var(--app-text-secondary);
+    --handle-height: 18px;
+    --handle-width: 18px;
+  }
+}
+
 .icon-btn {
   border: none;
   background: transparent;

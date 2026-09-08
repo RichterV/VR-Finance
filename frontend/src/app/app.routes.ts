@@ -30,6 +30,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/veiculos/veiculos.page').then((m) => m.VeiculosPage),
       },
       {
+        path: 'ferramentas',
+        loadComponent: () => import('./pages/ferramentas/ferramentas.page').then((m) => m.FerramentasPage),
+      },
+      {
         path: '',
         redirectTo: 'home',
         pathMatch: 'full',

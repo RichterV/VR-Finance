@@ -51,6 +51,7 @@ class DropdownOptionCreate(BaseModel):
 
 class DropdownOptionUpdate(BaseModel):
     name: str
+    include_in_inflation: Optional[bool] = None
 
 
 class DropdownOptionOut(BaseModel):
@@ -58,6 +59,7 @@ class DropdownOptionOut(BaseModel):
     priority: Priority
     name: str
     active: bool
+    include_in_inflation: bool
 
     class Config:
         from_attributes = True
@@ -274,6 +276,23 @@ class ResumoGeral(BaseModel):
     total_receita: float
     total_caixa_pretendido: float
     total_caixa_real: float
+
+
+class InflacaoPonto(BaseModel):
+    ano: int
+    mes: int
+    total_cesta: float
+    variacao_pct: Optional[float]  # None = sem base de comparação (ex: mês anterior sem gasto)
+    caixa_real_pct: float
+
+
+class ResumoInflacao(BaseModel):
+    possui_cesta: bool
+    cesta: list[str]  # nomes das categorias marcadas, só pra exibir
+    mensal: list[InflacaoPonto]  # variacao_pct = mês a mês
+    anual: list[InflacaoPonto]  # variacao_pct = ano a ano
+    headline_mom_pct: Optional[float]
+    headline_yoy_pct: Optional[float]
 
 
 # --- Anexos ---

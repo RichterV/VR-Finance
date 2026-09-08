@@ -23,7 +23,20 @@
   <ion-list>
     @for (item of items(); track item.id) {
       <ion-item lines="full">
-        <ion-label>{{ item.name }}</ion-label>
+        <ion-label>
+          {{ item.name }}
+          @if (priority() === 'essencial') {
+            <p class="inflacao-toggle-row">
+              <ion-toggle
+                [checked]="item.include_in_inflation"
+                (ionChange)="toggleInflacao(item)"
+                labelPlacement="end"
+              >
+                Cesta de inflação
+              </ion-toggle>
+            </p>
+          }
+        </ion-label>
         <div class="actions" slot="end">
           <button type="button" class="icon-btn" title="Editar categoria" (click)="editItem(item)">
             <ion-icon name="create"></ion-icon>

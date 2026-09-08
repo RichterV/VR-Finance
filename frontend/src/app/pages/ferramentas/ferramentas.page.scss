@@ -1,0 +1,209 @@
+.ferramentas {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+ion-segment-button {
+  --indicator-color: var(--ion-color-primary);
+  min-height: 44px;
+  font-weight: 500;
+  text-transform: none;
+  font-size: 0.85rem;
+}
+
+.tool-hint {
+  color: var(--app-text-secondary);
+  font-size: 0.85rem;
+  margin: 0;
+
+  &.small {
+    margin-top: -6px;
+    margin-bottom: 8px;
+  }
+}
+
+.tool-card {
+  background: var(--app-surface-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--app-surface-border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tool-card ion-item {
+  margin-bottom: 0;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.field-row > ion-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-row > ion-item.col-grow {
+  flex: 2;
+}
+
+.unit-suffix {
+  color: var(--app-text-secondary);
+  font-weight: 600;
+  margin-inline-start: 4px;
+}
+
+.toggle-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+.form-error {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.result-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: var(--app-text-secondary);
+
+  strong {
+    color: var(--app-text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &.highlight {
+    font-size: 1.05rem;
+
+    strong {
+      font-size: 1.2rem;
+    }
+  }
+
+  &.secondary {
+    font-size: 0.8rem;
+    opacity: 0.85;
+  }
+}
+
+.conclusao-banner {
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-weight: 700;
+  text-align: center;
+  color: #fff;
+  background: var(--app-surface-glass);
+  border: 1px solid var(--app-surface-border);
+  color: var(--app-text-primary);
+
+  &.vista {
+    background: linear-gradient(135deg, var(--ion-color-success), var(--ion-color-success-shade));
+    color: #fff;
+    border: none;
+  }
+
+  &.prazo {
+    background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
+    color: #fff;
+    border: none;
+  }
+}
+
+.toggle-tabela-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--app-surface-border);
+  background: transparent;
+  color: var(--app-text-primary);
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+
+  &:hover {
+    background: var(--app-surface-hover);
+  }
+}
+
+.table-card {
+  background: var(--app-surface-glass);
+  border: 1px solid var(--app-surface-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-scroll {
+  max-height: 360px;
+  overflow-y: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: var(--app-surface);
+  color: var(--app-text-secondary);
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--app-surface-border);
+  z-index: 1;
+}
+
+tbody td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--app-surface-border);
+  color: var(--app-text-primary);
+  white-space: nowrap;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr.esgotado td {
+  color: var(--ion-color-danger);
+}
+
+th.num,
+td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 480px) {
+  .field-row {
+    flex-direction: column;
+  }
+
+  .field-row > ion-item.col-grow {
+    flex: 1;
+  }
+
+  .tool-card {
+    padding: 16px;
+  }
+}

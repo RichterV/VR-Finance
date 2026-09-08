@@ -57,6 +57,22 @@
 
 .empty-state {
   color: var(--app-text-secondary);
+
+  a {
+    color: var(--ion-color-primary);
+    font-weight: 600;
+  }
+}
+
+.inflacao-cesta {
+  color: var(--app-text-secondary);
+  font-size: 0.85rem;
+  margin: 0 0 14px;
+}
+
+.inflacao-segment {
+  max-width: 320px;
+  margin: 0 0 18px;
 }
 
 .period-controls {

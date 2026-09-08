@@ -91,6 +91,23 @@ export interface Corte {
   ateMes?: number;
 }
 
+export interface InflacaoPonto {
+  ano: number;
+  mes: number;
+  total_cesta: number;
+  variacao_pct: number | null;
+  caixa_real_pct: number;
+}
+
+export interface ResumoInflacao {
+  possui_cesta: boolean;
+  cesta: string[];
+  mensal: InflacaoPonto[];
+  anual: InflacaoPonto[];
+  headline_mom_pct: number | null;
+  headline_yoy_pct: number | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ResumoService {
   private readonly baseUrl = `${environment.apiUrl}/resumo`;
@@ -116,5 +133,11 @@ export class ResumoService {
 
   geral(corte?: Corte): Observable<ResumoGeral> {
     return this.http.get<ResumoGeral>(`${this.baseUrl}/geral`, { params: this.corteParams(corte) });
+  }
+
+  inflacao(meses = 12, corte?: Corte): Observable<ResumoInflacao> {
+    return this.http.get<ResumoInflacao>(`${this.baseUrl}/inflacao`, {
+      params: { meses, ...this.corteParams(corte) },
+    });
   }
 }

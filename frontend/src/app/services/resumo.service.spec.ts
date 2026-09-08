@@ -58,4 +58,20 @@ describe('ResumoService', () => {
     expect(req.request.params.get('mes')).toBe('8');
     req.flush({});
   });
+
+  it('requests /resumo/inflacao with meses and no cutoff by default', () => {
+    service.inflacao().subscribe();
+    const req = httpMock.expectOne((r) => r.url === `${baseUrl}/inflacao`);
+    expect(req.request.params.get('meses')).toBe('12');
+    expect(req.request.params.has('ate_ano')).toBe(false);
+    req.flush({});
+  });
+
+  it('sends ate_ano/ate_mes on /resumo/inflacao when a cutoff is given', () => {
+    service.inflacao(12, { ateAno: 2026, ateMes: 4 }).subscribe();
+    const req = httpMock.expectOne((r) => r.url === `${baseUrl}/inflacao`);
+    expect(req.request.params.get('ate_ano')).toBe('2026');
+    expect(req.request.params.get('ate_mes')).toBe('4');
+    req.flush({});
+  });
 });
