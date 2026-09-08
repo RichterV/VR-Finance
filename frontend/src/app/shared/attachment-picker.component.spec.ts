@@ -216,4 +216,11 @@ describe('AttachmentPickerComponent', () => {
     expect(event.preventDefault).not.toHaveBeenCalled();
     expect(component.displayItems()).toEqual([]);
   });
+
+  it('shows the Ctrl+V hint outside the native app (web/desktop)', () => {
+    const fixture = createComponent('create');
+
+    expect(fixture.componentInstance.showPasteHint).toBe(true);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Ctrl+V');
+  });
 });

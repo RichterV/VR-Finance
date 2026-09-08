@@ -4,3 +4,8 @@ __pycache__/
 .env
 vrfinance.db
 .pytest_cache/
+
+# Anexos enviados por usuarios e backups locais -- nunca versionar
+uploads/
+last_backup.txt
+*.bak-*

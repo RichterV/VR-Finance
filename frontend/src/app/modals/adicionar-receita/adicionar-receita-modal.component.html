@@ -11,9 +11,8 @@
 
 <ion-content [fullscreen]="true" class="ion-padding">
   <form [formGroup]="form" (ngSubmit)="submit()">
-    <ion-item>
+    <ion-item class="value-primary">
       <ion-input
-        label="Valor"
         labelPlacement="stacked"
         type="text"
         inputmode="decimal"
@@ -21,20 +20,21 @@
         (ionInput)="onValorInput($event)"
         placeholder="0,00"
       >
+        <div slot="label">Valor</div>
         <div slot="start" class="currency-prefix">R$</div>
       </ion-input>
     </ion-item>
 
     <div class="cash-card">
       <div class="cash-card-row">
-        <span class="cash-card-label">% para caixa</span>
+        <span class="cash-card-label">% para caixa:</span>
         <span class="cash-card-value">{{ form.value.cashPercentage }}%</span>
       </div>
       <ion-item lines="none">
         <ion-range formControlName="cashPercentage" [min]="0" [max]="100" [step]="1" [pin]="true"></ion-range>
       </ion-item>
       <div class="cash-card-row cash-card-footer">
-        <span class="cash-card-label">Valor caixa</span>
+        <span class="cash-card-label">Valor caixa:</span>
         <span class="cash-card-value">{{ cashValue() | currency: 'BRL' }}</span>
       </div>
     </div>

@@ -57,12 +57,8 @@ ion-modal.side-modal .modal-wrapper {
 }
 
 /**
- * Side-modal form fields
+ * Side-modal chrome (header/title) — só existe no docked de desktop.
  * -----------------------------------------------------
- * Default Ionic list items (underline, generous padding, no visual grouping)
- * waste space on a narrow docked panel. Turn every real field into a compact
- * "glass" card instead, and leave lines="none" items (live labels, slider
- * containers — not actual inputs) alone so they stay flat.
  */
 .side-modal ion-header ion-toolbar {
   --border-width: 0 0 1px 0;
@@ -74,10 +70,23 @@ ion-modal.side-modal .modal-wrapper {
   font-size: 1.05rem;
 }
 
-.side-modal form ion-item:not([lines="none"]) {
+/**
+ * Campos de formulário dos modais (Adicionar/Editar dos 6 módulos)
+ * -----------------------------------------------------
+ * Escopado em "ion-modal form" (não ".side-modal form") de propósito -- essas regras
+ * precisam valer tanto no docked de desktop quanto no centralizado/fullscreen do
+ * mobile, senão o celular fica preso no visual cru padrão do Ionic (itens sem
+ * agrupamento visual, sem respiro entre campos, cash-card sem layout nenhum —
+ * foi exatamente isso que fazia "% para caixa" e o valor aparecerem colados no
+ * celular: a linha nunca virava flex por falta desse seletor alcançar lá).
+ * "ion-modal" (não só "form") evita vazar pro <form> da tela de Login, que fica
+ * fora de qualquer ion-modal e já tem o próprio estilo glass em login.page.scss.
+ */
+ion-modal form ion-item:not([lines="none"]) {
   --background: var(--app-surface-glass);
   --padding-start: 14px;
   --inner-padding-end: 14px;
+  --min-height: 52px;
   border: 1px solid var(--app-surface-border);
   border-radius: 12px;
   overflow: hidden;
@@ -85,20 +94,51 @@ ion-modal.side-modal .modal-wrapper {
   transition: border-color 0.15s ease;
 }
 
-.side-modal form ion-item:not([lines="none"]):focus-within {
+ion-modal form ion-item:not([lines="none"]):focus-within {
   border-color: var(--ion-color-primary);
 }
 
-.side-modal form ion-item[lines="none"] {
+ion-modal form ion-item[lines="none"] {
   --padding-start: 0;
   --inner-padding-end: 0;
   --min-height: 0;
   margin-bottom: 2px;
 }
 
-/* Groups the % slider and its two live value labels (adicionar/editar receita) into one card
-   instead of three near-invisible lines="none" items with no breathing room between them. */
-.side-modal form .cash-card {
+/* Campo "Valor" -- a informação principal do formulário, marcado explicitamente com essa
+   classe (só ele, nunca campos de apoio como "Cotação do dólar") pra ganhar mais destaque:
+   fonte maior e o prefixo "R$"/"US$" alinhado com o mesmo tamanho/peso do valor digitado. */
+ion-modal form .value-primary {
+  --min-height: 64px;
+}
+
+ion-modal form .value-primary ion-input {
+  --padding-top: 6px;
+  --padding-bottom: 6px;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+/* ion-input não expõe ::part(native-input) nesta versão do Ionic -- font-size no host
+   herda pro shadow DOM inteiro, engordando também o label "Valor" junto com "0,00" se o
+   label vier do atributo `label`. Por isso o label desses campos vem via `slot="label"`
+   (projetado no light DOM, HTML normal) em vez do atributo -- um elemento de verdade que
+   aceita um font-size explícito próprio, sem herdar o tamanho grande do ion-input pai. */
+ion-modal form .value-primary [slot="label"] {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--app-text-secondary);
+}
+
+ion-modal form .value-primary .currency-prefix {
+  font-size: 1.4rem;
+  font-weight: 700;
+  align-self: flex-end;
+}
+
+/* Agrupa o slider de % e os dois labels de valor ao vivo (adicionar/editar receita) num
+   só cartão, em vez de três ion-items "lines=none" quase invisíveis sem respiro entre si. */
+ion-modal form .cash-card {
   background: var(--app-surface-glass);
   border: 1px solid var(--app-surface-border);
   border-radius: 12px;
@@ -106,57 +146,81 @@ ion-modal.side-modal .modal-wrapper {
   margin-bottom: 14px;
 }
 
-.side-modal form .cash-card ion-item {
+ion-modal form .cash-card ion-item {
   margin-bottom: 0;
   --padding-top: 4px;
   --padding-bottom: 4px;
 }
 
-.side-modal form .cash-card-row {
+ion-modal form .cash-card-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
 }
 
-.side-modal form .cash-card-label {
+ion-modal form .cash-card-label {
   font-size: 0.8rem;
   color: var(--app-text-secondary);
 }
 
-.side-modal form .cash-card-value {
+ion-modal form .cash-card-value {
   font-weight: 600;
   color: var(--app-text-primary);
 }
 
-.side-modal form .cash-card-footer {
+ion-modal form .cash-card-footer {
   margin-top: 2px;
 }
 
-.side-modal form .cash-card-footer .cash-card-value {
+ion-modal form .cash-card-footer .cash-card-value {
   color: var(--ion-color-success);
   font-weight: 700;
 }
 
-.side-modal form .field-row {
+ion-modal form .field-row {
   display: flex;
   gap: 12px;
 }
 
-.side-modal form .field-row > ion-item {
+ion-modal form .field-row > ion-item {
   flex: 1;
   min-width: 0;
 }
 
-.side-modal form .field-row > ion-item.col-grow {
+ion-modal form .field-row > ion-item.col-grow {
   flex: 2;
 }
 
-.side-modal form ion-button[type="submit"] {
+/* ion-segment (ex: Essencial / Não essencial) -- garante que o indicador da aba ativa
+   ocupe a largura toda do botão e fique bem visível/proporcional no celular. */
+ion-modal form ion-segment {
+  margin-bottom: 14px;
+}
+
+ion-modal form ion-segment-button {
+  --indicator-color: var(--ion-color-primary);
+  min-height: 44px;
+  font-weight: 500;
+  text-transform: none;
+}
+
+/* ion-toggle (ex: "Parcelado?") -- item com altura mínima confortável pro toque, toggle
+   com folga do texto em vez de colado na borda. */
+ion-modal form ion-item:has(ion-toggle) {
+  --min-height: 52px;
+}
+
+ion-modal form ion-toggle {
+  padding: 8px 0;
+}
+
+ion-modal form ion-button[type="submit"] {
   position: sticky;
   bottom: 0;
   z-index: 2;
   margin-top: 20px;
+  min-height: 48px;
   font-weight: 600;
   --border-radius: 12px;
   --box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);

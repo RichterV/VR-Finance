@@ -28,9 +28,8 @@
       </ion-select>
     </ion-item>
 
-    <ion-item>
+    <ion-item class="value-primary">
       <ion-input
-        label="Valor"
         labelPlacement="stacked"
         type="text"
         inputmode="decimal"
@@ -38,6 +37,7 @@
         (ionInput)="onValorInput($event)"
         placeholder="0,00"
       >
+        <div slot="label">Valor</div>
         <div slot="start" class="currency-prefix">R$</div>
       </ion-input>
     </ion-item>

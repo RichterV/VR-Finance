@@ -1,4 +1,5 @@
 import { Component, EventEmitter, HostListener, Input, OnInit, Output, computed, signal } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 import { AlertController, IonIcon, IonLabel, IonText, ToastController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { add, documentOutline, trashOutline } from 'ionicons/icons';
@@ -33,7 +34,9 @@ interface DisplayItem {
   imports: [IonLabel, IonIcon, IonText],
   template: `
     <div class="attachment-picker">
-      <ion-label class="picker-label">Anexos (opcional) — cole uma imagem copiada com Ctrl+V</ion-label>
+      <ion-label class="picker-label">
+        Anexos (opcional){{ showPasteHint ? ' — cole uma imagem copiada com Ctrl+V' : '' }}
+      </ion-label>
 
       <button type="button" class="add-attachment-btn" [disabled]="uploading()" (click)="fileInput.click()">
         <ion-icon name="add"></ion-icon>
@@ -88,12 +91,13 @@ interface DisplayItem {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 8px 16px;
-        border-radius: 20px;
+        min-height: 44px;
+        padding: 8px 18px;
+        border-radius: 22px;
         border: 1px dashed var(--app-surface-border);
         background: var(--app-surface-glass);
         color: var(--ion-color-primary);
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         font-weight: 500;
         cursor: pointer;
         transition: border-color 0.15s ease, background 0.15s ease;
@@ -152,7 +156,8 @@ interface DisplayItem {
         border: none;
         background: transparent;
         color: var(--app-text-secondary);
-        padding: 4px;
+        padding: 8px;
+        margin: -8px;
         border-radius: 8px;
         cursor: pointer;
         display: inline-flex;
@@ -173,6 +178,9 @@ export class AttachmentPickerComponent implements OnInit {
   @Input() entityId: string | number | null = null;
   @Input() mode: 'create' | 'edit' = 'create';
   @Output() readonly filesChanged = new EventEmitter<void>();
+
+  /** Não existe Ctrl+V no teclado do celular -- some a dica só no app nativo (Android). */
+  readonly showPasteHint = !Capacitor.isNativePlatform();
 
   readonly acceptAttr = ALLOWED_ATTACHMENT_TYPES.join(',');
   readonly uploading = signal(false);
