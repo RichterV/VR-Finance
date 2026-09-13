@@ -117,12 +117,12 @@ interface DisplayItem {
       .add-attachment-btn:hover:not(:disabled) {
         border-color: var(--ion-color-primary);
         border-style: solid;
-        background: rgba(99, 102, 241, 0.12);
+        background: rgba(var(--ion-color-primary-rgb), 0.12);
       }
       .add-attachment-btn.drag-over {
         border-color: var(--ion-color-primary);
         border-style: solid;
-        background: rgba(99, 102, 241, 0.2);
+        background: rgba(var(--ion-color-primary-rgb), 0.2);
       }
       .add-attachment-btn:disabled {
         opacity: 0.6;

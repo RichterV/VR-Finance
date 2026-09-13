@@ -1,3 +1,5 @@
+@use "../../../theme/mixins" as ds;
+
 .ferramentas {
   max-width: 640px;
   margin: 0 auto;
@@ -26,12 +28,8 @@ ion-segment-button {
 }
 
 .tool-card {
-  background: var(--app-surface-glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--app-surface-border);
-  border-radius: 16px;
+  @include ds.app-card;
   padding: 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -103,20 +101,19 @@ ion-segment-button {
   padding: 14px 16px;
   font-weight: 700;
   text-align: center;
-  color: #fff;
   background: var(--app-surface-glass);
   border: 1px solid var(--app-surface-border);
   color: var(--app-text-primary);
 
   &.vista {
     background: linear-gradient(135deg, var(--ion-color-success), var(--ion-color-success-shade));
-    color: #fff;
+    color: var(--ion-color-success-contrast);
     border: none;
   }
 
   &.prazo {
     background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
-    color: #fff;
+    color: var(--ion-color-primary-contrast);
     border: none;
   }
 }
@@ -140,21 +137,19 @@ ion-segment-button {
   }
 }
 
-.table-card {
-  background: var(--app-surface-glass);
-  border: 1px solid var(--app-surface-border);
-  border-radius: 12px;
+.mini-table-card {
+  @include ds.app-card-compact;
   overflow: hidden;
 }
 
-.table-scroll {
+.mini-table-card .table-scroll {
   max-height: 360px;
   overflow-y: auto;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-table {
+.mini-table-card table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.85rem;

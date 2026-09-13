@@ -11,7 +11,9 @@
 
 <ion-content [fullscreen]="true" class="ion-padding">
   @if (auth.currentUser(); as user) {
-    <p>Usuário: <strong>{{ user.username }}</strong> ({{ user.role }})</p>
+    <p>
+      <strong>{{ user.first_name }} {{ user.last_name }}</strong> — {{ user.username }} ({{ user.role }})
+    </p>
   }
 
   <ion-button expand="block" fill="outline" color="danger" (click)="logout()">
@@ -74,6 +76,12 @@
         <ion-input label="Usuário" labelPlacement="stacked" formControlName="username"></ion-input>
       </ion-item>
       <ion-item>
+        <ion-input label="Nome" labelPlacement="stacked" formControlName="firstName"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-input label="Sobrenome" labelPlacement="stacked" formControlName="lastName"></ion-input>
+      </ion-item>
+      <ion-item>
         <ion-input
           label="Senha inicial"
           labelPlacement="stacked"
@@ -112,6 +120,12 @@
               <ion-input label="Usuário" labelPlacement="stacked" formControlName="username"></ion-input>
             </ion-item>
             <ion-item>
+              <ion-input label="Nome" labelPlacement="stacked" formControlName="firstName"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Sobrenome" labelPlacement="stacked" formControlName="lastName"></ion-input>
+            </ion-item>
+            <ion-item>
               <ion-input
                 label="Nova senha (opcional)"
                 labelPlacement="stacked"
@@ -136,7 +150,7 @@
         } @else {
           <div class="user-row">
             <div class="user-info">
-              <span class="username">{{ u.username }}</span>
+              <span class="username">{{ u.first_name }} {{ u.last_name }} ({{ u.username }})</span>
               <span class="role">{{ u.role === 'master' ? 'Master' : 'Usuário' }}</span>
             </div>
             <div class="user-actions">

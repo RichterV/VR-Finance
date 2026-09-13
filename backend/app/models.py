@@ -13,6 +13,8 @@ class User(Base):
     username = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
     role = Column(String, nullable=False, default="user")  # "master" | "user"
+    first_name = Column(String, nullable=False, default="")
+    last_name = Column(String, nullable=False, default="")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

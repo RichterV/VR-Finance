@@ -1,5 +1,5 @@
 .offline-content {
-  --background: radial-gradient(circle at 50% 0%, rgba(239, 68, 68, 0.14), transparent 60%), var(--ion-background-color);
+  --background: radial-gradient(circle at 50% 0%, rgba(var(--ion-color-danger-rgb), 0.14), transparent 60%), var(--ion-background-color);
 }
 
 .offline-wrap {
@@ -19,10 +19,8 @@
 }
 
 .offline-wrap h1 {
-  margin: 0;
   font-size: 1.4rem;
   font-weight: 700;
-  color: var(--app-text-primary);
 }
 
 .offline-subtitle {

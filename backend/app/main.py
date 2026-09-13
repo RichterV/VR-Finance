@@ -36,6 +36,18 @@ def _migrate_schema() -> None:
             )
             conn.commit()
 
+        user_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(users)"))}
+        if "first_name" not in user_cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN first_name TEXT NOT NULL DEFAULT ''"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN last_name TEXT NOT NULL DEFAULT ''"))
+            # Backfill dos dois usuários já existentes antes dessa coluna existir -- usuários criados
+            # depois já vêm com o nome preenchido via POST /auth/users, que passou a exigir os campos.
+            conn.execute(text("UPDATE users SET first_name = 'Teste', last_name = 'Teste' WHERE username = 'teste'"))
+            conn.execute(
+                text("UPDATE users SET first_name = 'Nome', last_name = 'Sobrenome' WHERE username = 'admin'")
+            )
+            conn.commit()
+
 
 _migrate_schema()
 Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)

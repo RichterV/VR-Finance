@@ -73,6 +73,8 @@ def main() -> None:
             db.query(models.Gasto).filter(models.Gasto.user_id == existing.id).delete()
             db.query(models.Receita).filter(models.Receita.user_id == existing.id).delete()
             db.query(models.DropdownOption).filter(models.DropdownOption.user_id == existing.id).delete()
+            existing.first_name = "Teste"
+            existing.last_name = "Teste"
             db.commit()
             user = existing
         else:
@@ -80,6 +82,8 @@ def main() -> None:
                 username=TEST_USERNAME,
                 password_hash=hash_password(TEST_PASSWORD),
                 role="user",
+                first_name="Teste",
+                last_name="Teste",
             )
             db.add(user)
             db.commit()

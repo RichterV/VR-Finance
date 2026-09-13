@@ -27,6 +27,8 @@ def test_me_returns_current_user(client, user, auth_headers):
     body = response.json()
     assert body["username"] == user.username
     assert body["role"] == "user"
+    assert body["first_name"] == user.first_name
+    assert body["last_name"] == user.last_name
 
 
 def test_change_password_success(client, user, user_password, auth_headers):
@@ -63,19 +65,30 @@ def test_master_can_create_user(client, master_headers):
     response = client.post(
         "/auth/users",
         headers=master_headers,
-        json={"username": "novo_usuario", "password": "senha123"},
+        json={"username": "novo_usuario", "password": "senha123", "first_name": "Novo", "last_name": "Usuário"},
     )
     assert response.status_code == 201
     body = response.json()
     assert body["username"] == "novo_usuario"
     assert body["role"] == "user"
+    assert body["first_name"] == "Novo"
+    assert body["last_name"] == "Usuário"
+
+
+def test_create_user_requires_first_and_last_name(client, master_headers):
+    response = client.post(
+        "/auth/users",
+        headers=master_headers,
+        json={"username": "sem_nome", "password": "senha123"},
+    )
+    assert response.status_code == 422
 
 
 def test_master_cannot_create_duplicate_username(client, master_headers, master_user):
     response = client.post(
         "/auth/users",
         headers=master_headers,
-        json={"username": master_user.username, "password": "senha123"},
+        json={"username": master_user.username, "password": "senha123", "first_name": "X", "last_name": "Y"},
     )
     assert response.status_code == 400
 
@@ -105,17 +118,25 @@ def test_master_can_update_user_username(client, master_headers, user):
     response = client.put(
         f"/auth/users/{user.id}",
         headers=master_headers,
-        json={"username": "renomeado"},
+        json={"username": "renomeado", "first_name": "Renomeado", "last_name": "Sobrenome"},
     )
     assert response.status_code == 200
-    assert response.json()["username"] == "renomeado"
+    body = response.json()
+    assert body["username"] == "renomeado"
+    assert body["first_name"] == "Renomeado"
+    assert body["last_name"] == "Sobrenome"
 
 
 def test_master_can_reset_user_password(client, master_headers, user):
     response = client.put(
         f"/auth/users/{user.id}",
         headers=master_headers,
-        json={"username": user.username, "password": "senha-resetada"},
+        json={
+            "username": user.username,
+            "password": "senha-resetada",
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+        },
     )
     assert response.status_code == 200
 
@@ -127,7 +148,7 @@ def test_update_user_rejects_duplicate_username(client, master_headers, user, ma
     response = client.put(
         f"/auth/users/{user.id}",
         headers=master_headers,
-        json={"username": master_user.username},
+        json={"username": master_user.username, "first_name": user.first_name, "last_name": user.last_name},
     )
     assert response.status_code == 400
 

@@ -62,6 +62,8 @@ def create_user(
         username=payload.username,
         password_hash=hash_password(payload.password),
         role="user",
+        first_name=payload.first_name,
+        last_name=payload.last_name,
     )
     db.add(user)
     db.commit()
@@ -102,6 +104,8 @@ def update_user(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuário já existe")
 
     user.username = payload.username
+    user.first_name = payload.first_name
+    user.last_name = payload.last_name
     if payload.password:
         user.password_hash = hash_password(payload.password)
     db.commit()

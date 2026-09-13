@@ -12,7 +12,9 @@ export const COLOR_NAO_ESSENCIAL_TENDENCIA = 'rgba(251, 146, 60, 0.35)';
 export const COLOR_CAIXA_REAL = '#16a34a';
 export const COLOR_RECEITA = '#fbbf24';
 export const COLOR_CAIXA_PRETENDIDO = '#86efac';
-export const COLOR_PROPORCAO = '#818cf8';
+// Violeta deliberadamente não-verde -- é a linha de razão sobre as 3 colunas verde/dourado/verde-claro
+// do gráfico "Caixa pretendido vs. real"; forçar verde aqui destruiria a diferenciação da série.
+export const COLOR_PROPORCAO = '#a78bfa';
 export const COLOR_INFLACAO = '#f87171';
 
 export const CHART_TEXT_COLOR = '#94a3b8';

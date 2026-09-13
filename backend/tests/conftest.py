@@ -50,8 +50,21 @@ def client(db_session):
     app.dependency_overrides.clear()
 
 
-def _create_user(db_session, username: str, password: str, role: str = "user") -> models.User:
-    user = models.User(username=username, password_hash=hash_password(password), role=role)
+def _create_user(
+    db_session,
+    username: str,
+    password: str,
+    role: str = "user",
+    first_name: str = "Usuário",
+    last_name: str = "Teste",
+) -> models.User:
+    user = models.User(
+        username=username,
+        password_hash=hash_password(password),
+        role=role,
+        first_name=first_name,
+        last_name=last_name,
+    )
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)

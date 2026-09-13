@@ -1,5 +1,5 @@
 .login-content {
-  --background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.18), transparent 60%), var(--ion-background-color);
+  --background: radial-gradient(circle at 50% 0%, rgba(var(--ion-color-primary-rgb), 0.18), transparent 60%), var(--ion-background-color);
 }
 
 .login-wrap {
@@ -25,20 +25,18 @@
   height: 64px;
   border-radius: 16px;
   background: var(--ion-color-primary);
-  color: #f8fafc;
+  color: var(--ion-color-primary-contrast);
   font-size: 32px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 12px 28px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 12px 28px rgba(var(--ion-color-primary-rgb), 0.35);
 }
 
 .brand h1 {
-  margin: 0;
   font-size: 1.6rem;
   font-weight: 700;
-  color: var(--app-text-primary);
 }
 
 .brand-subtitle {

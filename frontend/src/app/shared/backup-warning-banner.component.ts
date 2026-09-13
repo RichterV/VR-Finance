@@ -39,7 +39,7 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
         justify-content: center;
         gap: 10px;
         padding: 10px 16px;
-        background: linear-gradient(90deg, #b45309, #dc2626);
+        background: linear-gradient(90deg, var(--ion-color-warning-shade), var(--ion-color-danger));
         color: #fff;
         font-size: 0.85rem;
         font-weight: 600;

@@ -1,3 +1,5 @@
+@use "../../../theme/mixins" as ds;
+
 .exportar-dados {
   max-width: 640px;
   margin: 0 auto;
@@ -13,12 +15,8 @@
 }
 
 .modulo-card {
-  background: var(--app-surface-glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--app-surface-border);
-  border-radius: 16px;
+  @include ds.app-card;
   padding: 18px 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -31,8 +29,6 @@
   h3 {
     margin: 0 0 4px;
     font-size: 1rem;
-    font-weight: 600;
-    color: var(--app-text-primary);
   }
 
   p {

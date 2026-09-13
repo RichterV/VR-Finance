@@ -22,6 +22,8 @@ class UserOut(BaseModel):
     id: int
     username: str
     role: str
+    first_name: str
+    last_name: str
 
     class Config:
         from_attributes = True
@@ -30,11 +32,15 @@ class UserOut(BaseModel):
 class UserCreate(BaseModel):
     username: str
     password: str = Field(min_length=6)
+    first_name: str = Field(min_length=1)
+    last_name: str = Field(min_length=1)
 
 
 class UserUpdate(BaseModel):
     username: str
     password: Optional[str] = Field(default=None, min_length=6)
+    first_name: str = Field(min_length=1)
+    last_name: str = Field(min_length=1)
 
 
 class PasswordChange(BaseModel):

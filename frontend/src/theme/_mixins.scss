@@ -1,0 +1,19 @@
+// Mixins do Design System, importáveis de qualquer .scss de componente via `@use`
+// (diferente de `%placeholder` + `@extend`, que só funciona dentro do mesmo arquivo compilado --
+// os estilos de componente do Angular são compilados um a um, cada um isolado do global.scss).
+
+@mixin app-card {
+  background: var(--app-surface-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--app-surface-border);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+// Variante compacta -- card aninhado dentro de outro (linha de usuário no Perfil, tabela
+// secundária dentro de um resultado de Ferramentas), sem o blur/raio grande do card de página.
+@mixin app-card-compact {
+  background: var(--app-surface-glass);
+  border: 1px solid var(--app-surface-border);
+  border-radius: 12px;
+}

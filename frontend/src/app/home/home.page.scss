@@ -1,3 +1,5 @@
+@use "../../theme/mixins" as ds;
+
 .dashboard {
   max-width: 1200px;
   margin: 0 auto;
@@ -7,12 +9,6 @@
 }
 
 .dashboard-header {
-  h1 {
-    font-weight: 600;
-    margin: 0;
-    color: var(--app-text-primary);
-  }
-
   .subtitle {
     margin: 4px 0 0;
     color: var(--app-text-secondary);
@@ -32,16 +28,10 @@
   justify-content: space-between;
   gap: 12px;
 
-  h2 {
-    font-weight: 600;
-    margin: 0;
-    color: var(--app-text-primary);
-
-    .section-subtitle {
-      font-weight: 400;
-      color: var(--app-text-secondary);
-      font-size: 0.9rem;
-    }
+  h2 .section-subtitle {
+    font-weight: 400;
+    color: var(--app-text-secondary);
+    font-size: 0.9rem;
   }
 }
 
@@ -106,33 +96,40 @@
 }
 
 .stat-card {
-  background: var(--app-surface-glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--app-surface-border);
-  border-radius: 16px;
+  @include ds.app-card;
   padding: 22px 24px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 .stat-card--highlight {
   background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
   border: none;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.35);
 
+  // Texto escuro sobre o gradiente verde (não branco): --ion-color-primary-contrast já foi
+  // escolhido pra dar contraste alto nos dois tons do gradiente (shade e base).
   .stat-label {
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(var(--ion-color-primary-contrast-rgb), 0.75);
   }
 
   .stat-value {
-    color: #ffffff;
+    color: var(--ion-color-primary-contrast);
   }
 
   &.negativo {
     background: linear-gradient(135deg, var(--ion-color-danger), var(--ion-color-danger-shade));
-    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
+    box-shadow: 0 4px 16px rgba(var(--ion-color-danger-rgb), 0.35);
+
+    // O vermelho já é escuro o bastante pra texto branco (--ion-color-danger-contrast).
+    .stat-label {
+      color: rgba(var(--ion-color-danger-contrast-rgb), 0.85);
+    }
+
+    .stat-value {
+      color: var(--ion-color-danger-contrast);
+    }
   }
 }
 
@@ -155,7 +152,11 @@
 }
 
 .stat-card--highlight .stat-percent {
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(var(--ion-color-primary-contrast-rgb), 0.65);
+}
+
+.stat-card--highlight.negativo .stat-percent {
+  color: rgba(var(--ion-color-danger-contrast-rgb), 0.75);
 }
 
 .charts-grid {
@@ -169,12 +170,8 @@
 }
 
 .chart-card {
-  background: var(--app-surface-glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--app-surface-border);
-  border-radius: 16px;
+  @include ds.app-card;
   padding: 24px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 .chart-card-header {
@@ -184,30 +181,7 @@
   margin: 0 0 12px;
 
   h3 {
-    margin: 0;
     font-size: 1rem;
-    font-weight: 600;
-    color: var(--app-text-primary);
-  }
-}
-
-.icon-btn {
-  border: none;
-  background: transparent;
-  color: var(--app-text-secondary);
-  padding: 6px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-
-  ion-icon {
-    font-size: 1.1rem;
-  }
-
-  &:hover {
-    background: var(--app-surface-hover);
-    color: var(--app-text-primary);
   }
 }
 
@@ -227,17 +201,12 @@
 }
 
 .percentuais-col {
-  background: var(--app-surface-glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--app-surface-border);
-  border-radius: 16px;
+  @include ds.app-card;
   padding: 22px 24px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 
   h3 {
     margin: 0 0 12px;
     font-size: 0.95rem;
-    font-weight: 600;
     color: var(--app-text-secondary);
   }
 }

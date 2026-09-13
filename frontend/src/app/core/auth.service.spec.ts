@@ -49,15 +49,23 @@ describe('AuthService', () => {
   it('updates the currentUser signal and isMaster after loadCurrentUser', () => {
     service.loadCurrentUser().subscribe();
     const req = httpMock.expectOne(`${environment.apiUrl}/auth/me`);
-    req.flush({ id: 1, username: 'admin', role: 'master' });
+    req.flush({ id: 1, username: 'admin', role: 'master', first_name: 'Nome', last_name: 'Sobrenome' });
 
-    expect(service.currentUser()).toEqual({ id: 1, username: 'admin', role: 'master' });
+    expect(service.currentUser()).toEqual({
+      id: 1,
+      username: 'admin',
+      role: 'master',
+      first_name: 'Nome',
+      last_name: 'Sobrenome',
+    });
     expect(service.isMaster).toBe(true);
   });
 
   it('clears the token and currentUser on logout', () => {
     service.loadCurrentUser().subscribe();
-    httpMock.expectOne(`${environment.apiUrl}/auth/me`).flush({ id: 1, username: 'teste', role: 'user' });
+    httpMock
+      .expectOne(`${environment.apiUrl}/auth/me`)
+      .flush({ id: 1, username: 'teste', role: 'user', first_name: 'Teste', last_name: 'Teste' });
     localStorage.setItem(TOKEN_KEY, 'abc123');
 
     service.logout();

@@ -1,12 +1,19 @@
 // Slate Dark — dashboard financeiro moderno (paleta fixa, não segue o tema do sistema).
+// Identidade verde (fintech/SaaS): --ion-color-primary é a cor de marca/ação, escolhida pra
+// funcionar bem nos dois papéis que uma cor de destaque tem num tema escuro -- como fundo de
+// botão sólido (com --ion-color-primary-contrast escuro, não branco, em cima) E como cor de
+// ícone/texto sobre o fundo escuro do app (--ion-background-color/--app-surface) -- as duas
+// combinações passam de 4.5:1 de contraste. --ion-color-success continua um verde-esmeralda
+// deliberadamente distinto do primary (marca vs. "ganho financeiro" são papéis diferentes,
+// mesmo os dois sendo verdes -- ver CLAUDE.md, decisões da reformulação visual).
 :root {
-  // Cor de destaque / ação (Indigo)
-  --ion-color-primary: #6366f1;
-  --ion-color-primary-rgb: 99, 102, 241;
-  --ion-color-primary-contrast: #ffffff;
-  --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #5457d4;
-  --ion-color-primary-tint: #7a7cf3;
+  // Cor de destaque / ação (Verde)
+  --ion-color-primary: #22c55e;
+  --ion-color-primary-rgb: 34, 197, 94;
+  --ion-color-primary-contrast: #052e16;
+  --ion-color-primary-contrast-rgb: 5, 46, 22;
+  --ion-color-primary-shade: #16a34a;
+  --ion-color-primary-tint: #4ade80;
 
   // Indicadores financeiros
   --ion-color-success: #10b981;
@@ -22,6 +29,15 @@
   --ion-color-danger-contrast-rgb: 255, 255, 255;
   --ion-color-danger-shade: #d23c3c;
   --ion-color-danger-tint: #f15757;
+
+  // Alertas/avisos (badge de pendências, aviso de backup) -- antes caía no amarelo padrão do
+  // Ionic (#ffc409) sem ninguém ter escolhido isso de propósito.
+  --ion-color-warning: #f59e0b;
+  --ion-color-warning-rgb: 245, 158, 11;
+  --ion-color-warning-contrast: #451a03;
+  --ion-color-warning-contrast-rgb: 69, 26, 3;
+  --ion-color-warning-shade: #d97706;
+  --ion-color-warning-tint: #fbbf24;
 
   // Fundo principal (Slate 900) e superfícies elevadas
   --ion-background-color: #0f172a;
@@ -42,7 +58,7 @@
   --app-surface-glass: rgba(30, 41, 59, 0.72);
   --app-surface-border: #334155;
   --app-surface-hover: rgba(255, 255, 255, 0.06);
-  --app-surface-active: rgba(99, 102, 241, 0.16);
+  --app-surface-active: rgba(34, 197, 94, 0.16);
   --app-text-primary: #f8fafc;
   --app-text-secondary: #94a3b8;
 }

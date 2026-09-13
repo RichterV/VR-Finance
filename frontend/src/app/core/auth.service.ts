@@ -9,6 +9,8 @@ export interface CurrentUser {
   id: number;
   username: string;
   role: 'master' | 'user';
+  first_name: string;
+  last_name: string;
 }
 
 interface TokenResponse {
@@ -61,18 +63,31 @@ export class AuthService {
     });
   }
 
-  createUser(username: string, password: string): Observable<CurrentUser> {
-    return this.http.post<CurrentUser>(`${environment.apiUrl}/auth/users`, { username, password });
+  createUser(username: string, password: string, firstName: string, lastName: string): Observable<CurrentUser> {
+    return this.http.post<CurrentUser>(`${environment.apiUrl}/auth/users`, {
+      username,
+      password,
+      first_name: firstName,
+      last_name: lastName,
+    });
   }
 
   listUsers(): Observable<CurrentUser[]> {
     return this.http.get<CurrentUser[]>(`${environment.apiUrl}/auth/users`);
   }
 
-  updateUser(id: number, username: string, password?: string): Observable<CurrentUser> {
+  updateUser(
+    id: number,
+    username: string,
+    firstName: string,
+    lastName: string,
+    password?: string,
+  ): Observable<CurrentUser> {
     return this.http.put<CurrentUser>(`${environment.apiUrl}/auth/users/${id}`, {
       username,
       password: password || undefined,
+      first_name: firstName,
+      last_name: lastName,
     });
   }
 

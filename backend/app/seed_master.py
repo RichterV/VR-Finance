@@ -17,6 +17,8 @@ def main() -> None:
             username=settings.master_username,
             password_hash=hash_password(settings.master_password),
             role="master",
+            first_name="Nome",
+            last_name="Sobrenome",
         )
         db.add(master)
         db.commit()

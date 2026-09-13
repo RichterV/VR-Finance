@@ -42,7 +42,7 @@
   <div class="dashboard">
     <header class="dashboard-header">
       @if (auth.currentUser(); as user) {
-        <h1>Olá, {{ user.username }}</h1>
+        <h1>Olá, {{ user.first_name }}</h1>
       }
       <p class="subtitle">Aqui está o resumo das suas finanças</p>
     </header>

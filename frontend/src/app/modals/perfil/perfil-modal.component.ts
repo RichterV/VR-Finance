@@ -60,6 +60,8 @@ export class PerfilModalComponent implements OnInit {
 
   readonly editUserForm = this.fb.nonNullable.group({
     username: this.fb.nonNullable.control('', Validators.required),
+    firstName: this.fb.nonNullable.control('', Validators.required),
+    lastName: this.fb.nonNullable.control('', Validators.required),
     password: this.fb.nonNullable.control(''),
   });
 
@@ -75,6 +77,8 @@ export class PerfilModalComponent implements OnInit {
   readonly newUserForm = this.fb.nonNullable.group(
     {
       username: this.fb.nonNullable.control('', Validators.required),
+      firstName: this.fb.nonNullable.control('', Validators.required),
+      lastName: this.fb.nonNullable.control('', Validators.required),
       password: this.fb.nonNullable.control('', [Validators.required, Validators.minLength(6)]),
       confirmPassword: this.fb.nonNullable.control('', Validators.required),
     },
@@ -169,12 +173,12 @@ export class PerfilModalComponent implements OnInit {
       return;
     }
 
-    const { username, password } = this.newUserForm.getRawValue();
+    const { username, firstName, lastName, password } = this.newUserForm.getRawValue();
     this.userSaving.set(true);
-    this.auth.createUser(username, password).subscribe({
+    this.auth.createUser(username, password, firstName, lastName).subscribe({
       next: async () => {
         this.userSaving.set(false);
-        this.newUserForm.reset({ username: '', password: '', confirmPassword: '' });
+        this.newUserForm.reset({ username: '', firstName: '', lastName: '', password: '', confirmPassword: '' });
         this.loadUsers();
         const toast = await this.toastCtrl.create({
           message: `Usuário "${username}" criado.`,
@@ -193,7 +197,12 @@ export class PerfilModalComponent implements OnInit {
   editarUsuario(user: CurrentUser): void {
     this.editError.set(null);
     this.editingUserId.set(user.id);
-    this.editUserForm.reset({ username: user.username, password: '' });
+    this.editUserForm.reset({
+      username: user.username,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      password: '',
+    });
   }
 
   cancelarEdicao(): void {
@@ -208,9 +217,9 @@ export class PerfilModalComponent implements OnInit {
       return;
     }
 
-    const { username, password } = this.editUserForm.getRawValue();
+    const { username, firstName, lastName, password } = this.editUserForm.getRawValue();
     this.editSaving.set(true);
-    this.auth.updateUser(userId, username, password || undefined).subscribe({
+    this.auth.updateUser(userId, username, firstName, lastName, password || undefined).subscribe({
       next: async () => {
         this.editSaving.set(false);
         this.editingUserId.set(null);
