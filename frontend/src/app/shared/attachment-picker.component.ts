@@ -38,9 +38,18 @@ interface DisplayItem {
         Anexos (opcional){{ showPasteHint ? ' — cole uma imagem copiada com Ctrl+V' : '' }}
       </ion-label>
 
-      <button type="button" class="add-attachment-btn" [disabled]="uploading()" (click)="fileInput.click()">
+      <button
+        type="button"
+        class="add-attachment-btn"
+        [class.drag-over]="dragOver()"
+        [disabled]="uploading()"
+        (click)="fileInput.click()"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+      >
         <ion-icon name="add"></ion-icon>
-        <span>{{ uploading() ? 'Enviando...' : 'Adicionar arquivo' }}</span>
+        <span>{{ uploading() ? 'Enviando...' : dragOver() ? 'Solte o arquivo aqui' : 'Adicionar arquivo' }}</span>
       </button>
       <input
         type="file"
@@ -109,6 +118,11 @@ interface DisplayItem {
         border-color: var(--ion-color-primary);
         border-style: solid;
         background: rgba(99, 102, 241, 0.12);
+      }
+      .add-attachment-btn.drag-over {
+        border-color: var(--ion-color-primary);
+        border-style: solid;
+        background: rgba(99, 102, 241, 0.2);
       }
       .add-attachment-btn:disabled {
         opacity: 0.6;
@@ -185,6 +199,7 @@ export class AttachmentPickerComponent implements OnInit {
   readonly acceptAttr = ALLOWED_ATTACHMENT_TYPES.join(',');
   readonly uploading = signal(false);
   readonly errorMessage = signal<string | null>(null);
+  readonly dragOver = signal(false);
   private readonly pendingFiles = signal<File[]>([]);
   private readonly existingFiles = signal<Attachment[]>([]);
 
@@ -222,6 +237,26 @@ export class AttachmentPickerComponent implements OnInit {
     const files = Array.from(input.files ?? []);
     input.value = '';
     this.addFiles(files);
+  }
+
+  /** preventDefault() é obrigatório aqui -- sem isso o navegador nunca dispara o evento "drop"
+   * (o comportamento padrão dele em cima de um elemento comum é rejeitar o drop). */
+  onDragOver(ev: DragEvent): void {
+    ev.preventDefault();
+    if (this.uploading()) return;
+    this.dragOver.set(true);
+  }
+
+  onDragLeave(ev: DragEvent): void {
+    ev.preventDefault();
+    this.dragOver.set(false);
+  }
+
+  onDrop(ev: DragEvent): void {
+    ev.preventDefault();
+    this.dragOver.set(false);
+    if (this.uploading()) return;
+    this.addFiles(Array.from(ev.dataTransfer?.files ?? []));
   }
 
   /** Cola uma imagem da área de transferência como anexo -- funciona em qualquer campo do

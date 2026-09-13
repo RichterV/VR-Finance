@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -14,6 +15,11 @@ function blobToBase64(blob: Blob): Promise<string> {
 export interface DownloadResult {
   /** Preenchido só no app nativo -- indica que o arquivo foi salvo direto no dispositivo (sem prompt). */
   savedNatively: boolean;
+}
+
+export interface ShareResult {
+  /** false quando o usuário fechou a folha de compartilhar sem escolher um destino -- não é erro. */
+  shared: boolean;
 }
 
 /**
@@ -49,5 +55,35 @@ export class DownloadFileService {
     a.click();
     URL.revokeObjectURL(url);
     return { savedNatively: false };
+  }
+
+  /**
+   * Variante de `trigger()` pra arquivos que o usuário precisa efetivamente localizar depois (ex:
+   * exportação de dados) -- diferente de um anexo avulso, salvar em Directory.Documents não serve
+   * aqui: a partir do Android 11 essa pasta é escopada só pro próprio app ("the app can only access
+   * the files/folders the app created", doc oficial do @capacitor/filesystem), invisível no app de
+   * Arquivos e em qualquer outro app do celular -- o usuário via o toast de sucesso, mas nunca achava
+   * o arquivo depois. Aqui o arquivo é gravado só no cache interno (transitório, não precisa
+   * sobreviver) e a folha nativa de compartilhar do Android é aberta (@capacitor/share) -- o próprio
+   * usuário escolhe o destino final (Arquivos, Drive, e-mail etc.) e sempre sabe onde foi parar.
+   */
+  async shareFile(blob: Blob, filename: string): Promise<ShareResult> {
+    if (!Capacitor.isNativePlatform()) {
+      await this.trigger(blob, filename);
+      return { shared: true };
+    }
+
+    const base64Data = await blobToBase64(blob);
+    await Filesystem.writeFile({ path: filename, data: base64Data, directory: Directory.Cache });
+    const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
+    try {
+      await Share.share({ files: [uri], dialogTitle: 'Salvar exportação' });
+      return { shared: true };
+    } catch (err) {
+      if (err instanceof Error && err.message === 'Share canceled') {
+        return { shared: false };
+      }
+      throw err;
+    }
   }
 }

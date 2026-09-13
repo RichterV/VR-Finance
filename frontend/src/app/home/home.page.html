@@ -361,10 +361,17 @@
               <ion-label>Ano a ano</ion-label>
             </ion-segment-button>
           </ion-segment>
+          <p class="inflacao-caption">
+            @if (inflacaoJanela() === 'mensal') {
+              Cada ponto do gráfico compara o gasto da cesta daquele mês com o mês imediatamente anterior.
+            } @else {
+              Cada ponto do gráfico compara o gasto da cesta daquele mês com o mesmo mês, um ano antes.
+            }
+          </p>
 
           <div class="stats-grid">
             <div class="stat-card stat-card--highlight" [class.negativo]="(inflacaoHeadline() ?? 0) > 0">
-              <span class="stat-label">{{ inflacaoJanela() === 'mensal' ? 'Inflação no último mês' : 'Inflação nos últimos 12 meses' }}</span>
+              <span class="stat-label">{{ inflacaoJanela() === 'mensal' ? 'Inflação no último mês' : 'Inflação no último mês (vs. mesmo mês do ano anterior)' }}</span>
               <span class="stat-value">
                 @if (inflacaoHeadline() === null) {
                   Sem dado suficiente

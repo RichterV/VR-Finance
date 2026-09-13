@@ -1,0 +1,38 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Início"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Exportar Dados</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="exportar-dados">
+    <p class="tool-hint">
+      Baixa um módulo por vez num arquivo .zip: um CSV (separado por ";", encoding latin-1 -- abre direto no
+      Excel) mais uma pasta "anexos" com os comprovantes vinculados aos registros exportados. Só os seus
+      próprios dados.
+    </p>
+
+    @for (modulo of modulos; track modulo.chave) {
+      <div class="modulo-card">
+        <div class="modulo-info">
+          <h3>{{ modulo.label }}</h3>
+          <p>{{ modulo.descricao }}</p>
+        </div>
+        <ion-button
+          [disabled]="baixando() !== null"
+          (click)="baixar(modulo.chave)"
+        >
+          @if (baixando() === modulo.chave) {
+            <ion-spinner name="dots"></ion-spinner>
+          } @else {
+            <ion-icon slot="start" name="download-outline"></ion-icon>
+            <span>Baixar</span>
+          }
+        </ion-button>
+      </div>
+    }
+  </div>
+</ion-content>

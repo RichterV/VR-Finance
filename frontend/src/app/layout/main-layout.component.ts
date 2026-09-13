@@ -15,7 +15,17 @@ import {
   MenuController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { calculatorOutline, carSportOutline, homeOutline, logOutOutline, peopleOutline, pin, pinOutline, trendingUpOutline } from 'ionicons/icons';
+import {
+  calculatorOutline,
+  carSportOutline,
+  downloadOutline,
+  homeOutline,
+  logOutOutline,
+  peopleOutline,
+  pin,
+  pinOutline,
+  trendingUpOutline,
+} from 'ionicons/icons';
 
 import { AuthService } from '../core/auth.service';
 import { HomeRefreshService } from '../core/home-refresh.service';
@@ -48,6 +58,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   { label: 'Manutenção Veículos', icon: 'car-sport-outline', route: '/veiculos' },
   { label: 'Ferramentas', icon: 'calculator-outline', route: '/ferramentas' },
+  { label: 'Exportar Dados', icon: 'download-outline', route: '/exportar-dados' },
 ];
 
 /** Below this width we keep the classic always-visible/hamburger split-pane menu (touch-friendly, no hover). */
@@ -89,7 +100,17 @@ export class MainLayoutComponent {
     private readonly router: Router,
     private readonly homeRefresh: HomeRefreshService,
   ) {
-    addIcons({ homeOutline, carSportOutline, logOutOutline, peopleOutline, pin, pinOutline, trendingUpOutline, calculatorOutline });
+    addIcons({
+      homeOutline,
+      carSportOutline,
+      logOutOutline,
+      peopleOutline,
+      pin,
+      pinOutline,
+      trendingUpOutline,
+      calculatorOutline,
+      downloadOutline,
+    });
   }
 
   @HostListener('window:resize')

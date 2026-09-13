@@ -34,6 +34,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/ferramentas/ferramentas.page').then((m) => m.FerramentasPage),
       },
       {
+        path: 'exportar-dados',
+        loadComponent: () => import('./pages/exportar-dados/exportar-dados.page').then((m) => m.ExportarDadosPage),
+      },
+      {
         path: '',
         redirectTo: 'home',
         pathMatch: 'full',

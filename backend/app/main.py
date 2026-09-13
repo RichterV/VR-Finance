@@ -11,6 +11,7 @@ from app.routers import (
     auth,
     backup_status,
     dropdown_options,
+    export,
     gastos,
     receitas,
     resumo,
@@ -57,6 +58,7 @@ app.include_router(veiculos.router)
 app.include_router(servicos_veiculos.router)
 app.include_router(attachments.router)
 app.include_router(backup_status.router)
+app.include_router(export.router)
 
 
 @app.get("/health")

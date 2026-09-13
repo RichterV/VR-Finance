@@ -753,6 +753,7 @@ echo   1. Iniciar SSH servidor
 echo   2. Checar bateria
 echo   3. Checar armazenamento
 echo   4. Checar uso de RAM
+echo   5. Ver IP e MAC do servidor
 echo   0. Voltar
 echo.
 set /p opcao="Escolha uma opcao: "
@@ -761,6 +762,7 @@ if "%opcao%"=="1" goto servidor_ssh
 if "%opcao%"=="2" goto servidor_bateria
 if "%opcao%"=="3" goto servidor_armazenamento
 if "%opcao%"=="4" goto servidor_ram
+if "%opcao%"=="5" goto servidor_rede
 if "%opcao%"=="0" goto menu
 goto servidor_menu
 
@@ -789,6 +791,16 @@ echo Percentual livre (relativo ao total):
 ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "free | awk '/^Mem:/{print int($4/$2*1000+0.5)/10}'" < NUL
 echo Percentual disponivel (relativo ao total):
 ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "free | awk '/^Mem:/{print int($7/$2*1000+0.5)/10}'" < NUL
+pause
+goto servidor_menu
+
+:servidor_rede
+echo.
+echo Interface de rede local (nome / IP / MAC):
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "IFACE=$(ip -o -4 route show to default | awk '{print $5; exit}'); echo $IFACE; ip -4 addr show dev $IFACE | awk '/inet /{print $2}'; ip link show dev $IFACE | awk '/ether/{print $2}'" < NUL
+echo.
+echo IP do Tailscale:
+ssh -p %REMOTE_PORT% %REMOTE_USER%@%REMOTE_HOST% "command -v tailscale >/dev/null 2>&1 && tailscale ip -4 || echo indisponivel" < NUL
 pause
 goto servidor_menu
 

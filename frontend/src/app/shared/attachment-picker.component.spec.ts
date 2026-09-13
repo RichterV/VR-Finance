@@ -20,6 +20,13 @@ function pasteEvent(items: Array<{ type: string; file: File | null }>): Clipboar
   } as unknown as ClipboardEvent;
 }
 
+function dragEvent(files: File[]): DragEvent {
+  return {
+    dataTransfer: { files },
+    preventDefault: vi.fn(),
+  } as unknown as DragEvent;
+}
+
 function attachment(overrides: Partial<Attachment>): Attachment {
   return {
     id: 1,
@@ -215,6 +222,63 @@ describe('AttachmentPickerComponent', () => {
 
     expect(event.preventDefault).not.toHaveBeenCalled();
     expect(component.displayItems()).toEqual([]);
+  });
+
+  it('dragging over the button blocks the default browser behavior and flags drag-over state', () => {
+    const fixture = createComponent('create');
+    const component = fixture.componentInstance;
+    const event = dragEvent([]);
+
+    component.onDragOver(event);
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(component.dragOver()).toBe(true);
+  });
+
+  it('dragging away clears the drag-over state', () => {
+    const fixture = createComponent('create');
+    const component = fixture.componentInstance;
+    component.onDragOver(dragEvent([]));
+
+    component.onDragLeave(dragEvent([]));
+
+    expect(component.dragOver()).toBe(false);
+  });
+
+  it('dropping a valid file stages it in create mode, same pipeline as picking via the file input', () => {
+    const fixture = createComponent('create');
+    const component = fixture.componentInstance;
+    component.onDragOver(dragEvent([]));
+    const event = dragEvent([makeFile('nota.pdf', 'application/pdf')]);
+
+    component.onDrop(event);
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(component.dragOver()).toBe(false);
+    expect(uploadSpy).not.toHaveBeenCalled();
+    expect(component.displayItems().map((i) => i.name)).toEqual(['nota.pdf']);
+  });
+
+  it('dropping an invalid file is rejected the same way as an invalid file input selection', () => {
+    const fixture = createComponent('create');
+    const component = fixture.componentInstance;
+
+    component.onDrop(dragEvent([makeFile('nota.txt', 'text/plain')]));
+
+    expect(component.errorMessage()).toContain('nota.txt');
+    expect(component.displayItems()).toEqual([]);
+  });
+
+  it('dropping a file in edit mode uploads it immediately', () => {
+    const fixture = createComponent('edit', 42);
+    const component = fixture.componentInstance;
+    const file = makeFile('nova.pdf', 'application/pdf');
+    uploadSpy.mockReturnValue(of(attachment({ id: 9, original_filename: 'nova.pdf' })));
+
+    component.onDrop(dragEvent([file]));
+
+    expect(uploadSpy).toHaveBeenCalledWith('gasto', 42, file);
+    expect(component.displayItems().map((i) => i.name)).toEqual(['nova.pdf']);
   });
 
   it('shows the Ctrl+V hint outside the native app (web/desktop)', () => {
