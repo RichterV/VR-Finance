@@ -1,6 +1,8 @@
 from datetime import date
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import extract
 from sqlalchemy.orm import Session
 
 from app import models, schemas
@@ -76,6 +78,8 @@ def delete_vehicle(
 @router.get("/resumo", response_model=schemas.VehiclesResumo)
 def resumo_veiculos(
     meses: int = 12,
+    ano: Optional[int] = Query(None, ge=2000, le=2100),
+    mes: Optional[int] = Query(None, ge=1, le=12),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -91,12 +95,14 @@ def resumo_veiculos(
     for i in range(meses - 1, -1, -1):
         ref = add_months(date(today.year, today.month, 1), -i)
         janela.append((ref.year, ref.month))
-    meses_labels = [f"{ano:04d}-{mes:02d}" for ano, mes in janela]
+    meses_labels = [f"{ref_ano:04d}-{ref_mes:02d}" for ref_ano, ref_mes in janela]
 
     veiculos_resumo = []
     series = []
     for vehicle in vehicles:
-        services = (
+        # Sem filtro nenhum -- alimenta o gráfico "Evolução de gastos", que sempre olha a janela
+        # rolante inteira (meses), independente do filtro de ano/mês dos cards de total abaixo.
+        todos_servicos = (
             db.query(models.VehicleService)
             .filter(
                 models.VehicleService.user_id == current_user.id,
@@ -104,11 +110,24 @@ def resumo_veiculos(
             )
             .all()
         )
-        total_gasto = sum(s.value for s in services)
-        ultimo_servico = max((s.date for s in services), default=None)
+
+        # Com o filtro de ano/mês (se informado) -- só afeta os cards de total gasto/quantidade de
+        # serviços/último serviço, nunca o gráfico.
+        services_query = db.query(models.VehicleService).filter(
+            models.VehicleService.user_id == current_user.id,
+            models.VehicleService.vehicle_id == vehicle.id,
+        )
+        if ano is not None:
+            services_query = services_query.filter(extract("year", models.VehicleService.date) == ano)
+        if mes is not None:
+            services_query = services_query.filter(extract("month", models.VehicleService.date) == mes)
+        services_filtrados = services_query.all()
+
+        total_gasto = sum(s.value for s in services_filtrados)
+        ultimo_servico = max((s.date for s in services_filtrados), default=None)
 
         valores_mes = {}
-        for s in services:
+        for s in todos_servicos:
             key = (s.date.year, s.date.month)
             valores_mes[key] = valores_mes.get(key, 0) + s.value
 
@@ -117,14 +136,14 @@ def resumo_veiculos(
                 vehicle_id=vehicle.id,
                 vehicle_name=vehicle.name,
                 total_gasto=total_gasto,
-                quantidade_servicos=len(services),
+                quantidade_servicos=len(services_filtrados),
                 ultimo_servico=ultimo_servico,
             )
         )
         series.append(
             {
                 "vehicle_name": vehicle.name,
-                "valores": [valores_mes.get((ano, mes), 0) for ano, mes in janela],
+                "valores": [valores_mes.get((ref_ano, ref_mes), 0) for ref_ano, ref_mes in janela],
             }
         )
 

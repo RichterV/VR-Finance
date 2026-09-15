@@ -22,6 +22,34 @@
     <app-loading-state message="Carregando veículos e serviços..."></app-loading-state>
   } @else {
   <div class="veiculos">
+    <div class="resumo-filters">
+      <ion-select
+        [value]="mesResumo()"
+        (ionChange)="onMesResumoChange($any($event.detail.value))"
+        interface="popover"
+        [interfaceOptions]="{ size: 'auto' }"
+        fill="outline"
+        placeholder="Mês"
+      >
+        <ion-select-option [value]="null">Todos os meses</ion-select-option>
+        @for (m of meses; track $index) {
+          <ion-select-option [value]="$index + 1">{{ m }}</ion-select-option>
+        }
+      </ion-select>
+      <ion-select
+        [value]="anoResumo()"
+        (ionChange)="onAnoResumoChange($any($event.detail.value))"
+        interface="popover"
+        fill="outline"
+        placeholder="Ano"
+      >
+        <ion-select-option [value]="null">Todos os anos</ion-select-option>
+        @for (a of anos; track a) {
+          <ion-select-option [value]="a">{{ a }}</ion-select-option>
+        }
+      </ion-select>
+    </div>
+
     <section class="cards-grid">
       @for (v of resumo()?.veiculos ?? []; track v.vehicle_id) {
         <div class="stat-card">

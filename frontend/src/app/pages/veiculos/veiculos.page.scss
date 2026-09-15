@@ -8,6 +8,17 @@
   gap: 32px;
 }
 
+.resumo-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  ion-select {
+    max-width: 200px;
+    border-radius: 8px;
+  }
+}
+
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -121,7 +132,8 @@ td.description {
   }
 
   .section-header ion-select,
-  .section-header .busca-filter {
+  .section-header .busca-filter,
+  .resumo-filters ion-select {
     max-width: none;
     width: 100%;
   }

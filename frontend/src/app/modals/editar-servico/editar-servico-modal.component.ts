@@ -24,6 +24,7 @@ import { SERVICE_TYPE_LABELS } from '../adicionar-servico/adicionar-servico-moda
 import { ServiceType, ServicoVeiculo, ServicosVeiculosService } from '../../services/servicos-veiculos.service';
 import { Vehicle, VeiculosService } from '../../services/veiculos.service';
 import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
+import { extractHttpErrorMessage } from '../../shared/attachment-types';
 import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
 
 @Component({
@@ -64,7 +65,7 @@ export class EditarServicoModalComponent implements OnInit {
     notes: this.fb.nonNullable.control(''),
     value: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
     serviceType: this.fb.control<ServiceType | null>(null),
-    mileage: this.fb.control<number | null>(null),
+    mileage: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
   });
 
   constructor(
@@ -100,8 +101,8 @@ export class EditarServicoModalComponent implements OnInit {
     this.errorMessage.set(null);
     const { vehicleId, description, notes, value, serviceType, mileage } = this.form.getRawValue();
 
-    if (!vehicleId || !description || value == null) {
-      this.errorMessage.set('Preencha o veículo, a descrição e o valor.');
+    if (!vehicleId || !description || value == null || mileage == null) {
+      this.errorMessage.set('Preencha o veículo, a descrição, o valor e a quilometragem.');
       return;
     }
 
@@ -113,7 +114,7 @@ export class EditarServicoModalComponent implements OnInit {
         notes: notes || undefined,
         value,
         service_type: serviceType ?? undefined,
-        mileage: mileage ?? undefined,
+        mileage,
       })
       .subscribe({
         next: async (updated) => {
@@ -122,10 +123,9 @@ export class EditarServicoModalComponent implements OnInit {
           await toast.present();
           this.modalCtrl.dismiss(updated, 'saved');
         },
-        error: async () => {
+        error: (err) => {
           this.saving.set(false);
-          const toast = await this.toastCtrl.create({ message: 'Erro ao atualizar o serviço.', duration: 2500, color: 'danger' });
-          await toast.present();
+          this.errorMessage.set(`Erro ao atualizar o serviço: ${extractHttpErrorMessage(err)}`);
         },
       });
   }

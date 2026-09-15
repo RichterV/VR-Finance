@@ -57,7 +57,10 @@ export class VeiculosService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
-  resumo(meses = 12): Observable<VehiclesResumo> {
-    return this.http.get<VehiclesResumo>(`${this.baseUrl}/resumo`, { params: { meses } });
+  resumo(meses = 12, ano?: number, mes?: number): Observable<VehiclesResumo> {
+    const params: Record<string, number> = { meses };
+    if (ano != null) params['ano'] = ano;
+    if (mes != null) params['mes'] = mes;
+    return this.http.get<VehiclesResumo>(`${this.baseUrl}/resumo`, { params });
   }
 }

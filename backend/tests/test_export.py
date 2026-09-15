@@ -58,7 +58,7 @@ def _create_servico(client, headers, vehicle_id, value=200.0):
     return client.post(
         "/servicos-veiculos",
         headers=headers,
-        json={"vehicle_id": vehicle_id, "description": "Troca de óleo", "value": value},
+        json={"vehicle_id": vehicle_id, "description": "Troca de óleo", "value": value, "mileage": 1000},
     ).json()
 
 

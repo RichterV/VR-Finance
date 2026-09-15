@@ -71,7 +71,7 @@ export class AdicionarServicoModalComponent implements OnInit {
     notes: this.fb.nonNullable.control(''),
     value: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
     serviceType: this.fb.control<ServiceType | null>(null),
-    mileage: this.fb.control<number | null>(null),
+    mileage: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
   });
 
   constructor(
@@ -98,8 +98,8 @@ export class AdicionarServicoModalComponent implements OnInit {
     this.errorMessage.set(null);
     const { vehicleId, description, notes, value, serviceType, mileage } = this.form.getRawValue();
 
-    if (!vehicleId || !description || value == null) {
-      this.errorMessage.set('Preencha o veículo, a descrição e o valor.');
+    if (!vehicleId || !description || value == null || mileage == null) {
+      this.errorMessage.set('Preencha o veículo, a descrição, o valor e a quilometragem.');
       return;
     }
 
@@ -111,7 +111,7 @@ export class AdicionarServicoModalComponent implements OnInit {
         notes: notes || undefined,
         value,
         service_type: serviceType ?? undefined,
-        mileage: mileage ?? undefined,
+        mileage,
       })
       .subscribe({
         next: (servico) => {
@@ -136,10 +136,9 @@ export class AdicionarServicoModalComponent implements OnInit {
             },
           });
         },
-        error: async () => {
+        error: (err) => {
           this.saving.set(false);
-          const toast = await this.toastCtrl.create({ message: 'Erro ao salvar o serviço.', duration: 2500, color: 'danger' });
-          await toast.present();
+          this.errorMessage.set(`Erro ao salvar o serviço: ${extractHttpErrorMessage(err)}`);
         },
       });
   }

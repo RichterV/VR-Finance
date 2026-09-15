@@ -183,7 +183,9 @@ def test_delete_user_removes_dependent_data(client, master_headers, auth_headers
     client.post("/receitas", headers=auth_headers, json={"value": 500.0, "cash_percentage": 10})
     vehicle = client.post("/veiculos", headers=auth_headers, json={"name": "Carro", "year": 2020}).json()
     client.post(
-        "/servicos-veiculos", headers=auth_headers, json={"vehicle_id": vehicle["id"], "description": "Troca", "value": 50.0}
+        "/servicos-veiculos",
+        headers=auth_headers,
+        json={"vehicle_id": vehicle["id"], "description": "Troca", "value": 50.0, "mileage": 1000},
     )
     response = client.delete(f"/auth/users/{user.id}", headers=master_headers)
     assert response.status_code == 204

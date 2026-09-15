@@ -2,7 +2,7 @@ from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app import models, schemas
@@ -10,6 +10,77 @@ from app.deps import get_current_user, get_db
 from app.routers.attachments import delete_attachments_for_key
 
 router = APIRouter(prefix="/servicos-veiculos", tags=["servicos-veiculos"])
+
+
+def _mileage_neighbors(
+    db: Session,
+    vehicle_id: int,
+    service_date: date,
+    exclude_id: Optional[int],
+) -> tuple[Optional[models.VehicleService], Optional[models.VehicleService]]:
+    """Serviço imediatamente anterior/posterior (por data, com id como tie-break) do mesmo veículo,
+    ignorando linhas sem km registrado (histórico antigo) e o próprio serviço em edição.
+    `exclude_id=None` (criação) trata todas as linhas existentes na mesma data como "anteriores" --
+    o novo serviço, ainda sem id, sempre entra depois de qualquer uma delas e nunca tem "próximo"
+    (a data de um serviço já criado nunca é reeditável, então nada existente pode ter data futura)."""
+    base = db.query(models.VehicleService).filter(
+        models.VehicleService.vehicle_id == vehicle_id,
+        models.VehicleService.mileage.isnot(None),
+    )
+    if exclude_id is not None:
+        base = base.filter(models.VehicleService.id != exclude_id)
+        previous_cond = or_(
+            models.VehicleService.date < service_date,
+            and_(models.VehicleService.date == service_date, models.VehicleService.id < exclude_id),
+        )
+        next_cond = or_(
+            models.VehicleService.date > service_date,
+            and_(models.VehicleService.date == service_date, models.VehicleService.id > exclude_id),
+        )
+    else:
+        previous_cond = models.VehicleService.date <= service_date
+        next_cond = models.VehicleService.date > service_date
+
+    previous = (
+        base.filter(previous_cond)
+        .order_by(models.VehicleService.date.desc(), models.VehicleService.id.desc())
+        .first()
+    )
+    next_ = (
+        base.filter(next_cond)
+        .order_by(models.VehicleService.date.asc(), models.VehicleService.id.asc())
+        .first()
+    )
+    return previous, next_
+
+
+def _validate_mileage_order(
+    db: Session,
+    vehicle_id: int,
+    mileage: int,
+    service_date: date,
+    exclude_id: Optional[int] = None,
+) -> None:
+    """A quilometragem só pode aumentar ao longo do tempo, por veículo -- não dá pra registrar um
+    serviço com km menor que o do serviço anterior daquele veículo, nem maior que o do próximo
+    (relevante ao editar um serviço que não é o mais recente)."""
+    previous, next_ = _mileage_neighbors(db, vehicle_id, service_date, exclude_id)
+    if previous is not None and mileage < previous.mileage:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"A quilometragem não pode ser menor que a do serviço anterior deste veículo "
+                f"({previous.mileage} km, em {previous.date.strftime('%d/%m/%Y')})."
+            ),
+        )
+    if next_ is not None and mileage > next_.mileage:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"A quilometragem não pode ser maior que a do próximo serviço deste veículo "
+                f"({next_.mileage} km, em {next_.date.strftime('%d/%m/%Y')})."
+            ),
+        )
 
 
 def _get_owned_service(db: Session, current_user: models.User, service_id: int) -> models.VehicleService:
@@ -68,6 +139,7 @@ def create_service(
     current_user: models.User = Depends(get_current_user),
 ):
     _get_owned_vehicle(db, current_user, payload.vehicle_id)
+    _validate_mileage_order(db, payload.vehicle_id, payload.mileage, date.today())
     service = models.VehicleService(
         user_id=current_user.id,
         vehicle_id=payload.vehicle_id,
@@ -93,6 +165,7 @@ def update_service(
 ):
     service = _get_owned_service(db, current_user, service_id)
     _get_owned_vehicle(db, current_user, payload.vehicle_id)
+    _validate_mileage_order(db, payload.vehicle_id, payload.mileage, service.date, exclude_id=service.id)
     service.vehicle_id = payload.vehicle_id
     service.description = payload.description
     service.notes = payload.notes

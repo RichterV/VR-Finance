@@ -12,7 +12,7 @@ export interface ServicoVeiculoPayload {
   notes?: string;
   value: number;
   service_type?: ServiceType;
-  mileage?: number;
+  mileage: number;
 }
 
 export interface ServicoVeiculo {

@@ -28,6 +28,7 @@ import { AttachmentsService } from '../../services/attachments.service';
 import { ServiceType, ServicoVeiculo, ServicosVeiculosService } from '../../services/servicos-veiculos.service';
 import { Vehicle, VeiculosService, VehiclesResumo } from '../../services/veiculos.service';
 import { LoadingStateComponent } from '../../shared/loading-state.component';
+import { MESES_COMPLETOS } from '../../shared/months';
 import { SortState, sortItems, toggleSortState, UNSORTED } from '../../shared/sortable';
 import { SortThComponent } from '../../shared/sort-th.component';
 import { buildVeiculosChartData, VEICULOS_CHART_OPTIONS } from './veiculos-chart';
@@ -63,6 +64,8 @@ const PAGE_SIZE = 25;
 })
 export class VeiculosPage {
   readonly serviceTypeLabels = SERVICE_TYPE_LABELS;
+  readonly meses = MESES_COMPLETOS;
+  readonly anos: number[];
 
   /** Verdadeiro até a primeira carga de veículos+resumo+serviços terminar. */
   readonly initialLoading = signal(true);
@@ -73,6 +76,11 @@ export class VeiculosPage {
   readonly totalServices = signal(0);
   readonly filtroVeiculoId = signal<number | null>(null);
   readonly buscaServicos = signal<string>('');
+  /** Filtro de ano/mês dos cards de total gasto por veículo -- sem valor por padrão (mostra tudo).
+   * Não afeta a tabela de serviços abaixo (tem os próprios filtros) nem o gráfico de evolução
+   * (sempre olha a janela rolante dos últimos 12 meses, independente disso). */
+  readonly mesResumo = signal<number | null>(null);
+  readonly anoResumo = signal<number | null>(null);
   readonly serviceAttachmentKeys = signal<Set<string>>(new Set());
 
   readonly vehiclesSort = signal<SortState>(UNSORTED);
@@ -98,6 +106,8 @@ export class VeiculosPage {
     private readonly popoverCtrl: PopoverController,
   ) {
     addIcons({ addCircleOutline, carSportOutline, buildOutline, create, trash, attachOutline });
+    const currentYear = new Date().getFullYear();
+    this.anos = Array.from({ length: 6 }, (_, i) => currentYear - i);
   }
 
   /**
@@ -115,6 +125,16 @@ export class VeiculosPage {
     this.reloadServices();
   }
 
+  onMesResumoChange(value: number | null): void {
+    this.mesResumo.set(value);
+    this.reloadResumo();
+  }
+
+  onAnoResumoChange(value: number | null): void {
+    this.anoResumo.set(value);
+    this.reloadResumo();
+  }
+
   onBuscaServicosInput(ev: CustomEvent): void {
     this.buscaServicos.set(String((ev.detail as { value?: string })?.value ?? '').trim());
     this.reloadServices();
@@ -127,7 +147,7 @@ export class VeiculosPage {
   private reload(): void {
     forkJoin([
       this.veiculosService.list(),
-      this.veiculosService.resumo(),
+      this.veiculosService.resumo(12, this.anoResumo() ?? undefined, this.mesResumo() ?? undefined),
       this.servicosService.list({ ...this.servicesListParams(), limit: PAGE_SIZE, offset: 0 }),
     ]).subscribe(([vehicles, resumo, servicesPage]) => {
       this.vehicles.set(vehicles);
@@ -137,6 +157,12 @@ export class VeiculosPage {
       this.initialLoading.set(false);
       this.refreshServiceAttachmentKeys();
     });
+  }
+
+  private reloadResumo(): void {
+    this.veiculosService
+      .resumo(12, this.anoResumo() ?? undefined, this.mesResumo() ?? undefined)
+      .subscribe((resumo) => this.resumo.set(resumo));
   }
 
   private reloadServices(): void {

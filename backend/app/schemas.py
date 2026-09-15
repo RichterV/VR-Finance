@@ -176,7 +176,7 @@ class VehicleServiceCreate(BaseModel):
     notes: Optional[str] = None
     value: float = Field(ge=0)
     service_type: Optional[ServiceType] = None
-    mileage: Optional[int] = Field(default=None, ge=0)
+    mileage: int = Field(ge=0)
 
 
 class VehicleServiceUpdate(VehicleServiceCreate):
