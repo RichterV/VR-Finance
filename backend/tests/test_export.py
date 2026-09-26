@@ -197,8 +197,6 @@ def test_export_veiculos_gera_dois_csvs(client, auth_headers):
     assert servicos_rows[1][8] != ""
 
 
-
-
 def test_export_categorias_inclui_ativas_e_inativas(client, auth_headers):
     ativa = _create_item(client, auth_headers, name="Alimentação")
     inativa = _create_item(client, auth_headers, name="Categoria Antiga")

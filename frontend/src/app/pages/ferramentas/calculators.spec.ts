@@ -80,9 +80,9 @@ describe('calcularVistaVsPrazo', () => {
     const montante1 = 1000 - parcela + juros1;
     const juros2 = montante1 * jm;
     const montante2 = montante1 - parcela + juros2;
-    const jurosAcumulados = juros1 + juros2;
-    const jurosLiquidos = jurosAcumulados * 0.8;
     const economiaAVista = 100;
+    const td = jm * 0.8;
+    const valorPresente = parcela / (1 + td) + parcela / Math.pow(1 + td, 2);
 
     const resultado = calcularVistaVsPrazo({
       valorAVista: 1000,
@@ -98,11 +98,13 @@ describe('calcularVistaVsPrazo', () => {
     expect(resultado.meses[0].montanteRestante).toBeCloseTo(montante1, 6);
     expect(resultado.meses[1].montanteRestante).toBeCloseTo(montante2, 6);
     expect(resultado.economiaAVista).toBeCloseTo(economiaAVista, 6);
-    expect(resultado.jurosLiquidos).toBeCloseTo(jurosLiquidos, 6);
+    expect(resultado.taxaDescontoMensalPct).toBeCloseTo(td * 100, 8);
+    expect(resultado.valorPresenteParcelas).toBeCloseTo(valorPresente, 6);
+    expect(resultado.diferencaValorPresente).toBeCloseTo(valorPresente - 1000, 6);
     // O saldo investido (parcela maior que os juros de um CDI de 12% a.a.) fica negativo no 2º mês --
     // a projeção ainda soma os juros desse mês final antes de marcar o esgotamento, igual ao script Python.
     expect(resultado.saldoEsgotado).toBe(true);
-    // economia (100) vs juros líquidos (bem menor num CDI de 12% a.a. sobre 2 meses) -> à vista vence.
+    // VP das 2 parcelas (~R$1087) > R$1000 à vista -> à vista vence.
     expect(resultado.conclusao).toBe('vista');
   });
 
@@ -130,6 +132,34 @@ describe('calcularVistaVsPrazo', () => {
     expect(resultado.saldoEsgotado).toBe(true);
     expect(resultado.meses.length).toBeLessThan(12);
     expect(resultado.meses.at(-1)!.montanteRestante).toBeLessThan(0);
+  });
+
+  it('discounts installments to present value instead of treating future reais as today reais', () => {
+    // Sem juros nominais (a prazo = à vista), mas pagar depois ainda vale a pena com CDI positivo.
+    const resultado = calcularVistaVsPrazo({
+      valorAVista: 1200,
+      valorAPrazo: 1200,
+      numeroParcelas: 12,
+      cdiAnualPct: 12,
+      aliquotaManualPct: 0,
+    });
+
+    expect(resultado.valorPresenteParcelas).toBeLessThan(1200);
+    expect(resultado.conclusao).toBe('prazo');
+  });
+
+  it('is indifferent when the cash price equals the present value of the installments', () => {
+    const jm = Math.pow(1.12, 1 / 12) - 1;
+    const vista = 100 / (1 + jm) + 100 / Math.pow(1 + jm, 2);
+    const resultado = calcularVistaVsPrazo({
+      valorAVista: vista,
+      valorAPrazo: 200,
+      numeroParcelas: 2,
+      cdiAnualPct: 12,
+      aliquotaManualPct: 0,
+    });
+
+    expect(resultado.conclusao).toBe('indiferente');
   });
 
   it('concludes "prazo" when net interest from investing beats the cash discount', () => {

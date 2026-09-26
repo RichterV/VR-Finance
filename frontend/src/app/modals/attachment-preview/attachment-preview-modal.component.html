@@ -1,0 +1,93 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>{{ file.original_filename }}</ion-title>
+    <ion-buttons slot="end">
+      @if (canZoom) {
+        <ion-button [disabled]="zoom() <= 1" (click)="zoomOut()">
+          <ion-icon slot="icon-only" name="remove-circle-outline"></ion-icon>
+        </ion-button>
+        <ion-button [disabled]="zoom() >= 4" (click)="zoomIn()">
+          <ion-icon slot="icon-only" name="add-circle-outline"></ion-icon>
+        </ion-button>
+      }
+      <ion-button [disabled]="!hasBlob || downloading()" (click)="download()">
+        <ion-icon slot="icon-only" name="download-outline"></ion-icon>
+      </ion-button>
+      <ion-button (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  @if (loading()) {
+    <div class="preview-state">
+      <ion-spinner></ion-spinner>
+    </div>
+  } @else if (errorMessage()) {
+    <div class="preview-state">
+      <p>{{ errorMessage() }}</p>
+    </div>
+  } @else if (isImage) {
+    <div
+      #viewport
+      class="zoom-viewport"
+      [class.pannable]="zoom() > 1"
+      [class.dragging]="dragging()"
+      (touchstart)="onTouchStart($event)"
+      (touchmove)="onTouchMove($event)"
+      (touchend)="onTouchEnd($event)"
+      (wheel)="onWheel($event)"
+      (dblclick)="onDoubleClick($event)"
+      (pointerdown)="onPointerDown($event)"
+      (pointermove)="onPointerMove($event)"
+      (pointerup)="onPointerUp($event)"
+      (pointercancel)="onPointerUp($event)"
+    >
+      <img
+        class="preview-image"
+        draggable="false"
+        [class.zoomed]="zoom() > 1"
+        [style.width.%]="zoom() > 1 ? zoom() * 100 : null"
+        [src]="blobPreviewUrl()"
+        [alt]="file.original_filename"
+      />
+    </div>
+  } @else if (isPdfViaIframe) {
+    <iframe class="preview-pdf-iframe" [src]="blobPreviewUrl()" title="Pré-visualização do PDF"></iframe>
+  } @else if (isPdfViaCanvas) {
+    <div
+      #viewport
+      class="zoom-viewport"
+      [class.pannable]="zoom() > 1"
+      [class.dragging]="dragging()"
+      (touchstart)="onTouchStart($event)"
+      (touchmove)="onTouchMove($event)"
+      (touchend)="onTouchEnd($event)"
+      (wheel)="onWheel($event)"
+      (dblclick)="onDoubleClick($event)"
+      (pointerdown)="onPointerDown($event)"
+      (pointermove)="onPointerMove($event)"
+      (pointerup)="onPointerUp($event)"
+      (pointercancel)="onPointerUp($event)"
+    >
+      <div class="preview-pdf-pages" [class.zoomed]="zoom() > 1">
+        @for (page of pdfPages(); track $index) {
+          <img
+            class="preview-pdf-page"
+            draggable="false"
+            [class.zoomed]="zoom() > 1"
+            [style.width.%]="zoom() > 1 ? zoom() * 100 : null"
+            [src]="page"
+            [alt]="'Página ' + ($index + 1) + ' de ' + file.original_filename"
+          />
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="preview-state">
+      <p>Não há pré-visualização disponível para este tipo de arquivo.</p>
+    </div>
+  }
+</ion-content>

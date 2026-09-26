@@ -125,7 +125,8 @@
     @if (tab() === 'vista-prazo') {
       <p class="tool-hint">
         Compara pagar à vista com um desconto, ou a prazo investindo o valor à vista e rendendo enquanto paga as
-        parcelas. Não salva nada -- é só pra cálculo esporádico.
+        parcelas. Cada parcela é trazida a valor presente pelo CDI líquido de IR (R$ 1 daqui a 12 meses vale menos
+        que R$ 1 hoje) e a soma é comparada com o valor à vista. Não salva nada -- é só pra cálculo esporádico.
       </p>
 
       <form class="tool-card" (ngSubmit)="calcularVista()" [formGroup]="vistaForm">
@@ -228,8 +229,8 @@
           @if (r.saldoEsgotado) {
             <ion-text color="warning">
               <p class="form-error">
-                Aviso: o saldo investido se esgotaria antes do fim das parcelas -- o resultado acima considera só até
-                esse ponto.
+                Aviso: investindo só o valor à vista, o saldo se esgotaria antes do fim das parcelas -- a tabela mês a
+                mês para nesse ponto (a conclusão acima, por valor presente, continua válida).
               </p>
             </ion-text>
           }
@@ -239,12 +240,20 @@
             <strong>{{ r.parcela | currency: 'BRL' }}</strong>
           </div>
           <div class="result-row">
-            <span>Economia pagando à vista</span>
-            <strong>{{ r.economiaAVista | currency: 'BRL' }}</strong>
+            <span>Valor presente das parcelas</span>
+            <strong>{{ r.valorPresenteParcelas | currency: 'BRL' }}</strong>
           </div>
           <div class="result-row">
-            <span>Juros líquidos (investindo a prazo)</span>
-            <strong>{{ r.jurosLiquidos | currency: 'BRL' }}</strong>
+            <span>{{ r.diferencaValorPresente > 0 ? 'Vantagem à vista' : 'Vantagem a prazo' }} (valor presente)</span>
+            <strong>{{ (r.diferencaValorPresente < 0 ? -r.diferencaValorPresente : r.diferencaValorPresente) | currency: 'BRL' }}</strong>
+          </div>
+          <div class="result-row secondary">
+            <span>Diferença nominal (a prazo − à vista)</span>
+            <strong>{{ r.economiaAVista | currency: 'BRL' }}</strong>
+          </div>
+          <div class="result-row secondary">
+            <span>Taxa de desconto (CDI líquido de IR)</span>
+            <strong>{{ r.taxaDescontoMensalPct | number: '1.2-4' }}% a.m.</strong>
           </div>
           <div class="result-row secondary">
             <span>Alíquota de IR aplicada</span>

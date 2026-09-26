@@ -31,6 +31,11 @@
                 "glob": "**/*",
                 "input": "src/assets",
                 "output": "assets"
+              },
+              {
+                "glob": "pdf.worker.min.mjs",
+                "input": "node_modules/pdfjs-dist/build",
+                "output": "assets"
               }
             ],
             "styles": ["src/global.scss", "src/theme/variables.scss"],

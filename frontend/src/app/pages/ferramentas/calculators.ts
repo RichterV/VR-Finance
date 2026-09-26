@@ -66,7 +66,10 @@ export interface VistaVsPrazoResultado {
   parcela: number;
   aliquotaIrPct: number;
   economiaAVista: number;
-  jurosLiquidos: number;
+  taxaDescontoMensalPct: number;
+  valorPresenteParcelas: number;
+  /** valorPresenteParcelas - valorAVista: positivo = a prazo custa mais em valor presente. */
+  diferencaValorPresente: number;
   saldoEsgotado: boolean;
   conclusao: VistaVsPrazoConclusao;
   meses: VistaVsPrazoMes[];
@@ -105,16 +108,33 @@ export function calcularVistaVsPrazo(input: VistaVsPrazoInput): VistaVsPrazoResu
   }
 
   const economiaAVista = input.valorAPrazo - input.valorAVista;
-  const jurosLiquidos = jurosAcumulados * (1 - aliquota / 100);
+
+  // Desconta cada parcela (paga no fim do mês k) pelo CDI líquido de IR, o custo de oportunidade real.
+  const taxaDesconto = jurosMensal * (1 - aliquota / 100);
+  let valorPresenteParcelas = 0;
+  for (let k = 1; k <= input.numeroParcelas; k++) {
+    valorPresenteParcelas += parcela / Math.pow(1 + taxaDesconto, k);
+  }
+  const diferencaValorPresente = valorPresenteParcelas - input.valorAVista;
 
   let conclusao: VistaVsPrazoConclusao;
-  if (economiaAVista > jurosLiquidos) {
-    conclusao = 'vista';
-  } else if (economiaAVista < jurosLiquidos) {
-    conclusao = 'prazo';
-  } else {
+  if (Math.abs(diferencaValorPresente) < 0.005) {
     conclusao = 'indiferente';
+  } else if (diferencaValorPresente > 0) {
+    conclusao = 'vista';
+  } else {
+    conclusao = 'prazo';
   }
 
-  return { parcela, aliquotaIrPct: aliquota, economiaAVista, jurosLiquidos, saldoEsgotado, conclusao, meses };
+  return {
+    parcela,
+    aliquotaIrPct: aliquota,
+    economiaAVista,
+    taxaDescontoMensalPct: taxaDesconto * 100,
+    valorPresenteParcelas,
+    diferencaValorPresente,
+    saldoEsgotado,
+    conclusao,
+    meses,
+  };
 }

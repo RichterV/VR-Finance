@@ -35,7 +35,6 @@ def _create_gasto(client, headers, parcelado=False, installment_count=3):
     return client.post("/gastos", headers=headers, json=payload).json()
 
 
-
 def _other_user_headers(client, db_session):
     other = models.User(username="outro_anexo", password_hash=hash_password("senha123"), role="user")
     db_session.add(other)
@@ -228,7 +227,6 @@ def test_gasto_nao_parcelado_attachment_linked_directly_to_id(client, auth_heade
     assert response.json()["entity_id"] == str(gasto_id)
 
 
-
 def test_exists_returns_only_entity_ids_with_attachments(client, auth_headers):
     receita_com_anexo = _create_receita(client, auth_headers, value=10.0)
     receita_sem_anexo = _create_receita(client, auth_headers, value=20.0)
@@ -317,7 +315,6 @@ def test_deleting_one_parcela_of_gasto_group_keeps_attachment_for_siblings(clien
     assert response.status_code == 204
     assert not _attachment_row_exists(db_session, "gasto", group_id)
     assert not any(tmp_path.rglob("*.pdf"))
-
 
 
 def test_deleting_user_removes_all_their_attachments(client, master_headers, db_session, tmp_path):

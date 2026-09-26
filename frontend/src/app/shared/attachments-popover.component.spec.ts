@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideIonicAngular } from '@ionic/angular';
+import { ModalController, provideIonicAngular } from '@ionic/angular';
 import { of, throwError } from 'rxjs';
 
 import { Attachment, AttachmentsService } from '../services/attachments.service';
@@ -22,6 +22,8 @@ function attachment(overrides: Partial<Attachment> = {}): Attachment {
 describe('AttachmentsPopoverComponent', () => {
   let downloadBlobSpy: ReturnType<typeof vi.fn>;
   let triggerSpy: ReturnType<typeof vi.fn>;
+  let modalCreateSpy: ReturnType<typeof vi.fn>;
+  let modalPresentSpy: ReturnType<typeof vi.fn>;
 
   function createComponent(files: Attachment[]) {
     TestBed.configureTestingModule({
@@ -29,6 +31,7 @@ describe('AttachmentsPopoverComponent', () => {
         provideIonicAngular(),
         { provide: AttachmentsService, useValue: { downloadBlob: downloadBlobSpy } },
         { provide: DownloadFileService, useValue: { trigger: triggerSpy } },
+        { provide: ModalController, useValue: { create: modalCreateSpy } },
       ],
     });
     const fixture = TestBed.createComponent(AttachmentsPopoverComponent);
@@ -40,6 +43,8 @@ describe('AttachmentsPopoverComponent', () => {
   beforeEach(() => {
     downloadBlobSpy = vi.fn();
     triggerSpy = vi.fn();
+    modalPresentSpy = vi.fn().mockResolvedValue(undefined);
+    modalCreateSpy = vi.fn().mockResolvedValue({ present: modalPresentSpy });
   });
 
   it('downloads and hands the blob to DownloadFileService (web), clearing the busy state', async () => {
@@ -49,9 +54,7 @@ describe('AttachmentsPopoverComponent', () => {
     const fixture = createComponent([attachment()]);
     const component = fixture.componentInstance;
 
-    component.download(attachment());
-    await Promise.resolve();
-    await Promise.resolve();
+    await component.download(attachment());
 
     expect(downloadBlobSpy).toHaveBeenCalledWith(1);
     expect(triggerSpy).toHaveBeenCalledWith(blob, 'comprovante.pdf');
@@ -65,8 +68,7 @@ describe('AttachmentsPopoverComponent', () => {
     const fixture = createComponent([attachment()]);
     const component = fixture.componentInstance;
 
-    component.download(attachment());
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await component.download(attachment());
 
     expect(triggerSpy).toHaveBeenCalledWith(blob, 'comprovante.pdf');
     expect(component.downloadingId()).toBeNull();
@@ -77,8 +79,7 @@ describe('AttachmentsPopoverComponent', () => {
     const fixture = createComponent([attachment()]);
     const component = fixture.componentInstance;
 
-    component.download(attachment());
-    await Promise.resolve();
+    await component.download(attachment());
 
     expect(triggerSpy).not.toHaveBeenCalled();
     expect(component.downloadingId()).toBeNull();
@@ -90,8 +91,7 @@ describe('AttachmentsPopoverComponent', () => {
     const fixture = createComponent([attachment()]);
     const component = fixture.componentInstance;
 
-    component.download(attachment());
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await component.download(attachment());
 
     expect(component.downloadingId()).toBeNull();
   });
@@ -99,5 +99,18 @@ describe('AttachmentsPopoverComponent', () => {
   it('shows the empty state when there are no attachments', () => {
     const fixture = createComponent([]);
     expect(fixture.nativeElement.textContent).toContain('Nenhum anexo.');
+  });
+
+  it('opens the preview modal with the clicked file', async () => {
+    const fixture = createComponent([attachment()]);
+    const component = fixture.componentInstance;
+    const file = attachment();
+
+    await component.preview(file);
+
+    expect(modalCreateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ componentProps: { file } }),
+    );
+    expect(modalPresentSpy).toHaveBeenCalled();
   });
 });

@@ -1,0 +1,77 @@
+.preview-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 160px);
+  color: var(--app-text-secondary);
+}
+
+.zoom-viewport {
+  height: calc(100vh - 160px);
+  overflow: auto;
+  /* Deixa nosso JS (onTouchStart/Move/End) dono do gesto de pinça, sem o navegador tentar dar
+     zoom na página inteira -- mas mantém o scroll nativo de um dedo só (pan) pra navegar quando
+     ampliado, sem precisar reimplementar isso na mão. */
+  touch-action: pan-x pan-y;
+  user-select: none;
+
+  /* Barras de rolagem visíveis no tema escuro -- sem elas, no desktop, não havia pista nenhuma de
+     que dava pra navegar pelo conteúdo ampliado. */
+  scrollbar-color: var(--app-text-secondary) transparent;
+
+  &.pannable {
+    cursor: grab;
+  }
+
+  &.dragging {
+    cursor: grabbing;
+  }
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: calc(100vh - 160px);
+  margin: 0 auto;
+  display: block;
+  object-fit: contain;
+
+  &.zoomed {
+    max-width: none;
+    max-height: none;
+    object-fit: unset;
+  }
+}
+
+.preview-pdf-iframe {
+  display: block;
+  width: 100%;
+  height: calc(100vh - 190px);
+  border: none;
+  border-radius: 12px;
+}
+
+.preview-pdf-pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+
+  /* Ampliado, as páginas ficam mais largas que o contêiner: centralizadas, a sobra da esquerda
+     vira overflow negativo, que o scroll não alcança (metade esquerda da página inacessível). */
+  &.zoomed {
+    align-items: flex-start;
+  }
+}
+
+.preview-pdf-page {
+  display: block;
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+
+  &.zoomed {
+    max-width: none;
+  }
+}

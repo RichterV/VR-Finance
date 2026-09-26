@@ -226,7 +226,6 @@ def _export_veiculos(db: Session, user: models.User) -> dict[str, bytes]:
     return files
 
 
-
 def _export_categorias(db: Session, user: models.User) -> dict[str, bytes]:
     # Ativas e inativas de proposito -- e' uma copia de backup, esconder as soft-deleted perderia
     # o historico de categorias ja usadas em gastos antigos.
