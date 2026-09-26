@@ -12,9 +12,11 @@
   }
 }
 
+// Reset + mês + ano sempre numa linha só -- com wrap o grupo encolhia até o texto dos selects e
+// "Todos os anos" caía pra linha de baixo (inclusive no desktop).
 .filters {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
 
@@ -25,10 +27,7 @@
 }
 
 @media (max-width: 480px) {
-  // Reset + mês + ano sempre numa linha só: sem nowrap/min-width 0 o texto "Todos os meses" força
-  // a quebra de linha até um mês curto ser selecionado.
   .filters {
-    flex-wrap: nowrap;
     width: 100%;
   }
 
