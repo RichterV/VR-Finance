@@ -67,6 +67,18 @@ def update_me(
     )
 
 
+@router.put("/me/default-cash-percentage", response_model=schemas.UserOut)
+def update_default_cash_percentage(
+    payload: schemas.CashPercentageDefault,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    current_user.default_cash_percentage = payload.default_cash_percentage
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
 @router.put("/me/password")
 def change_password(
     payload: schemas.PasswordChange,

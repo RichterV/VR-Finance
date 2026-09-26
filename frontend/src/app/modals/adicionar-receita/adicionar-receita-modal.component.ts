@@ -21,6 +21,7 @@ import {
 import { addIcons } from 'ionicons';
 import { close } from 'ionicons/icons';
 
+import { AuthService } from '../../core/auth.service';
 import { HomeRefreshService } from '../../core/home-refresh.service';
 import { ReceitasService } from '../../services/receitas.service';
 import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
@@ -61,14 +62,25 @@ export class AdicionarReceitaModalComponent {
   readonly errorMessage = signal<string | null>(null);
   readonly valorDisplay = signal('');
   private readonly savedAny = signal(false);
+  readonly savingDefault = signal(false);
+
+  /** Padrão do usuário (botão "Usar como padrão"); 50% se ainda não carregou. */
+  readonly defaultCashPercentage = computed(() => this.auth.currentUser()?.default_cash_percentage ?? 50);
 
   readonly form = this.fb.nonNullable.group({
     value: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]),
-    cashPercentage: this.fb.nonNullable.control(50, [Validators.min(0), Validators.max(100)]),
+    cashPercentage: this.fb.nonNullable.control(this.defaultCashPercentage(), [
+      Validators.min(0),
+      Validators.max(100),
+    ]),
     description: this.fb.nonNullable.control(''),
   });
 
   private readonly formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+
+  readonly isDefaultCashPercentage = computed(
+    () => this.formValue().cashPercentage === this.defaultCashPercentage(),
+  );
 
   readonly cashValue = computed(() => {
     const { value, cashPercentage } = this.formValue();
@@ -81,6 +93,7 @@ export class AdicionarReceitaModalComponent {
     private readonly toastCtrl: ToastController,
     private readonly modalCtrl: ModalController,
     private readonly homeRefresh: HomeRefreshService,
+    private readonly auth: AuthService,
   ) {
     addIcons({ close });
   }
@@ -89,6 +102,31 @@ export class AdicionarReceitaModalComponent {
     const reais = parseCentsInput(String((ev.detail as { value?: string })?.value ?? ''));
     this.valorDisplay.set(reais === 0 ? '' : formatCurrencyValue(reais));
     this.form.controls.value.setValue(reais);
+  }
+
+  saveDefaultCashPercentage(): void {
+    const percentage = this.form.controls.cashPercentage.value;
+    this.savingDefault.set(true);
+    this.auth.updateDefaultCashPercentage(percentage).subscribe({
+      next: async () => {
+        this.savingDefault.set(false);
+        const toast = await this.toastCtrl.create({
+          message: `${percentage}% salvo como padrão.`,
+          duration: 2000,
+          color: 'success',
+        });
+        await toast.present();
+      },
+      error: async () => {
+        this.savingDefault.set(false);
+        const toast = await this.toastCtrl.create({
+          message: 'Erro ao salvar o padrão.',
+          duration: 2500,
+          color: 'danger',
+        });
+        await toast.present();
+      },
+    });
   }
 
   async submit(): Promise<void> {
@@ -124,7 +162,7 @@ export class AdicionarReceitaModalComponent {
                 color: 'success',
               });
               await toast.present();
-              this.form.reset({ value: null, cashPercentage: 50, description: '' });
+              this.form.reset({ value: null, cashPercentage: this.defaultCashPercentage(), description: '' });
               this.valorDisplay.set('');
               this.attachmentPicker.reset();
             },
@@ -137,7 +175,7 @@ export class AdicionarReceitaModalComponent {
                 color: 'warning',
               });
               await toast.present();
-              this.form.reset({ value: null, cashPercentage: 50, description: '' });
+              this.form.reset({ value: null, cashPercentage: this.defaultCashPercentage(), description: '' });
               this.valorDisplay.set('');
               this.attachmentPicker.reset();
             },

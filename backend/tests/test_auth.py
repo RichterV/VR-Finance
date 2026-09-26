@@ -52,6 +52,30 @@ def test_change_password_wrong_current(client, auth_headers):
     assert response.status_code == 400
 
 
+def test_default_cash_percentage_starts_at_50(client, auth_headers):
+    response = client.get("/auth/me", headers=auth_headers)
+    assert response.json()["default_cash_percentage"] == 50
+
+
+def test_update_default_cash_percentage(client, auth_headers, master_headers):
+    response = client.put(
+        "/auth/me/default-cash-percentage", headers=auth_headers, json={"default_cash_percentage": 35}
+    )
+    assert response.status_code == 200
+    assert response.json()["default_cash_percentage"] == 35
+    assert client.get("/auth/me", headers=auth_headers).json()["default_cash_percentage"] == 35
+    # Por usuário: o padrão de um não afeta o de outro
+    assert client.get("/auth/me", headers=master_headers).json()["default_cash_percentage"] == 50
+
+
+def test_update_default_cash_percentage_rejects_out_of_range(client, auth_headers):
+    for value in (-1, 101):
+        response = client.put(
+            "/auth/me/default-cash-percentage", headers=auth_headers, json={"default_cash_percentage": value}
+        )
+        assert response.status_code == 422
+
+
 def test_create_user_requires_master(client, auth_headers):
     response = client.post(
         "/auth/users",

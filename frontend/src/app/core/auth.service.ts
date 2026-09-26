@@ -17,6 +17,8 @@ export interface CurrentUser {
   modules: ModuleKey[];
   /** Senha definida pelo master (criação/reset) -- precisa trocar antes de usar o app. */
   must_change_password: boolean;
+  /** % de caixa pré-selecionado em "Adicionar receita" (0–100). */
+  default_cash_percentage: number;
 }
 
 export interface UserPayload {
@@ -117,6 +119,15 @@ export class AuthService {
           if (oldUsername) void renameSavedCredentials(oldUsername, res.user.username);
         }),
       );
+  }
+
+  /** Salva o % de caixa que "Adicionar receita" passa a usar como ponto de partida. */
+  updateDefaultCashPercentage(percentage: number): Observable<CurrentUser> {
+    return this.http
+      .put<CurrentUser>(`${environment.apiUrl}/auth/me/default-cash-percentage`, {
+        default_cash_percentage: percentage,
+      })
+      .pipe(tap((user) => this.currentUserSignal.set(user)));
   }
 
   createUser(payload: UserPayload): Observable<CurrentUser> {

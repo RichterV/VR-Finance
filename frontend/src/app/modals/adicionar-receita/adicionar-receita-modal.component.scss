@@ -1,0 +1,34 @@
+.cash-card-default {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 28px;
+  margin-top: 8px;
+}
+
+.default-btn {
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  background: transparent;
+  border: 1px dashed var(--ion-color-primary);
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(34, 197, 94, 0.12);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.default-hint {
+  font-size: 0.78rem;
+  color: var(--app-text-secondary);
+}

@@ -57,6 +57,11 @@ def _migrate_schema() -> None:
             conn.execute(text("ALTER TABLE users ADD COLUMN must_change_password BOOLEAN NOT NULL DEFAULT 0"))
             conn.commit()
 
+        if "default_cash_percentage" not in user_cols:
+            # 50% era o valor fixo do slider antes de existir o padrão por usuário.
+            conn.execute(text("ALTER TABLE users ADD COLUMN default_cash_percentage REAL NOT NULL DEFAULT 50"))
+            conn.commit()
+
         if not _had_user_modules:
             # Tabela recém-criada: usuários que já existiam antes do controle de módulos ficam com
             # todos os módulos habilitados (não perdem nada que já usavam). Usuários criados depois

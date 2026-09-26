@@ -18,6 +18,8 @@ class User(Base):
     last_name = Column(String, nullable=False, default="")
     # Senha definida pelo master (criação ou reset) -- o usuário precisa trocar antes de usar o app
     must_change_password = Column(Boolean, nullable=False, default=False)
+    # % de caixa que já vem selecionado em "Adicionar receita" (botão "Usar como padrão")
+    default_cash_percentage = Column(Float, nullable=False, default=50)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     module_rows = relationship("UserModule", cascade="all, delete-orphan")

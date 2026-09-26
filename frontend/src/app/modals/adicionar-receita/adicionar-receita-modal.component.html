@@ -37,6 +37,21 @@
         <span class="cash-card-label">Valor caixa:</span>
         <span class="cash-card-value">{{ cashValue() | currency: 'BRL' }}</span>
       </div>
+      <div class="cash-card-default">
+        @if (isDefaultCashPercentage()) {
+          <span class="default-hint">Este é o seu padrão</span>
+        } @else {
+          <button
+            type="button"
+            class="default-btn"
+            [disabled]="savingDefault()"
+            (click)="saveDefaultCashPercentage()"
+            title="Próximas receitas já abrem com este percentual"
+          >
+            {{ savingDefault() ? 'Salvando...' : 'Usar como padrão' }}
+          </button>
+        }
+      </div>
     </div>
 
     <ion-item>

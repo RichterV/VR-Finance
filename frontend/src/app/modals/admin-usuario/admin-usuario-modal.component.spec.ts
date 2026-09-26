@@ -20,6 +20,7 @@ describe('AdminUsuarioModalComponent', () => {
     last_name: 'R',
     modules: ['veiculos', 'operacoes_bolsa', 'devedores', 'ferramentas', 'exportar_dados'],
     must_change_password: false,
+    default_cash_percentage: 50,
   };
   const comum: CurrentUser = {
     id: 2,
@@ -29,6 +30,7 @@ describe('AdminUsuarioModalComponent', () => {
     last_name: 'Teste',
     modules: ['ferramentas'],
     must_change_password: false,
+    default_cash_percentage: 50,
   };
 
   function setup(user?: CurrentUser): void {

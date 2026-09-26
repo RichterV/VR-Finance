@@ -28,6 +28,7 @@ class UserOut(BaseModel):
     last_name: str
     modules: list[str]
     must_change_password: bool
+    default_cash_percentage: float
 
     class Config:
         from_attributes = True
@@ -64,6 +65,12 @@ class ProfileUpdateOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
+
+
+class CashPercentageDefault(BaseModel):
+    """% de caixa pré-selecionado em "Adicionar receita" (PUT /auth/me/default-cash-percentage)."""
+
+    default_cash_percentage: float = Field(ge=0, le=100)
 
 
 class PasswordChange(BaseModel):
