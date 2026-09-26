@@ -28,6 +28,7 @@ import { AttachmentsService } from '../../services/attachments.service';
 import { ServiceType, ServicoVeiculo, ServicosVeiculosService } from '../../services/servicos-veiculos.service';
 import { Vehicle, VeiculosService, VehiclesResumo } from '../../services/veiculos.service';
 import { LoadingStateComponent } from '../../shared/loading-state.component';
+import { ResetPeriodButtonComponent } from '../../shared/reset-period-button.component';
 import { MESES_COMPLETOS } from '../../shared/months';
 import { SortState, sortItems, toggleSortState, UNSORTED } from '../../shared/sortable';
 import { SortThComponent } from '../../shared/sort-th.component';
@@ -60,6 +61,7 @@ const PAGE_SIZE = 25;
     BaseChartDirective,
     SortThComponent,
     LoadingStateComponent,
+    ResetPeriodButtonComponent,
   ],
 })
 export class VeiculosPage {
@@ -132,6 +134,12 @@ export class VeiculosPage {
 
   onAnoResumoChange(value: number | null): void {
     this.anoResumo.set(value);
+    this.reloadResumo();
+  }
+
+  resetPeriodoResumo(): void {
+    this.mesResumo.set(null);
+    this.anoResumo.set(null);
     this.reloadResumo();
   }
 

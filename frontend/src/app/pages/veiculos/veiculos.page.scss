@@ -11,6 +11,7 @@
 .resumo-filters {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
 
   ion-select {
@@ -135,7 +136,7 @@ td.description {
   .section-header .busca-filter,
   .resumo-filters ion-select {
     max-width: none;
-    width: 100%;
+    flex: 1 1 140px;
   }
 
   td.description {

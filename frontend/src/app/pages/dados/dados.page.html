@@ -20,6 +20,10 @@
       </ion-segment>
 
       <div class="filters">
+        <app-reset-period-button
+          [disabled]="mes() === null && ano() === null"
+          (reset)="resetPeriodo()"
+        ></app-reset-period-button>
         <ion-select
           [value]="mes()"
           (ionChange)="onMesChange($any($event.detail.value))"

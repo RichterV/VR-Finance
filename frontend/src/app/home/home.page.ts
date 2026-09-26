@@ -39,6 +39,7 @@ import { AuthService } from '../core/auth.service';
 import { HomeRefreshService } from '../core/home-refresh.service';
 import { Corte, ItemPercentual, ResumoAnual, ResumoGeral, ResumoInflacao, ResumoMensal, ResumoService } from '../services/resumo.service';
 import { LoadingStateComponent } from '../shared/loading-state.component';
+import { ResetPeriodButtonComponent } from '../shared/reset-period-button.component';
 import { MESES_COMPLETOS } from '../shared/months';
 import { Priority } from '../services/dropdown-options.service';
 import {
@@ -79,6 +80,7 @@ import {
     BaseChartDirective,
     RouterLink,
     LoadingStateComponent,
+    ResetPeriodButtonComponent,
     IonRefresher,
     IonRefresherContent,
   ],
@@ -327,6 +329,18 @@ export class HomePage implements OnInit, OnDestroy {
       this.loadResumoGeral();
       this.loadResumoInflacao();
     }
+  }
+
+  periodoMensalIsDefault(): boolean {
+    const hoje = new Date();
+    return this.mes() === hoje.getMonth() + 1 && this.anoMensal() === hoje.getFullYear();
+  }
+
+  /** Volta o seletor mensal pro mês/ano atual (o padrão da Home -- aqui o período nunca fica vazio). */
+  resetPeriodoMensal(): void {
+    const hoje = new Date();
+    this.mes.set(hoje.getMonth() + 1);
+    this.onAnoMensalChange(hoje.getFullYear());
   }
 
   setLimitarAteMesSelecionado(value: boolean): void {

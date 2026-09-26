@@ -51,6 +51,10 @@
       <div class="section-header">
         <h2>Resumo mensal</h2>
         <div class="period-controls">
+          <app-reset-period-button
+            [disabled]="periodoMensalIsDefault()"
+            (reset)="resetPeriodoMensal()"
+          ></app-reset-period-button>
           <ion-select
             class="select-mes"
             [value]="mes()"

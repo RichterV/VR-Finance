@@ -23,6 +23,10 @@
   } @else {
   <div class="veiculos">
     <div class="resumo-filters">
+      <app-reset-period-button
+        [disabled]="mesResumo() === null && anoResumo() === null"
+        (reset)="resetPeriodoResumo()"
+      ></app-reset-period-button>
       <ion-select
         [value]="mesResumo()"
         (ionChange)="onMesResumoChange($any($event.detail.value))"

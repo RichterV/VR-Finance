@@ -29,6 +29,7 @@ import { Gasto, GastosService } from '../../services/gastos.service';
 import { Receita, ReceitasService } from '../../services/receitas.service';
 import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
 import { LoadingStateComponent } from '../../shared/loading-state.component';
+import { ResetPeriodButtonComponent } from '../../shared/reset-period-button.component';
 import { MESES_COMPLETOS } from '../../shared/months';
 import { SortState, sortItems, toggleSortState, UNSORTED } from '../../shared/sortable';
 import { SortThComponent } from '../../shared/sort-th.component';
@@ -61,6 +62,7 @@ const PAGE_SIZE = 25;
     IonLabel,
     SortThComponent,
     LoadingStateComponent,
+    ResetPeriodButtonComponent,
   ],
 })
 export class DadosPage {
@@ -129,6 +131,12 @@ export class DadosPage {
 
   onAnoChange(value: number | null): void {
     this.ano.set(value);
+    this.reload();
+  }
+
+  resetPeriodo(): void {
+    this.mes.set(null);
+    this.ano.set(null);
     this.reload();
   }
 
