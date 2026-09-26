@@ -77,9 +77,15 @@
               <ion-select-option [value]="a">{{ a }}</ion-select-option>
             }
           </ion-select>
-          <ion-button fill="outline" size="small" (click)="abrirDetalhesMes()">
+          <ion-button
+            class="btn-detalhes"
+            fill="outline"
+            title="Ver detalhes"
+            aria-label="Ver detalhes"
+            (click)="abrirDetalhesMes()"
+          >
             <ion-icon slot="start" name="document-text-outline"></ion-icon>
-            Ver detalhes
+            <span class="btn-text">Ver detalhes</span>
           </ion-button>
         </div>
         <label class="cutoff-toggle" (click)="$event.preventDefault(); setLimitarAteMesSelecionado(!limitarAteMesSelecionado())">

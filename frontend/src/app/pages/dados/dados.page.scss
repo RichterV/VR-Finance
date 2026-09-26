@@ -25,9 +25,17 @@
 }
 
 @media (max-width: 480px) {
+  // Reset + mês + ano sempre numa linha só: sem nowrap/min-width 0 o texto "Todos os meses" força
+  // a quebra de linha até um mês curto ser selecionado.
+  .filters {
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+
   .filters ion-select {
     max-width: none;
-    flex: 1 1 140px;
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   td.description {

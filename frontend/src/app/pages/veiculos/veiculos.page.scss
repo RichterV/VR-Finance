@@ -134,9 +134,15 @@ td.description {
 
   .section-header ion-select,
   .section-header .busca-filter,
+  // Mesmo ajuste de /dados: sem nowrap/min-width 0 o texto "Todos os meses" força a quebra de linha.
+  .resumo-filters {
+    flex-wrap: nowrap;
+  }
+
   .resumo-filters ion-select {
     max-width: none;
-    flex: 1 1 140px;
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   td.description {

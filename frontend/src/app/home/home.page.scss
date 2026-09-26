@@ -88,6 +88,53 @@
   ion-select.select-mes {
     max-width: 180px;
   }
+
+  // Mesma altura/raio dos ion-select ao lado (56px, padrão dos campos outline do app).
+  .btn-detalhes {
+    height: 56px;
+    margin: 0;
+    flex-shrink: 0;
+    white-space: nowrap;
+    --border-radius: 8px;
+  }
+}
+
+// No celular, "Ver detalhes" vira só ícone (mesma regra dos botões de header abaixo de 576px) e os
+// seletores encolhem pra reset + mês + ano + botão caberem numa linha só, sem vazar da tela.
+@media (max-width: 576px) {
+  .period-controls {
+    width: 100%;
+
+    ion-select,
+    ion-select.select-mes {
+      max-width: none;
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    ion-select.select-mes {
+      flex-grow: 1.4;
+    }
+
+    .btn-detalhes {
+      flex: 0 0 auto;
+      width: 56px;
+      --padding-start: 0;
+      --padding-end: 0;
+
+      ion-icon {
+        font-size: 1.3rem;
+      }
+
+      .btn-text {
+        display: none;
+      }
+
+      ion-icon[slot="start"] {
+        margin-inline-end: 0;
+      }
+    }
+  }
 }
 
 .stats-grid {
