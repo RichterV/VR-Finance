@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, signal } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   IonButton,
@@ -50,6 +50,12 @@ import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask
   ],
 })
 export class EditarServicoModalComponent implements OnInit {
+  @ViewChild(AttachmentPickerComponent) attachmentPicker?: AttachmentPickerComponent;
+
+  /** Foto sendo processada / anexo subindo -- salvar agora gravaria o registro sem o anexo. */
+  get attachmentBusy(): boolean {
+    return this.attachmentPicker?.uploading() ?? false;
+  }
   @Input({ required: true }) servico!: ServicoVeiculo;
 
   readonly vehicles = signal<Vehicle[]>([]);
@@ -98,6 +104,7 @@ export class EditarServicoModalComponent implements OnInit {
   }
 
   async submit(): Promise<void> {
+    if (this.attachmentBusy) return;
     this.errorMessage.set(null);
     const { vehicleId, description, notes, value, serviceType, mileage } = this.form.getRawValue();
 

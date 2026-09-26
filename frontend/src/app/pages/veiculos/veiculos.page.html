@@ -150,9 +150,9 @@
                 <th appSortTh="vehicle" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Veículo</th>
                 <th appSortTh="description" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Descrição</th>
                 <th appSortTh="notes" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Observação</th>
-                <th appSortTh="value" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Valor</th>
+                <th class="num" appSortTh="value" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Valor</th>
                 <th appSortTh="type" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Tipo</th>
-                <th appSortTh="mileage" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Km</th>
+                <th class="num" appSortTh="mileage" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Km</th>
                 <th class="actions-col">Ações</th>
               </tr>
             </thead>

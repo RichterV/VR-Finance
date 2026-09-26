@@ -4,6 +4,8 @@ import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 
 import { environment } from '../../environments/environment';
+import { ModuleKey } from './modules';
+import { renameSavedCredentials, updateSavedPassword } from './saved-credentials';
 
 export interface CurrentUser {
   id: number;
@@ -11,6 +13,24 @@ export interface CurrentUser {
   role: 'master' | 'user';
   first_name: string;
   last_name: string;
+  /** Módulos opcionais habilitados (master sempre recebe todos do backend). */
+  modules: ModuleKey[];
+  /** Senha definida pelo master (criação/reset) -- precisa trocar antes de usar o app. */
+  must_change_password: boolean;
+}
+
+export interface UserPayload {
+  username: string;
+  first_name: string;
+  last_name: string;
+  password?: string;
+  modules: ModuleKey[];
+}
+
+interface ProfileUpdateResponse {
+  access_token: string;
+  token_type: string;
+  user: CurrentUser;
 }
 
 interface TokenResponse {
@@ -38,6 +58,10 @@ export class AuthService {
     return this.currentUserSignal()?.role === 'master';
   }
 
+  hasModule(key: ModuleKey): boolean {
+    return this.currentUserSignal()?.modules.includes(key) ?? false;
+  }
+
   login(username: string, password: string): Observable<TokenResponse> {
     const body = new URLSearchParams();
     body.set('username', username);
@@ -57,37 +81,56 @@ export class AuthService {
   }
 
   changePassword(currentPassword: string, newPassword: string): Observable<{ detail: string }> {
-    return this.http.put<{ detail: string }>(`${environment.apiUrl}/auth/me/password`, {
-      current_password: currentPassword,
-      new_password: newPassword,
-    });
+    return this.http
+      .put<{ detail: string }>(`${environment.apiUrl}/auth/me/password`, {
+        current_password: currentPassword,
+        new_password: newPassword,
+      })
+      .pipe(
+        tap(() => {
+          const user = this.currentUserSignal();
+          if (!user) return;
+          void updateSavedPassword(user.username, newPassword);
+          if (user.must_change_password) {
+            this.currentUserSignal.set({ ...user, must_change_password: false });
+          }
+        }),
+      );
   }
 
-  createUser(username: string, password: string, firstName: string, lastName: string): Observable<CurrentUser> {
-    return this.http.post<CurrentUser>(`${environment.apiUrl}/auth/users`, {
-      username,
-      password,
-      first_name: firstName,
-      last_name: lastName,
-    });
+  /**
+   * Usuário logado editando a própria conta. O JWT carrega o username, então trocar o username
+   * invalida o token antigo -- o backend já devolve um novo, que substitui o guardado aqui.
+   */
+  updateProfile(username: string, firstName: string, lastName: string): Observable<ProfileUpdateResponse> {
+    const oldUsername = this.currentUserSignal()?.username;
+    return this.http
+      .put<ProfileUpdateResponse>(`${environment.apiUrl}/auth/me`, {
+        username,
+        first_name: firstName,
+        last_name: lastName,
+      })
+      .pipe(
+        tap((res) => {
+          localStorage.setItem(TOKEN_KEY, res.access_token);
+          this.currentUserSignal.set(res.user);
+          if (oldUsername) void renameSavedCredentials(oldUsername, res.user.username);
+        }),
+      );
+  }
+
+  createUser(payload: UserPayload): Observable<CurrentUser> {
+    return this.http.post<CurrentUser>(`${environment.apiUrl}/auth/users`, payload);
   }
 
   listUsers(): Observable<CurrentUser[]> {
     return this.http.get<CurrentUser[]>(`${environment.apiUrl}/auth/users`);
   }
 
-  updateUser(
-    id: number,
-    username: string,
-    firstName: string,
-    lastName: string,
-    password?: string,
-  ): Observable<CurrentUser> {
+  updateUser(id: number, payload: UserPayload): Observable<CurrentUser> {
     return this.http.put<CurrentUser>(`${environment.apiUrl}/auth/users/${id}`, {
-      username,
-      password: password || undefined,
-      first_name: firstName,
-      last_name: lastName,
+      ...payload,
+      password: payload.password || undefined,
     });
   }
 

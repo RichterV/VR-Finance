@@ -57,6 +57,11 @@ export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
 export class AdicionarServicoModalComponent implements OnInit {
   @ViewChild(AttachmentPickerComponent) attachmentPicker!: AttachmentPickerComponent;
 
+  /** Foto sendo processada / anexo subindo -- salvar agora gravaria o registro sem o anexo. */
+  get attachmentBusy(): boolean {
+    return this.attachmentPicker?.uploading() ?? false;
+  }
+
   readonly vehicles = signal<Vehicle[]>([]);
   readonly saving = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -95,6 +100,7 @@ export class AdicionarServicoModalComponent implements OnInit {
   }
 
   async submit(): Promise<void> {
+    if (this.attachmentBusy) return;
     this.errorMessage.set(null);
     const { vehicleId, description, notes, value, serviceType, mileage } = this.form.getRawValue();
 

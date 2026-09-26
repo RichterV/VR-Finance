@@ -24,11 +24,13 @@ import {
   peopleOutline,
   pin,
   pinOutline,
+  shieldCheckmarkOutline,
   trendingUpOutline,
 } from 'ionicons/icons';
 
 import { AuthService } from '../core/auth.service';
 import { HomeRefreshService } from '../core/home-refresh.service';
+import { OPTIONAL_MODULES } from '../core/modules';
 import { BackupWarningBannerComponent } from '../shared/backup-warning-banner.component';
 
 interface NavSubItem {
@@ -44,22 +46,19 @@ interface NavItem {
   children?: NavSubItem[];
 }
 
-const NAV_ITEMS: NavItem[] = [
-  {
-    label: 'Início',
-    icon: 'home-outline',
-    route: '/home',
-    children: [
-      { label: 'Resumo mensal', route: '/home', fragment: 'resumo-mensal' },
-      { label: 'Resumo anual', route: '/home', fragment: 'resumo-anual' },
-      { label: 'Relatório geral', route: '/home', fragment: 'relatorio-geral' },
-      { label: 'Análise inflacionária', route: '/home', fragment: 'analise-inflacionaria' },
-    ],
-  },
-  { label: 'Manutenção Veículos', icon: 'car-sport-outline', route: '/veiculos' },
-  { label: 'Ferramentas', icon: 'calculator-outline', route: '/ferramentas' },
-  { label: 'Exportar Dados', icon: 'download-outline', route: '/exportar-dados' },
-];
+const HOME_ITEM: NavItem = {
+  label: 'Início',
+  icon: 'home-outline',
+  route: '/home',
+  children: [
+    { label: 'Resumo mensal', route: '/home', fragment: 'resumo-mensal' },
+    { label: 'Resumo anual', route: '/home', fragment: 'resumo-anual' },
+    { label: 'Relatório geral', route: '/home', fragment: 'relatorio-geral' },
+    { label: 'Análise inflacionária', route: '/home', fragment: 'analise-inflacionaria' },
+  ],
+};
+
+const ADMIN_ITEM: NavItem = { label: 'Administração', icon: 'shield-checkmark-outline', route: '/admin' };
 
 /** Below this width we keep the classic always-visible/hamburger split-pane menu (touch-friendly, no hover). */
 const DESKTOP_BREAKPOINT = 992;
@@ -86,7 +85,14 @@ const DESKTOP_BREAKPOINT = 992;
   ],
 })
 export class MainLayoutComponent {
-  readonly navItems = NAV_ITEMS;
+  /** Início sempre + módulos opcionais habilitados pro usuário + Administração (só master). */
+  readonly navItems = computed<NavItem[]>(() => {
+    const user = this.auth.currentUser();
+    const modules = OPTIONAL_MODULES.filter((m) => user?.modules.includes(m.key)).map(
+      ({ label, icon, route }) => ({ label, icon, route }),
+    );
+    return [HOME_ITEM, ...modules, ...(user?.role === 'master' ? [ADMIN_ITEM] : [])];
+  });
 
   readonly isDesktop = signal(MainLayoutComponent.checkDesktop());
   /** Fixado por padrão no desktop -- o usuário ainda pode desafixar pelo botão de pin. */
@@ -110,6 +116,7 @@ export class MainLayoutComponent {
       trendingUpOutline,
       calculatorOutline,
       downloadOutline,
+      shieldCheckmarkOutline,
     });
   }
 

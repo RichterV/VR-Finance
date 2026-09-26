@@ -39,7 +39,10 @@ def test_delete_vehicle_not_owned_returns_404(client, auth_headers, db_session):
     from app import models
     from app.security import hash_password
 
+    from app.modules import OPTIONAL_MODULES
+
     other = models.User(username="outro_veiculo", password_hash=hash_password("senha123"), role="user")
+    other.set_modules(list(OPTIONAL_MODULES))
     db_session.add(other)
     db_session.commit()
     login = client.post("/auth/login", data={"username": "outro_veiculo", "password": "senha123"})

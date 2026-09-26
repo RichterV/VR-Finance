@@ -1,0 +1,29 @@
+@use "../../../theme/mixins" as ds;
+
+.hint {
+  margin: 4px 4px 8px;
+  font-size: 0.8rem;
+  color: var(--app-text-secondary);
+}
+
+.modules-title {
+  margin: 20px 0 4px;
+  font-size: 1rem;
+  color: var(--app-text-primary);
+}
+
+.modules-list {
+  @include ds.app-card-compact;
+  padding: 4px 0;
+
+  ion-item {
+    --background: transparent;
+    --padding-start: 14px;
+    --inner-padding-end: 14px;
+  }
+
+  ion-icon {
+    color: var(--ion-color-primary);
+    margin-inline-end: 14px;
+  }
+}

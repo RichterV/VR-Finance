@@ -2,6 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideIonicAngular, ToastController } from '@ionic/angular';
 import { of, throwError } from 'rxjs';
 
+import { AuthService } from '../../core/auth.service';
+import { ModuleKey } from '../../core/modules';
 import { DownloadFileService } from '../../shared/download-file.service';
 import { ExportService } from '../../services/export.service';
 import { ExportarDadosPage } from './exportar-dados.page';
@@ -12,15 +14,18 @@ describe('ExportarDadosPage', () => {
   let downloadSpy: ReturnType<typeof vi.fn>;
   let shareFileSpy: ReturnType<typeof vi.fn>;
   let toastCreateSpy: ReturnType<typeof vi.fn>;
+  let enabledModules: Set<ModuleKey>;
 
   beforeEach(() => {
     downloadSpy = vi.fn(() => of(new Blob(['dados'])));
     shareFileSpy = vi.fn().mockResolvedValue({ shared: true });
     toastCreateSpy = vi.fn().mockResolvedValue({ present: vi.fn().mockResolvedValue(undefined) });
+    enabledModules = new Set<ModuleKey>(['veiculos', 'operacoes_bolsa', 'devedores', 'ferramentas', 'exportar_dados']);
 
     TestBed.configureTestingModule({
       providers: [
         provideIonicAngular(),
+        { provide: AuthService, useValue: { hasModule: (key: ModuleKey) => enabledModules.has(key) } },
         { provide: ExportService, useValue: { download: downloadSpy } },
         { provide: DownloadFileService, useValue: { shareFile: shareFileSpy } },
         { provide: ToastController, useValue: { create: toastCreateSpy } },
@@ -31,8 +36,14 @@ describe('ExportarDadosPage', () => {
     fixture.detectChanges();
   });
 
-  it('lists all 6 exportable modules', () => {
-    expect(component.modulos.map((m) => m.chave)).toEqual([
+  it('hides modules the user does not have enabled (Início ones always shown)', () => {
+    enabledModules = new Set<ModuleKey>(['exportar_dados']);
+    const restricted = TestBed.createComponent(ExportarDadosPage).componentInstance;
+    expect(restricted.modulos().map((m) => m.chave)).toEqual(['gastos', 'receitas', 'categorias']);
+  });
+
+  it('lists all 6 exportable modules when every module is enabled', () => {
+    expect(component.modulos().map((m) => m.chave)).toEqual([
       'gastos',
       'receitas',
       'veiculos',

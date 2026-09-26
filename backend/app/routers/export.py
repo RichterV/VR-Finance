@@ -6,14 +6,18 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Literal, Optional
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app import models
 from app.config import settings
-from app.deps import get_current_user, get_db
+from app.deps import get_current_user, get_db, require_module
 
-router = APIRouter(prefix="/export", tags=["export"])
+router = APIRouter(
+    prefix="/export",
+    tags=["export"],
+    dependencies=[Depends(require_module("exportar_dados"))],
+)
 
 Modulo = Literal["gastos", "receitas", "veiculos", "categorias"]
 
@@ -257,6 +261,14 @@ _BUILDERS = {
     "categorias": _export_categorias,
 }
 
+# Módulo de exportação -> módulo opcional que também precisa estar habilitado (gastos/receitas/
+# categorias são do Início, sempre disponíveis)
+_REQUIRED_MODULE = {
+    "veiculos": "veiculos",
+    "operacoes_bolsa": "operacoes_bolsa",
+    "devedores": "devedores",
+}
+
 
 @router.get("/{modulo}")
 def export_modulo(
@@ -264,6 +276,9 @@ def export_modulo(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    required = _REQUIRED_MODULE.get(modulo)
+    if required is not None and required not in current_user.modules:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Módulo não habilitado para este usuário")
     files = _BUILDERS[modulo](db, current_user)
     zip_bytes = _build_zip(files)
     filename = f"export_{modulo}_{date.today().isoformat()}.zip"

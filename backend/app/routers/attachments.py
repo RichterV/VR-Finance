@@ -29,6 +29,20 @@ ENTITY_CONFIG: dict[str, tuple[type, bool]] = {
 }
 
 
+# entity_type -> módulo opcional que precisa estar habilitado (gasto/receita são do Início, sempre)
+ENTITY_MODULE: dict[str, str] = {
+    "servico_veiculo": "veiculos",
+    "operacao_bolsa": "operacoes_bolsa",
+    "devedor": "devedores",
+}
+
+
+def _require_entity_module(current_user: models.User, entity_type: str) -> None:
+    module_key = ENTITY_MODULE.get(entity_type)
+    if module_key is not None and module_key not in current_user.modules:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Módulo não habilitado para este usuário")
+
+
 def _authorize_entity(db: Session, current_user: models.User, entity_type: str, entity_id: str) -> None:
     """Confere que entity_id (id numerico OU installment_group_id) pertence ao usuario logado.
 
@@ -36,6 +50,7 @@ def _authorize_entity(db: Session, current_user: models.User, entity_type: str, 
     installment_group_id quanto o id de uma parcela individual como chave valida de posse. Quem
     garante "sempre vincula ao grupo, nunca a uma parcela" e o frontend -- ver anexos.md.
     """
+    _require_entity_module(current_user, entity_type)
     model, has_group = ENTITY_CONFIG[entity_type]
     query = db.query(model).filter(model.user_id == current_user.id)
     if has_group:
@@ -57,6 +72,7 @@ def _get_owned_attachment(db: Session, current_user: models.User, attachment_id:
     )
     if attachment is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Anexo não encontrado")
+    _require_entity_module(current_user, attachment.entity_type)
     return attachment
 
 
@@ -162,6 +178,7 @@ def check_attachments_exist(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    _require_entity_module(current_user, entity_type)
     rows = (
         db.query(models.Attachment.entity_id)
         .filter(

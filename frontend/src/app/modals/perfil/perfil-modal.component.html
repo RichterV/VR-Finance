@@ -21,14 +21,32 @@
     Sair
   </ion-button>
 
-  @if (auth.isMaster) {
-    <ion-button expand="block" fill="outline" (click)="switchToTeste()">
-      <ion-icon slot="start" name="swap-horizontal-outline"></ion-icon>
-      Mudar pra conta teste
-    </ion-button>
-  }
+  <h2 class="ion-margin-top">Meus dados</h2>
+  <form [formGroup]="profileForm" (ngSubmit)="submitProfile()">
+    <ion-item>
+      <ion-input label="Usuário" labelPlacement="stacked" formControlName="username" autocomplete="username"></ion-input>
+    </ion-item>
+    <div class="field-row">
+      <ion-item class="col-grow">
+        <ion-input label="Nome" labelPlacement="stacked" formControlName="firstName"></ion-input>
+      </ion-item>
+      <ion-item class="col-grow">
+        <ion-input label="Sobrenome" labelPlacement="stacked" formControlName="lastName"></ion-input>
+      </ion-item>
+    </div>
 
-  <h2>Trocar senha</h2>
+    @if (profileError()) {
+      <ion-text color="danger">
+        <p>{{ profileError() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="profileSaving()">
+      {{ profileSaving() ? 'Salvando...' : 'Salvar dados' }}
+    </ion-button>
+  </form>
+
+  <h2 class="ion-margin-top">Trocar senha</h2>
   <form [formGroup]="passwordForm" (ngSubmit)="submitPasswordChange()">
     <ion-item>
       <ion-input
@@ -68,104 +86,4 @@
       {{ passwordSaving() ? 'Salvando...' : 'Trocar senha' }}
     </ion-button>
   </form>
-
-  @if (auth.isMaster) {
-    <h2 class="ion-margin-top">Criar usuário</h2>
-    <form [formGroup]="newUserForm" (ngSubmit)="submitNewUser()">
-      <ion-item>
-        <ion-input label="Usuário" labelPlacement="stacked" formControlName="username"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input label="Nome" labelPlacement="stacked" formControlName="firstName"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input label="Sobrenome" labelPlacement="stacked" formControlName="lastName"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input
-          label="Senha inicial"
-          labelPlacement="stacked"
-          type="password"
-          formControlName="password"
-          autocomplete="new-password"
-        ></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input
-          label="Confirmar senha"
-          labelPlacement="stacked"
-          type="password"
-          formControlName="confirmPassword"
-          autocomplete="new-password"
-        ></ion-input>
-      </ion-item>
-
-      @if (userError()) {
-        <ion-text color="danger">
-          <p>{{ userError() }}</p>
-        </ion-text>
-      }
-
-      <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="userSaving()">
-        {{ userSaving() ? 'Criando...' : 'Criar usuário' }}
-      </ion-button>
-    </form>
-
-    <h2 class="ion-margin-top">Usuários</h2>
-    <div class="user-list">
-      @for (u of users(); track u.id) {
-        @if (editingUserId() === u.id) {
-          <form class="user-edit-form" [formGroup]="editUserForm" (ngSubmit)="salvarEdicaoUsuario()">
-            <ion-item>
-              <ion-input label="Usuário" labelPlacement="stacked" formControlName="username"></ion-input>
-            </ion-item>
-            <ion-item>
-              <ion-input label="Nome" labelPlacement="stacked" formControlName="firstName"></ion-input>
-            </ion-item>
-            <ion-item>
-              <ion-input label="Sobrenome" labelPlacement="stacked" formControlName="lastName"></ion-input>
-            </ion-item>
-            <ion-item>
-              <ion-input
-                label="Nova senha (opcional)"
-                labelPlacement="stacked"
-                type="password"
-                formControlName="password"
-                autocomplete="new-password"
-                placeholder="Deixe em branco pra manter a atual"
-              ></ion-input>
-            </ion-item>
-            @if (editError()) {
-              <ion-text color="danger">
-                <p>{{ editError() }}</p>
-              </ion-text>
-            }
-            <div class="edit-actions">
-              <ion-button size="small" fill="outline" type="button" (click)="cancelarEdicao()">Cancelar</ion-button>
-              <ion-button size="small" type="submit" [disabled]="editSaving()">
-                {{ editSaving() ? 'Salvando...' : 'Salvar' }}
-              </ion-button>
-            </div>
-          </form>
-        } @else {
-          <div class="user-row">
-            <div class="user-info">
-              <span class="username">{{ u.first_name }} {{ u.last_name }} ({{ u.username }})</span>
-              <span class="role">{{ u.role === 'master' ? 'Master' : 'Usuário' }}</span>
-            </div>
-            <div class="user-actions">
-              <button class="icon-btn" (click)="editarUsuario(u)">
-                <ion-icon name="create"></ion-icon>
-              </button>
-              @if (u.role !== 'master') {
-                <button class="icon-btn danger" (click)="excluirUsuario(u)">
-                  <ion-icon name="trash"></ion-icon>
-                </button>
-              }
-            </div>
-          </div>
-        }
-      }
-    </div>
-  }
 </ion-content>

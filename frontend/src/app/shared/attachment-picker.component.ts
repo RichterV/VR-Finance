@@ -2,7 +2,7 @@ import { Component, EventEmitter, HostListener, Input, OnInit, Output, computed,
 import { Capacitor } from '@capacitor/core';
 import { AlertController, IonIcon, IonLabel, IonText, ToastController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { add, documentOutline, trashOutline } from 'ionicons/icons';
+import { add, cameraOutline, documentOutline, trashOutline } from 'ionicons/icons';
 import { Observable, forkJoin, of } from 'rxjs';
 
 import { Attachment, AttachmentsService, EntityType } from '../services/attachments.service';
@@ -13,6 +13,7 @@ import {
   formatFileSize,
   isAllowedAttachmentFile,
 } from './attachment-types';
+import { shrinkPhoto } from './camera-photo';
 
 interface DisplayItem {
   key: string;
@@ -38,19 +39,44 @@ interface DisplayItem {
         Anexos (opcional){{ showPasteHint ? ' — cole uma imagem copiada com Ctrl+V' : '' }}
       </ion-label>
 
-      <button
-        type="button"
-        class="add-attachment-btn"
-        [class.drag-over]="dragOver()"
+      <div class="picker-actions">
+        <button
+          type="button"
+          class="add-attachment-btn"
+          [class.drag-over]="dragOver()"
+          [disabled]="uploading()"
+          (click)="fileInput.click()"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+        >
+          <ion-icon name="add"></ion-icon>
+          <span>{{ uploading() ? 'Enviando...' : dragOver() ? 'Solte o arquivo aqui' : 'Adicionar arquivo' }}</span>
+        </button>
+        @if (showCameraButton) {
+          <button
+            type="button"
+            class="add-attachment-btn camera-btn"
+            title="Tirar foto"
+            aria-label="Tirar foto"
+            [disabled]="uploading()"
+            (click)="cameraInput.click()"
+          >
+            <ion-icon name="camera-outline"></ion-icon>
+          </button>
+        }
+      </div>
+      <!-- capture="environment": no celular abre direto a câmera traseira (no app nativo o
+           WebView do Capacitor trata isso abrindo o app de câmera do Android) -->
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
         [disabled]="uploading()"
-        (click)="fileInput.click()"
-        (dragover)="onDragOver($event)"
-        (dragleave)="onDragLeave($event)"
-        (drop)="onDrop($event)"
-      >
-        <ion-icon name="add"></ion-icon>
-        <span>{{ uploading() ? 'Enviando...' : dragOver() ? 'Solte o arquivo aqui' : 'Adicionar arquivo' }}</span>
-      </button>
+        (change)="onPhotoCaptured($event)"
+        #cameraInput
+        hidden
+      />
       <input
         type="file"
         multiple
@@ -96,6 +122,11 @@ interface DisplayItem {
         color: var(--app-text-secondary);
         margin-bottom: 8px;
       }
+      .picker-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
       .add-attachment-btn {
         display: inline-flex;
         align-items: center;
@@ -113,6 +144,14 @@ interface DisplayItem {
       }
       .add-attachment-btn ion-icon {
         font-size: 1.1rem;
+      }
+      .add-attachment-btn.camera-btn {
+        justify-content: center;
+        width: 44px;
+        padding: 0;
+      }
+      .add-attachment-btn.camera-btn ion-icon {
+        font-size: 1.25rem;
       }
       .add-attachment-btn:hover:not(:disabled) {
         border-color: var(--ion-color-primary);
@@ -193,8 +232,15 @@ export class AttachmentPickerComponent implements OnInit {
   @Input() mode: 'create' | 'edit' = 'create';
   @Output() readonly filesChanged = new EventEmitter<void>();
 
-  /** Não existe Ctrl+V no teclado do celular -- some a dica só no app nativo (Android). */
-  readonly showPasteHint = !Capacitor.isNativePlatform();
+  /** Celular = app nativo ou navegador com tela de toque. */
+  private readonly isMobile = Capacitor.isNativePlatform() || window.matchMedia('(pointer: coarse)').matches;
+
+  /** Não existe Ctrl+V no teclado do celular -- a dica só aparece no desktop. */
+  readonly showPasteHint = !this.isMobile;
+
+  /** Câmera só faz sentido no celular -- no desktop o atributo capture é ignorado e o botão só
+   * abriria o mesmo seletor de arquivos. */
+  readonly showCameraButton = this.isMobile;
 
   readonly acceptAttr = ALLOWED_ATTACHMENT_TYPES.join(',');
   readonly uploading = signal(false);
@@ -223,7 +269,7 @@ export class AttachmentPickerComponent implements OnInit {
     private readonly toastCtrl: ToastController,
     private readonly alertCtrl: AlertController,
   ) {
-    addIcons({ documentOutline, trashOutline, add });
+    addIcons({ documentOutline, trashOutline, add, cameraOutline });
   }
 
   ngOnInit(): void {
@@ -237,6 +283,18 @@ export class AttachmentPickerComponent implements OnInit {
     const files = Array.from(input.files ?? []);
     input.value = '';
     this.addFiles(files);
+  }
+
+  async onPhotoCaptured(ev: Event): Promise<void> {
+    const input = ev.target as HTMLInputElement;
+    const photo = input.files?.[0];
+    input.value = '';
+    if (!photo) return;
+    // Reduzir a foto leva um instante -- trava os botões pra não disparar outra captura no meio
+    this.uploading.set(true);
+    const file = await shrinkPhoto(photo);
+    this.uploading.set(false);
+    this.addFiles([file]);
   }
 
   /** preventDefault() é obrigatório aqui -- sem isso o navegador nunca dispara o evento "drop"

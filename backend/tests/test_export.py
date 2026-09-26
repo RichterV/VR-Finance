@@ -66,7 +66,7 @@ def _create_devedor(client, headers, installment_count=1, value=69.38):
     return client.post(
         "/devedores",
         headers=headers,
-        json={"devedor": "Kaoane", "value": value, "installment_count": installment_count},
+        json={"devedor": "Fulano", "value": value, "installment_count": installment_count},
     ).json()
 
 

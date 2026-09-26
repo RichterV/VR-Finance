@@ -30,6 +30,7 @@ import { GastosService } from '../../services/gastos.service';
 import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
 import { extractHttpErrorMessage } from '../../shared/attachment-types';
 import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
+import { CATEGORY_SELECT_POPOVER_OPTIONS } from '../../shared/select-popover';
 
 @Component({
   selector: 'app-adicionar-gasto-modal',
@@ -58,7 +59,13 @@ import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask
   ],
 })
 export class AdicionarGastoModalComponent implements OnInit {
+  readonly categorySelectOptions = CATEGORY_SELECT_POPOVER_OPTIONS;
   @ViewChild(AttachmentPickerComponent) attachmentPicker!: AttachmentPickerComponent;
+
+  /** Foto sendo processada / anexo subindo -- salvar agora gravaria o registro sem o anexo. */
+  get attachmentBusy(): boolean {
+    return this.attachmentPicker?.uploading() ?? false;
+  }
 
   readonly items = signal<DropdownOption[]>([]);
   readonly saving = signal(false);
@@ -106,6 +113,7 @@ export class AdicionarGastoModalComponent implements OnInit {
   }
 
   async submit(): Promise<void> {
+    if (this.attachmentBusy) return;
     this.errorMessage.set(null);
     const { priority, itemId, value, description, isInstallment, installmentCount } = this.form.getRawValue();
 

@@ -15,6 +15,7 @@ from app import models
 from app.database import Base
 from app.deps import get_db
 from app.main import app
+from app.modules import OPTIONAL_MODULES
 from app.security import hash_password
 
 engine = create_engine(
@@ -57,6 +58,7 @@ def _create_user(
     role: str = "user",
     first_name: str = "Usuário",
     last_name: str = "Teste",
+    modules: tuple[str, ...] = OPTIONAL_MODULES,
 ) -> models.User:
     user = models.User(
         username=username,
@@ -65,6 +67,7 @@ def _create_user(
         first_name=first_name,
         last_name=last_name,
     )
+    user.set_modules(list(modules))
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)

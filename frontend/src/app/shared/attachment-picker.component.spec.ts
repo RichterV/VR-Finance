@@ -85,6 +85,25 @@ describe('AttachmentPickerComponent', () => {
     expect(component.displayItems().map((i) => i.name)).toEqual(['nota.pdf']);
   });
 
+  it('stages a camera photo with a standardized name (create mode)', async () => {
+    const fixture = createComponent('create');
+    const component = fixture.componentInstance;
+
+    await component.onPhotoCaptured(fileEvent([makeFile('JPEG_123.jpg', 'image/jpeg')]));
+
+    expect(uploadSpy).not.toHaveBeenCalled();
+    expect(component.uploading()).toBe(false);
+    const names = component.displayItems().map((i) => i.name);
+    expect(names).toHaveLength(1);
+    expect(names[0]).toMatch(/^foto-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.jpg$/);
+  });
+
+  it('ignores a cancelled camera capture', async () => {
+    const fixture = createComponent('create');
+    await fixture.componentInstance.onPhotoCaptured(fileEvent([]));
+    expect(fixture.componentInstance.displayItems()).toEqual([]);
+  });
+
   it('rejects an invalid file client-side without calling the API', () => {
     const fixture = createComponent('create');
     const component = fixture.componentInstance;

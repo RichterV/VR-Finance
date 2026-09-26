@@ -2,10 +2,11 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 from app.config import settings
 from app.database import Base, engine
+from app.modules import OPTIONAL_MODULES
 from app.routers import (
     attachments,
     auth,
@@ -19,6 +20,8 @@ from app.routers import (
     veiculos,
 )
 
+# Precisa ser checado antes do create_all -- é ele que cria a tabela.
+_had_user_modules = inspect(engine).has_table("user_modules")
 Base.metadata.create_all(bind=engine)
 
 
@@ -46,6 +49,25 @@ def _migrate_schema() -> None:
             conn.execute(
                 text("UPDATE users SET first_name = 'Nome', last_name = 'Sobrenome' WHERE username = 'admin'")
             )
+            conn.commit()
+
+        if "must_change_password" not in user_cols:
+            # Usuários que já existiam ficam como estão (false) -- só contas criadas ou com senha
+            # resetada pelo master daqui pra frente passam a exigir a troca.
+            conn.execute(text("ALTER TABLE users ADD COLUMN must_change_password BOOLEAN NOT NULL DEFAULT 0"))
+            conn.commit()
+
+        if not _had_user_modules:
+            # Tabela recém-criada: usuários que já existiam antes do controle de módulos ficam com
+            # todos os módulos habilitados (não perdem nada que já usavam). Usuários criados depois
+            # começam sem nenhum -- quem habilita é o master, no painel de admin. Roda uma vez só.
+            user_ids = [row[0] for row in conn.execute(text("SELECT id FROM users WHERE role != 'master'"))]
+            for user_id in user_ids:
+                for key in OPTIONAL_MODULES:
+                    conn.execute(
+                        text("INSERT INTO user_modules (user_id, module_key) VALUES (:u, :k)"),
+                        {"u": user_id, "k": key},
+                    )
             conn.commit()
 
 

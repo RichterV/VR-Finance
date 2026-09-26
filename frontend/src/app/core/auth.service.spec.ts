@@ -74,4 +74,47 @@ describe('AuthService', () => {
     expect(service.currentUser()).toBeNull();
     expect(router.navigateByUrl).toHaveBeenCalledWith('/login');
   });
+
+  it('hasModule reflects the modules returned by /auth/me', () => {
+    service.loadCurrentUser().subscribe();
+    httpMock.expectOne(`${environment.apiUrl}/auth/me`).flush({
+      id: 2,
+      username: 'teste',
+      role: 'user',
+      first_name: 'Teste',
+      last_name: 'Teste',
+      modules: ['devedores'],
+    });
+
+    expect(service.hasModule('devedores')).toBe(true);
+    expect(service.hasModule('veiculos')).toBe(false);
+  });
+
+  it('updateProfile sends PUT /auth/me and swaps the stored token and current user', () => {
+    localStorage.setItem(TOKEN_KEY, 'token-antigo');
+    service.updateProfile('novo_nome', 'Maria', 'Silva').subscribe();
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/auth/me`);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ username: 'novo_nome', first_name: 'Maria', last_name: 'Silva' });
+    const user = { id: 2, username: 'novo_nome', role: 'user', first_name: 'Maria', last_name: 'Silva', modules: [] };
+    req.flush({ access_token: 'token-novo', token_type: 'bearer', user });
+
+    expect(service.token).toBe('token-novo');
+    expect(service.currentUser()).toEqual(user);
+  });
+
+  it('createUser/updateUser send the enabled modules, omitting a blank password on update', () => {
+    const payload = { username: 'x', first_name: 'A', last_name: 'B', modules: ['ferramentas' as const] };
+    service.createUser({ ...payload, password: 'senha123' }).subscribe();
+    const create = httpMock.expectOne(`${environment.apiUrl}/auth/users`);
+    expect(create.request.body).toEqual({ ...payload, password: 'senha123' });
+    create.flush({});
+
+    service.updateUser(5, { ...payload, password: '' }).subscribe();
+    const update = httpMock.expectOne(`${environment.apiUrl}/auth/users/5`);
+    expect(update.request.method).toBe('PUT');
+    expect(update.request.body).toEqual({ ...payload, password: undefined });
+    update.flush({});
+  });
 });

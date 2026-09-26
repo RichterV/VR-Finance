@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, Input, OnInit, computed, signal } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, computed, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
@@ -48,6 +48,12 @@ import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask
   ],
 })
 export class EditarReceitaModalComponent implements OnInit {
+  @ViewChild(AttachmentPickerComponent) attachmentPicker?: AttachmentPickerComponent;
+
+  /** Foto sendo processada / anexo subindo -- salvar agora gravaria o registro sem o anexo. */
+  get attachmentBusy(): boolean {
+    return this.attachmentPicker?.uploading() ?? false;
+  }
   @Input({ required: true }) receita!: Receita;
 
   readonly saving = signal(false);
@@ -92,6 +98,7 @@ export class EditarReceitaModalComponent implements OnInit {
   }
 
   async submit(): Promise<void> {
+    if (this.attachmentBusy) return;
     this.errorMessage.set(null);
     const { value, cashPercentage, description } = this.form.getRawValue();
 

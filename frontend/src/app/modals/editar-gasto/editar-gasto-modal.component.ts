@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, signal } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   IonButton,
@@ -27,6 +27,7 @@ import { DropdownOption, DropdownOptionsService, Priority } from '../../services
 import { Gasto, GastosService } from '../../services/gastos.service';
 import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
 import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
+import { CATEGORY_SELECT_POPOVER_OPTIONS } from '../../shared/select-popover';
 
 @Component({
   selector: 'app-editar-gasto-modal',
@@ -54,6 +55,13 @@ import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask
   ],
 })
 export class EditarGastoModalComponent implements OnInit {
+  @ViewChild(AttachmentPickerComponent) attachmentPicker?: AttachmentPickerComponent;
+
+  /** Foto sendo processada / anexo subindo -- salvar agora gravaria o registro sem o anexo. */
+  get attachmentBusy(): boolean {
+    return this.attachmentPicker?.uploading() ?? false;
+  }
+  readonly categorySelectOptions = CATEGORY_SELECT_POPOVER_OPTIONS;
   @Input({ required: true }) gasto!: Gasto;
 
   get attachmentEntityId(): string | number {
@@ -109,6 +117,7 @@ export class EditarGastoModalComponent implements OnInit {
   }
 
   async submit(): Promise<void> {
+    if (this.attachmentBusy) return;
     this.errorMessage.set(null);
     const { priority, itemId, value, description } = this.form.getRawValue();
 

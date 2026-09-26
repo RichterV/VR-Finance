@@ -10,17 +10,12 @@ import { Capacitor } from '@capacitor/core';
 import { timeout } from 'rxjs';
 
 import { AuthService } from '../../core/auth.service';
+import { CREDENTIALS_KEY, SavedCredentials } from '../../core/saved-credentials';
 
 const LOGIN_TIMEOUT_MS = 15000;
-const CREDENTIALS_KEY = 'login_credentials';
 /** Chave antiga (texto puro, pre-Secure Storage) -- removida se ainda existir, pra nao deixar senha em texto puro no dispositivo. */
 const LEGACY_CREDENTIALS_KEY = 'vrfinance_saved_credentials';
 const BIOMETRIC_ENABLED_KEY = 'biometric_login_enabled';
-
-interface SavedCredentials {
-  username: string;
-  password: string;
-}
 
 @Component({
   selector: 'app-login',

@@ -15,7 +15,7 @@
       próprios dados.
     </p>
 
-    @for (modulo of modulos; track modulo.chave) {
+    @for (modulo of modulos(); track modulo.chave) {
       <div class="modulo-card">
         <div class="modulo-info">
           <h3>{{ modulo.label }}</h3>

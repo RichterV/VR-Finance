@@ -56,8 +56,8 @@
       </ion-text>
     }
 
-    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving()">
-      {{ saving() ? 'Salvando...' : 'Salvar receita' }}
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving() || attachmentBusy">
+      {{ saving() ? 'Salvando...' : attachmentBusy ? 'Aguarde o anexo...' : 'Salvar receita' }}
     </ion-button>
   </form>
 </ion-content>

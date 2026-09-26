@@ -394,6 +394,9 @@ ion-input .currency-prefix {
   background: var(--app-surface-hover);
 }
 
+// Cabeçalho de coluna numérica (th.num) acompanha o valor alinhado à direita -- sem isso o título
+// ficava à esquerda e o número à direita, parecendo desalinhado (ex: Receitas em "Ver detalhes").
+.table-card th.num,
 .table-card td.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -438,4 +441,61 @@ h3 {
   color: var(--app-text-primary);
   font-weight: 600;
   margin: 0;
+}
+
+// Popover dos ion-select (o Ionic já adiciona .select-popover sozinho em todo select com
+// interface="popover") -- cartão escuro com borda/raio do design system, itens em "pílula" com
+// hover e o selecionado destacado em verde, no lugar da lista crua padrão do Ionic.
+ion-popover.select-popover {
+  --background: var(--app-surface);
+  --box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  --max-height: min(60vh, 420px);
+
+  &::part(content) {
+    border: 1px solid var(--app-surface-border);
+    border-radius: 14px;
+  }
+
+  ion-list {
+    padding: 6px;
+    background: transparent;
+  }
+
+  ion-item {
+    --background: transparent;
+    --background-hover: rgba(var(--ion-color-primary-rgb), 1);
+    --background-hover-opacity: 0.08;
+    --background-focused: rgba(var(--ion-color-primary-rgb), 1);
+    --background-focused-opacity: 0.12;
+    --color: var(--app-text-primary);
+    --min-height: 42px;
+    --padding-start: 12px;
+    --inner-padding-end: 12px;
+    --border-radius: 10px;
+    margin: 2px 0;
+    font-size: 0.95rem;
+  }
+
+  ion-item.item-radio-checked {
+    --background: rgba(var(--ion-color-primary-rgb), 0.14);
+    --color: var(--ion-color-primary);
+    font-weight: 600;
+  }
+
+  ion-radio {
+    --color-checked: var(--ion-color-primary);
+  }
+}
+
+// Lista de categorias (Adicionar/Editar gasto): abre colada embaixo do campo, com ~a largura dele
+// (campo = modal de 440px menos o padding lateral; no celular, a tela menos o padding), em vez de
+// uma caixa estreita flutuando à direita e vazando do modal.
+ion-popover.category-select-popover {
+  --width: min(380px, calc(100vw - 48px));
+  --max-height: min(50vh, 360px);
+
+  // Sem isso o topo da lista cobre a borda de baixo do campo
+  &::part(content) {
+    margin-top: 18px;
+  }
 }

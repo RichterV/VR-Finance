@@ -9,6 +9,8 @@ BolsaOperation = Literal["compra", "venda", "compra_dolar", "venda_dolar"]
 BolsaCurrency = Literal["BRL", "USD"]
 DevedorStatus = Literal["pago", "nao_pago"]
 EntityType = Literal["gasto", "receita", "servico_veiculo"]
+# Espelha app.modules.OPTIONAL_MODULES
+ModuleKey = Literal["veiculos", "operacoes_bolsa", "devedores", "ferramentas", "exportar_dados"]
 
 
 # --- Auth ---
@@ -24,23 +26,44 @@ class UserOut(BaseModel):
     role: str
     first_name: str
     last_name: str
+    modules: list[str]
+    must_change_password: bool
 
     class Config:
         from_attributes = True
 
 
 class UserCreate(BaseModel):
-    username: str
+    username: str = Field(min_length=1)
     password: str = Field(min_length=6)
     first_name: str = Field(min_length=1)
     last_name: str = Field(min_length=1)
+    modules: list[ModuleKey] = []
 
 
 class UserUpdate(BaseModel):
-    username: str
+    username: str = Field(min_length=1)
     password: Optional[str] = Field(default=None, min_length=6)
     first_name: str = Field(min_length=1)
     last_name: str = Field(min_length=1)
+    # None = não mexe nos módulos atuais
+    modules: Optional[list[ModuleKey]] = None
+
+
+class ProfileUpdate(BaseModel):
+    """Usuário logado editando a própria conta (PUT /auth/me)."""
+
+    username: str = Field(min_length=1)
+    first_name: str = Field(min_length=1)
+    last_name: str = Field(min_length=1)
+
+
+class ProfileUpdateOut(BaseModel):
+    # O JWT carrega o username no "sub" -- trocar o username invalida o token antigo, então a
+    # resposta já devolve um novo pro frontend substituir o guardado.
+    access_token: str
+    token_type: str = "bearer"
+    user: UserOut
 
 
 class PasswordChange(BaseModel):

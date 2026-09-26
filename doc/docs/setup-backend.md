@@ -48,7 +48,7 @@ python -m app.seed_master
 ## 5. (Opcional) Criar o usuário de teste com dados mocados
 
 Útil para testar sem tocar nos dados reais do master — cria o usuário `teste` (senha
-`Teste@VRFINANCE`) com ~21 gastos e 8 receitas mocados nos últimos 6 meses. Idempotente: pode rodar de
+`SenhaDeTeste@123`) com ~21 gastos e 8 receitas mocados nos últimos 6 meses. Idempotente: pode rodar de
 novo, que ele apaga os lançamentos mocados antigos e recria (não apaga o usuário em si):
 
 ```powershell

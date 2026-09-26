@@ -1,0 +1,156 @@
+@use "../../../theme/mixins" as ds;
+
+$mobile-max: 767px;
+
+.admin {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+h2 .count {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--app-text-secondary);
+}
+
+.module-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  color: var(--ion-color-primary);
+  border: 1px solid color-mix(in srgb, var(--ion-color-primary) 45%, transparent);
+  background: color-mix(in srgb, var(--ion-color-primary) 10%, transparent);
+
+  &.pending {
+    margin-left: 6px;
+    color: var(--ion-color-warning);
+    border-color: color-mix(in srgb, var(--ion-color-warning) 45%, transparent);
+    background: color-mix(in srgb, var(--ion-color-warning) 10%, transparent);
+  }
+
+  &.core {
+    color: var(--app-text-secondary);
+    border-color: var(--app-surface-border);
+    background: transparent;
+  }
+}
+
+// --- Celular: cartões no lugar da tabela --------------------------------------------------------
+// Tabela só no desktop/tablet; abaixo de 768px ela precisava de scroll lateral e espremia os
+// módulos numa coluna estreita (um chip por linha, cortado).
+
+.user-cards {
+  display: none;
+}
+
+@media (max-width: $mobile-max) {
+  .table-card,
+  .desktop-only {
+    display: none;
+  }
+
+  .user-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+.user-card {
+  @include ds.app-card;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .chip.pending {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+}
+
+.user-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.user-card-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  strong {
+    font-size: 1.05rem;
+    color: var(--app-text-primary);
+  }
+}
+
+.user-card-username {
+  font-size: 0.85rem;
+  color: var(--app-text-secondary);
+}
+
+.role-badge {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--app-text-secondary);
+  border: 1px solid var(--app-surface-border);
+
+  &.master {
+    color: var(--ion-color-primary);
+    border-color: color-mix(in srgb, var(--ion-color-primary) 45%, transparent);
+  }
+}
+
+.user-card-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.user-card-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--app-text-secondary);
+}
+
+.user-card-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--app-surface-border);
+
+  ion-button {
+    flex: 1;
+    margin: 8px 0 0;
+  }
+}
+
+.empty-cards {
+  text-align: center;
+  color: var(--app-text-secondary);
+}
+
+.mobile-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}

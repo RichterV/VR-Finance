@@ -4,6 +4,8 @@
 **/*.pyc
 **/*.db
 **/*.db.bak-*
+backend/db-backups/
+**/*.sync-tmp
 backend/uploads/
 backend/uploads.bak-*/
 backend/last_backup.txt

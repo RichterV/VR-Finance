@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import {
   IonBackButton,
   IonButton,
@@ -14,6 +14,8 @@ import {
 import { addIcons } from 'ionicons';
 import { downloadOutline } from 'ionicons/icons';
 
+import { AuthService } from '../../core/auth.service';
+import { ModuleKey } from '../../core/modules';
 import { extractHttpErrorMessage } from '../../shared/attachment-types';
 import { DownloadFileService } from '../../shared/download-file.service';
 import { ExportModulo, ExportService } from '../../services/export.service';
@@ -22,6 +24,8 @@ interface ModuloExport {
   chave: ExportModulo;
   label: string;
   descricao: string;
+  /** Módulo opcional que precisa estar habilitado; ausente = do Início, sempre disponível. */
+  requer?: ModuleKey;
 }
 
 const MODULOS: ModuloExport[] = [
@@ -29,16 +33,19 @@ const MODULOS: ModuloExport[] = [
   { chave: 'receitas', label: 'Receitas', descricao: 'Todas as receitas lançadas, com os comprovantes anexados.' },
   {
     chave: 'veiculos',
+    requer: 'veiculos',
     label: 'Manutenção Veículos',
     descricao: 'Veículos cadastrados e serviços de manutenção, com os comprovantes anexados aos serviços.',
   },
   {
     chave: 'operacoes_bolsa',
+    requer: 'operacoes_bolsa',
     label: 'Operações Bolsa',
     descricao: 'Operações na bolsa de valores, com os comprovantes anexados.',
   },
   {
     chave: 'devedores',
+    requer: 'devedores',
     label: 'Devedores',
     descricao: 'Parcelas de dívidas de terceiros, com os comprovantes anexados.',
   },
@@ -61,10 +68,12 @@ const MODULOS: ModuloExport[] = [
   imports: [IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent, IonButton, IonIcon, IonSpinner],
 })
 export class ExportarDadosPage {
-  readonly modulos = MODULOS;
+  /** Só os módulos que o usuário tem habilitados (o backend também barra os demais). */
+  readonly modulos = computed(() => MODULOS.filter((m) => !m.requer || this.auth.hasModule(m.requer)));
   readonly baixando = signal<ExportModulo | null>(null);
 
   constructor(
+    private readonly auth: AuthService,
     private readonly exportService: ExportService,
     private readonly downloadFileService: DownloadFileService,
     private readonly toastCtrl: ToastController,

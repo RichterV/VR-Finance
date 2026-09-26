@@ -1,0 +1,48 @@
+<ion-content [fullscreen]="true" class="login-content">
+  <div class="login-wrap">
+    <div class="brand">
+      <div class="brand-icon">$</div>
+      <h1>Defina sua senha</h1>
+      <p class="brand-subtitle">
+        @if (auth.currentUser(); as user) {
+          Olá, {{ user.first_name }}! A senha atual foi definida pelo administrador — escolha uma nova pra continuar.
+        }
+      </p>
+    </div>
+
+    <form class="login-card" [formGroup]="form" (ngSubmit)="submit()">
+      <ion-item>
+        <ion-input
+          label="Senha atual (recebida do administrador)"
+          labelPlacement="stacked"
+          type="password"
+          formControlName="currentPassword"
+          autocomplete="current-password"
+        ></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-input label="Nova senha" labelPlacement="stacked" type="password" formControlName="newPassword" autocomplete="new-password"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-input
+          label="Confirmar nova senha"
+          labelPlacement="stacked"
+          type="password"
+          formControlName="confirmPassword"
+          autocomplete="new-password"
+        ></ion-input>
+      </ion-item>
+
+      @if (errorMessage()) {
+        <ion-text color="danger">
+          <p>{{ errorMessage() }}</p>
+        </ion-text>
+      }
+
+      <ion-button type="submit" expand="block" [disabled]="saving()">
+        {{ saving() ? 'Salvando...' : 'Salvar nova senha' }}
+      </ion-button>
+      <button type="button" class="link-button" (click)="logout()">Sair</button>
+    </form>
+  </div>
+</ion-content>

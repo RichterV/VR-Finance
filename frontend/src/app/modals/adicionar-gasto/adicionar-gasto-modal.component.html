@@ -21,7 +21,13 @@
     </ion-segment>
 
     <ion-item>
-      <ion-select label="Item" placeholder="Selecione" formControlName="itemId" interface="popover">
+      <ion-select
+        label="Item"
+        placeholder="Selecione"
+        formControlName="itemId"
+        interface="popover"
+        [interfaceOptions]="categorySelectOptions"
+      >
         @for (item of items(); track item.id) {
           <ion-select-option [value]="item.id">{{ item.name }}</ion-select-option>
         }
@@ -76,8 +82,8 @@
       </ion-text>
     }
 
-    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving()">
-      {{ saving() ? 'Salvando...' : 'Salvar gasto' }}
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving() || attachmentBusy">
+      {{ saving() ? 'Salvando...' : attachmentBusy ? 'Aguarde o anexo...' : 'Salvar gasto' }}
     </ion-button>
   </form>
 </ion-content>

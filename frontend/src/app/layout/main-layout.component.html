@@ -19,7 +19,7 @@
           </div>
 
           <div class="side-nav-list">
-            @for (item of navItems; track item.route) {
+            @for (item of navItems(); track item.route) {
               <a
                 class="side-nav-item"
                 [routerLink]="item.route"
@@ -72,7 +72,7 @@
 
       <ion-content>
         <ion-list>
-          @for (item of navItems; track item.route) {
+          @for (item of navItems(); track item.route) {
             <ion-item
               [routerLink]="item.route"
               routerLinkActive="active-nav-item"

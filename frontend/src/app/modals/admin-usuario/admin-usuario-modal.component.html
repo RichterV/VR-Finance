@@ -1,0 +1,85 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>{{ isEdit ? 'Editar usuário' : 'Adicionar usuário' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <ion-item>
+      <ion-input label="Usuário" labelPlacement="stacked" formControlName="username" autocomplete="off"></ion-input>
+    </ion-item>
+    @if (isSelf) {
+      <p class="hint">O seu próprio nome de usuário é alterado pelo Perfil.</p>
+    }
+    <div class="field-row">
+      <ion-item class="col-grow">
+        <ion-input label="Nome" labelPlacement="stacked" formControlName="firstName"></ion-input>
+      </ion-item>
+      <ion-item class="col-grow">
+        <ion-input label="Sobrenome" labelPlacement="stacked" formControlName="lastName"></ion-input>
+      </ion-item>
+    </div>
+    <ion-item>
+      <ion-input
+        [label]="isEdit ? 'Nova senha (opcional)' : 'Senha inicial'"
+        labelPlacement="stacked"
+        type="password"
+        formControlName="password"
+        autocomplete="new-password"
+        [placeholder]="isEdit ? 'Deixe em branco pra manter a atual' : ''"
+      ></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-input
+        label="Confirmar senha"
+        labelPlacement="stacked"
+        type="password"
+        formControlName="confirmPassword"
+        autocomplete="new-password"
+      ></ion-input>
+    </ion-item>
+    @if (!isSelf) {
+      <p class="hint">
+        {{ isEdit ? 'Se definir uma nova senha, o usuário' : 'O usuário' }} vai precisar trocá-la no próximo login.
+      </p>
+    }
+
+    <h3 class="modules-title">Módulos</h3>
+    @if (isMasterUser) {
+      <p class="hint">O usuário master sempre tem todos os módulos habilitados.</p>
+    } @else {
+      <p class="hint">Início (resumos, gastos, receitas e categorias) é sempre habilitado.</p>
+    }
+    <ion-list class="modules-list" lines="none">
+      @for (module of optionalModules; track module.key) {
+        <ion-item lines="none">
+          <ion-icon slot="start" [name]="module.icon"></ion-icon>
+          <ion-toggle
+            justify="space-between"
+            [checked]="isModuleSelected(module.key)"
+            [disabled]="isMasterUser"
+            (ionChange)="toggleModule(module.key, $event.detail.checked)"
+          >
+            <ion-label>{{ module.label }}</ion-label>
+          </ion-toggle>
+        </ion-item>
+      }
+    </ion-list>
+
+    @if (errorMessage()) {
+      <ion-text color="danger">
+        <p>{{ errorMessage() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving()">
+      {{ saving() ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Criar usuário' }}
+    </ion-button>
+  </form>
+</ion-content>

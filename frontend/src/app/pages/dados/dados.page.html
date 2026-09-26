@@ -72,7 +72,7 @@
                   <th appSortTh="date" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Data</th>
                   <th appSortTh="priority" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Prioridade</th>
                   <th appSortTh="item" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Item</th>
-                  <th appSortTh="value" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Valor</th>
+                  <th class="num" appSortTh="value" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Valor</th>
                   <th appSortTh="installment" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Parcela</th>
                   <th appSortTh="description" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Descrição</th>
                   <th class="actions-col">Ações</th>
@@ -137,9 +137,9 @@
               <thead>
                 <tr>
                   <th appSortTh="date" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Data</th>
-                  <th appSortTh="value" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Valor</th>
-                  <th appSortTh="cash_percentage" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">% Caixa</th>
-                  <th appSortTh="cash_value" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Valor caixa</th>
+                  <th class="num" appSortTh="value" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Valor</th>
+                  <th class="num" appSortTh="cash_percentage" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">% Caixa</th>
+                  <th class="num" appSortTh="cash_value" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Valor caixa</th>
                   <th appSortTh="description" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Descrição</th>
                   <th class="actions-col">Ações</th>
                 </tr>

@@ -6,10 +6,14 @@ from sqlalchemy import extract
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.deps import get_current_user, get_db
+from app.deps import get_current_user, get_db, require_module
 from app.utils import add_months
 
-router = APIRouter(prefix="/veiculos", tags=["veiculos"])
+router = APIRouter(
+    prefix="/veiculos",
+    tags=["veiculos"],
+    dependencies=[Depends(require_module("veiculos"))],
+)
 
 
 def _get_owned_vehicle(db: Session, current_user: models.User, vehicle_id: int) -> models.Vehicle:

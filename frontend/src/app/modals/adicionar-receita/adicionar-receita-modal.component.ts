@@ -52,6 +52,11 @@ import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask
 export class AdicionarReceitaModalComponent {
   @ViewChild(AttachmentPickerComponent) attachmentPicker!: AttachmentPickerComponent;
 
+  /** Foto sendo processada / anexo subindo -- salvar agora gravaria o registro sem o anexo. */
+  get attachmentBusy(): boolean {
+    return this.attachmentPicker?.uploading() ?? false;
+  }
+
   readonly saving = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly valorDisplay = signal('');
@@ -87,6 +92,7 @@ export class AdicionarReceitaModalComponent {
   }
 
   async submit(): Promise<void> {
+    if (this.attachmentBusy) return;
     this.errorMessage.set(null);
     const { value, cashPercentage, description } = this.form.getRawValue();
 

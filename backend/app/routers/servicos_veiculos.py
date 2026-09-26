@@ -6,10 +6,14 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.deps import get_current_user, get_db
+from app.deps import get_current_user, get_db, require_module
 from app.routers.attachments import delete_attachments_for_key
 
-router = APIRouter(prefix="/servicos-veiculos", tags=["servicos-veiculos"])
+router = APIRouter(
+    prefix="/servicos-veiculos",
+    tags=["servicos-veiculos"],
+    dependencies=[Depends(require_module("veiculos"))],
+)
 
 
 def _mileage_neighbors(

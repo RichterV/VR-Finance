@@ -1,11 +1,16 @@
 import { Routes } from '@angular/router';
 
-import { authGuard } from './core/auth.guard';
+import { authGuard, masterGuard, moduleGuard, passwordChangeGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () => import('./pages/login/login.page').then((m) => m.LoginPage),
+  },
+  {
+    path: 'trocar-senha',
+    canActivate: [passwordChangeGuard],
+    loadComponent: () => import('./pages/trocar-senha/trocar-senha.page').then((m) => m.TrocarSenhaPage),
   },
   {
     path: 'servidor-indisponivel',
@@ -27,15 +32,26 @@ export const routes: Routes = [
       },
       {
         path: 'veiculos',
+        canActivate: [moduleGuard],
+        data: { module: 'veiculos' },
         loadComponent: () => import('./pages/veiculos/veiculos.page').then((m) => m.VeiculosPage),
       },
       {
         path: 'ferramentas',
+        canActivate: [moduleGuard],
+        data: { module: 'ferramentas' },
         loadComponent: () => import('./pages/ferramentas/ferramentas.page').then((m) => m.FerramentasPage),
       },
       {
         path: 'exportar-dados',
+        canActivate: [moduleGuard],
+        data: { module: 'exportar_dados' },
         loadComponent: () => import('./pages/exportar-dados/exportar-dados.page').then((m) => m.ExportarDadosPage),
+      },
+      {
+        path: 'admin',
+        canActivate: [masterGuard],
+        loadComponent: () => import('./pages/admin/admin.page').then((m) => m.AdminPage),
       },
       {
         path: '',

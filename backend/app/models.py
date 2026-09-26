@@ -1,9 +1,10 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, Date, DateTime, Float, ForeignKey, Index, Integer, String
+from sqlalchemy import Boolean, Column, Date, DateTime, Float, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.modules import OPTIONAL_MODULES
 
 
 class User(Base):
@@ -15,7 +16,37 @@ class User(Base):
     role = Column(String, nullable=False, default="user")  # "master" | "user"
     first_name = Column(String, nullable=False, default="")
     last_name = Column(String, nullable=False, default="")
+    # Senha definida pelo master (criação ou reset) -- o usuário precisa trocar antes de usar o app
+    must_change_password = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    module_rows = relationship("UserModule", cascade="all, delete-orphan")
+
+    @property
+    def modules(self) -> list[str]:
+        """Módulos opcionais habilitados (ver app/modules.py) -- o master sempre tem todos."""
+        if self.role == "master":
+            return list(OPTIONAL_MODULES)
+        enabled = {row.module_key for row in self.module_rows}
+        return [key for key in OPTIONAL_MODULES if key in enabled]
+
+    def set_modules(self, keys: list[str]) -> None:
+        wanted = set(keys)
+        self.module_rows = [row for row in self.module_rows if row.module_key in wanted]
+        current = {row.module_key for row in self.module_rows}
+        for key in OPTIONAL_MODULES:
+            if key in wanted and key not in current:
+                self.module_rows.append(UserModule(module_key=key))
+
+
+class UserModule(Base):
+    __tablename__ = "user_modules"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    module_key = Column(String, nullable=False)  # uma das chaves de app.modules.OPTIONAL_MODULES
+
+    __table_args__ = (UniqueConstraint("user_id", "module_key", name="uq_user_modules_user_module"),)
 
 
 class DropdownOption(Base):
