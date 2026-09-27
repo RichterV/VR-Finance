@@ -7,7 +7,8 @@ import { close } from 'ionicons/icons';
 import { Gasto, GastosService } from '../../services/gastos.service';
 import { Receita, ReceitasService } from '../../services/receitas.service';
 import { MESES_COMPLETOS } from '../../shared/months';
-import { SortState, sortItems, toggleSortState } from '../../shared/sortable';
+import { SortOption, SortState, sortItems, toggleSortState } from '../../shared/sortable';
+import { SortSelectComponent } from '../../shared/sort-select.component';
 import { SortThComponent } from '../../shared/sort-th.component';
 
 const LIMITE_ITENS = 200;
@@ -16,7 +17,7 @@ const LIMITE_ITENS = 200;
   selector: 'app-detalhes-mes-modal',
   templateUrl: './detalhes-mes-modal.component.html',
   styleUrls: ['./detalhes-mes-modal.component.scss'],
-  imports: [CurrencyPipe, DatePipe, IonHeader, IonToolbar, IonButtons, IonButton, IonIcon, IonTitle, IonContent, SortThComponent],
+  imports: [CurrencyPipe, DatePipe, IonHeader, IonToolbar, IonButtons, IonButton, IonIcon, IonTitle, IonContent, SortThComponent, SortSelectComponent],
 })
 export class DetalhesMesModalComponent implements OnInit {
   @Input({ required: true }) ano!: number;
@@ -28,6 +29,21 @@ export class DetalhesMesModalComponent implements OnInit {
 
   readonly gastosSort = signal<SortState>({ column: 'value', direction: 'desc' });
   readonly receitasSort = signal<SortState>({ column: 'value', direction: 'desc' });
+
+  // Sem opção "padrão": aqui a ordem inicial já é maior valor primeiro.
+  readonly gastosSortOptions: readonly SortOption[] = [
+    { value: 'value:desc', label: 'Maior valor' },
+    { value: 'value:asc', label: 'Menor valor' },
+    { value: 'date:desc', label: 'Mais recentes' },
+    { value: 'date:asc', label: 'Mais antigos' },
+    { value: 'item:asc', label: 'Categoria (A–Z)' },
+  ];
+  readonly receitasSortOptions: readonly SortOption[] = [
+    { value: 'value:desc', label: 'Maior valor' },
+    { value: 'value:asc', label: 'Menor valor' },
+    { value: 'date:desc', label: 'Mais recentes' },
+    { value: 'date:asc', label: 'Mais antigas' },
+  ];
 
   readonly sortedGastos = computed(() =>
     sortItems(this.gastos(), this.gastosSort(), (g, column) => this.gastoSortValue(g, column)),

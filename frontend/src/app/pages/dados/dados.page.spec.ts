@@ -110,4 +110,12 @@ describe('DadosPage', () => {
     component.toggleGastosSort('item');
     expect(component.sortedGastos().map((g) => g.item_name)).toEqual(['Casa', 'Lanche']);
   });
+
+  it('renders one mobile card per gasto with item and value', () => {
+    fixture.detectChanges();
+    const cards = fixture.nativeElement.querySelectorAll('.entry-card');
+    expect(cards.length).toBe(2);
+    expect(cards[0].querySelector('.entry-title').textContent).toContain('Casa');
+    expect(cards[0].querySelector('.entry-value').textContent).toContain('300');
+  });
 });

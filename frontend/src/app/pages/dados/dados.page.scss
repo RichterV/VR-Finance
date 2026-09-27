@@ -1,3 +1,5 @@
+$mobile-max: 767px;
+
 .dados {
   max-width: 1200px;
   margin: 0 auto;
@@ -71,4 +73,20 @@ td.description {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--app-text-secondary);
+}
+
+// Cartões do celular: estilos compartilhados em global.scss (.entry-*). Aqui só o que é de /dados.
+@media (max-width: $mobile-max) {
+  // "Gastos"/"Receitas" repete a aba logo acima -- no celular fica só o contador.
+  .data-section h2 {
+    font-size: 0;
+
+    .count {
+      font-size: 0.85rem;
+    }
+  }
+
+  .dados {
+    gap: 20px;
+  }
 }

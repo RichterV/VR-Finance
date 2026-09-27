@@ -431,6 +431,183 @@ ion-input .currency-prefix {
   }
 }
 
+// --- Listas em cartões no celular ---------------------------------------------------------------
+// Abaixo de 768px toda tabela marcada com `.has-cards` some e dá lugar a uma
+// `.entry-list` irmã (um `.entry-card` por linha) -- as tabelas escondiam colunas atrás de scroll
+// lateral, inclusive o valor. Tabela e cartões ficam os dois no DOM e a troca é só por CSS (mesmo
+// padrão do painel de Administração). Estrutura do cartão:
+//   .entry-main  -> [.prio-dot] .entry-title ............ .entry-value
+//   .entry-meta  -> .entry-meta-text (data · detalhes) ... .entry-actions (anexo sempre primeiro)
+//   .entry-desc  -> descrição/observação, só quando existe
+// Sem cabeçalho clicável, a ordenação fica no <app-sort-select>, também só no celular.
+$cards-breakpoint: 767px;
+
+.entry-list,
+app-sort-select {
+  display: none;
+}
+
+@media (max-width: $cards-breakpoint) {
+  .has-cards {
+    display: none !important;
+  }
+
+  .entry-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  app-sort-select {
+    display: block;
+  }
+}
+
+.entry-card {
+  @include ds.app-card-compact;
+  padding: 12px 12px 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  // Lembrete visual (parcela de devedor do mês atual) -- mesma borda âmbar da linha da tabela.
+  &.highlight {
+    background: rgba(var(--ion-color-warning-rgb), 0.1);
+    box-shadow: inset 3px 0 0 var(--ion-color-warning);
+  }
+}
+
+.entry-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// Prioridade como ponto colorido na frente do item (verde = essencial, âmbar = não essencial);
+// o texto por extenso fica nos metadados.
+.prio-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ion-color-warning);
+
+  &.essencial {
+    background: var(--ion-color-primary);
+  }
+}
+
+.entry-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--app-text-primary);
+
+  &.muted {
+    color: var(--app-text-secondary);
+    font-weight: 500;
+  }
+}
+
+.entry-value {
+  flex-shrink: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text-primary);
+
+  &.income {
+    color: var(--ion-color-success);
+  }
+
+  &.danger {
+    color: var(--ion-color-danger);
+  }
+}
+
+.entry-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.entry-meta-text {
+  min-width: 0;
+  font-size: 0.8rem;
+  color: var(--app-text-secondary);
+  font-variant-numeric: tabular-nums;
+
+  strong {
+    color: var(--app-text-primary);
+    font-weight: 600;
+  }
+}
+
+.entry-actions {
+  flex-shrink: 0;
+  display: flex;
+  margin-right: -6px;
+}
+
+.entry-desc {
+  margin: 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--app-surface-border);
+  font-size: 0.82rem;
+  color: var(--app-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Pílula curta dentro do título/metadados (tipo de operação, status de devedor).
+.entry-chip {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--app-text-secondary);
+  border: 1px solid var(--app-surface-border);
+}
+
+.entry-empty {
+  @include ds.app-card-compact;
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--app-text-secondary);
+}
+
+// Contador "(25 de 194)" nunca quebra no meio quando divide a linha com o "Ordenar por".
+.section-title-row h2 .count {
+  white-space: nowrap;
+}
+
+// Busca + "Ordenar por" lado a lado no celular.
+@media (max-width: $cards-breakpoint) {
+  .list-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+
+    ion-input {
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: none !important;
+    }
+
+    app-sort-select {
+      flex: 0 0 150px;
+    }
+  }
+}
+
 // Hierarquia tipográfica básica -- antes cada página redeclarava peso/cor de h1/h2/h3 em ad hoc
 // (mesmo trio de propriedades, idêntico, em home/veículos/operações-bolsa/devedores). Não mexe em
 // font-size aqui de propósito -- cada página já define o tamanho que faz sentido pro contexto

@@ -149,3 +149,20 @@ td.description {
     max-width: 140px;
   }
 }
+
+.section-header .list-controls {
+  flex: 1;
+  max-width: 280px;
+
+  .busca-filter {
+    max-width: none;
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 767px) {
+  .section-header .list-controls {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}

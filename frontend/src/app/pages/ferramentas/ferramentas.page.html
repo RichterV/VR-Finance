@@ -266,7 +266,7 @@
           </button>
 
           @if (mostrarTabelaMensal()) {
-            <div class="mini-table-card">
+            <div class="mini-table-card has-cards">
               <div class="table-scroll">
                 <table>
                   <thead>
@@ -289,6 +289,22 @@
                   </tbody>
                 </table>
               </div>
+            </div>
+            <div class="entry-list">
+              @for (m of r.meses; track m.mes) {
+                <article class="entry-card" [class.esgotado]="m.saldoEsgotado">
+                  <div class="entry-main">
+                    <strong class="entry-title">Mês {{ m.mes }}</strong>
+                    <span class="entry-value" [class.danger]="m.saldoEsgotado">{{ m.montanteRestante | currency: 'BRL' }}</span>
+                  </div>
+                  <div class="entry-meta">
+                    <span class="entry-meta-text">
+                      Juros <strong>{{ m.juros | currency: 'BRL' }}</strong> · acumulados {{ m.jurosAcumulados | currency: 'BRL' }}
+                    </span>
+                    <span class="entry-meta-text">restante</span>
+                  </div>
+                </article>
+              }
             </div>
           }
         </div>

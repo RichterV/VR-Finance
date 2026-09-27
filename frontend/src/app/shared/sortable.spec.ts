@@ -1,4 +1,4 @@
-import { sortItems, toggleSortState, UNSORTED } from './sortable';
+import { DEFAULT_SORT_KEY, sortItems, sortKeyToState, sortStateToKey, toggleSortState, UNSORTED } from './sortable';
 
 describe('toggleSortState', () => {
   it('starts ascending when a new column is clicked', () => {
@@ -58,5 +58,19 @@ describe('sortItems', () => {
 
     const desc = sortItems(rows, { column: 'name', direction: 'desc' }, accessor);
     expect(desc[desc.length - 1].name).toBeNull();
+  });
+});
+
+describe('sortStateToKey / sortKeyToState', () => {
+  it('maps UNSORTED to the default key and back', () => {
+    expect(sortStateToKey(UNSORTED)).toBe(DEFAULT_SORT_KEY);
+    expect(sortKeyToState(DEFAULT_SORT_KEY)).toEqual(UNSORTED);
+    expect(sortKeyToState(null)).toEqual(UNSORTED);
+  });
+
+  it('round-trips a column and direction', () => {
+    const state = { column: 'value', direction: 'desc' } as const;
+    expect(sortStateToKey(state)).toBe('value:desc');
+    expect(sortKeyToState('value:desc')).toEqual(state);
   });
 });

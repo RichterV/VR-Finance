@@ -54,3 +54,21 @@ td.description {
   white-space: nowrap;
   color: var(--app-text-secondary);
 }
+
+// Título + "Ordenar por" (este só aparece no celular, junto com os cartões).
+.section-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  app-sort-select {
+    flex: 0 0 160px;
+  }
+}
+
+// Top-3 no cartão: mesma linha vermelha da tabela, na borda esquerda.
+.entry-card.top-gasto {
+  box-shadow: inset 3px 0 0 var(--ion-color-danger);
+}

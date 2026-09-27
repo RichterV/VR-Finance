@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, signal } from '@angular/core';
 import {
   AlertController,
@@ -30,7 +30,8 @@ import { Vehicle, VeiculosService, VehiclesResumo } from '../../services/veiculo
 import { LoadingStateComponent } from '../../shared/loading-state.component';
 import { ResetPeriodButtonComponent } from '../../shared/reset-period-button.component';
 import { MESES_COMPLETOS } from '../../shared/months';
-import { SortState, sortItems, toggleSortState, UNSORTED } from '../../shared/sortable';
+import { DEFAULT_SORT_KEY, SortOption, SortState, sortItems, toggleSortState, UNSORTED } from '../../shared/sortable';
+import { SortSelectComponent } from '../../shared/sort-select.component';
 import { SortThComponent } from '../../shared/sort-th.component';
 import { buildVeiculosChartData, VEICULOS_CHART_OPTIONS } from './veiculos-chart';
 
@@ -46,6 +47,7 @@ const PAGE_SIZE = 25;
   styleUrls: ['./veiculos.page.scss'],
   imports: [
     CurrencyPipe,
+    DecimalPipe,
     DatePipe,
     IonHeader,
     IonToolbar,
@@ -60,6 +62,7 @@ const PAGE_SIZE = 25;
     IonSelectOption,
     BaseChartDirective,
     SortThComponent,
+    SortSelectComponent,
     LoadingStateComponent,
     ResetPeriodButtonComponent,
   ],
@@ -87,6 +90,15 @@ export class VeiculosPage {
 
   readonly vehiclesSort = signal<SortState>(UNSORTED);
   readonly servicesSort = signal<SortState>(UNSORTED);
+
+  readonly servicesSortOptions: readonly SortOption[] = [
+    { value: DEFAULT_SORT_KEY, label: 'Mais recentes' },
+    { value: 'date:asc', label: 'Mais antigos' },
+    { value: 'value:desc', label: 'Maior valor' },
+    { value: 'value:asc', label: 'Menor valor' },
+    { value: 'mileage:desc', label: 'Maior km' },
+    { value: 'vehicle:asc', label: 'Veículo (A–Z)' },
+  ];
 
   readonly sortedVehicles = computed(() =>
     sortItems(this.vehicles(), this.vehiclesSort(), (v, column) => this.vehicleSortValue(v, column)),

@@ -33,7 +33,9 @@
         interface="popover"
         [interfaceOptions]="{ size: 'auto' }"
         fill="outline"
-        placeholder="Mês"
+        label="Mês"
+        labelPlacement="floating"
+        [selectedText]="mesResumo() === null ? 'Todos' : null"
       >
         <ion-select-option [value]="null">Todos os meses</ion-select-option>
         @for (m of meses; track $index) {
@@ -45,7 +47,9 @@
         (ionChange)="onAnoResumoChange($any($event.detail.value))"
         interface="popover"
         fill="outline"
-        placeholder="Ano"
+        label="Ano"
+        labelPlacement="floating"
+        [selectedText]="anoResumo() === null ? 'Todos' : null"
       >
         <ion-select-option [value]="null">Todos os anos</ion-select-option>
         @for (a of anos; track a) {
@@ -84,7 +88,7 @@
       <div class="section-header">
         <h2>Veículos cadastrados</h2>
       </div>
-      <div class="table-card">
+      <div class="table-card has-cards">
         <table>
           <thead>
             <tr>
@@ -115,18 +119,41 @@
           </tbody>
         </table>
       </div>
+      <div class="entry-list">
+        @for (vehicle of sortedVehicles(); track vehicle.id) {
+          <article class="entry-card">
+            <div class="entry-meta">
+              <strong class="entry-title">{{ vehicle.name }}</strong>
+              <span class="entry-meta-text">{{ vehicle.year }}</span>
+              <span class="entry-actions">
+                <button class="icon-btn" title="Editar" (click)="editarVeiculo(vehicle)">
+                  <ion-icon name="create"></ion-icon>
+                </button>
+                <button class="icon-btn danger" title="Excluir" (click)="excluirVeiculo(vehicle)">
+                  <ion-icon name="trash"></ion-icon>
+                </button>
+              </span>
+            </div>
+          </article>
+        } @empty {
+          <div class="entry-empty">Nenhum veículo cadastrado.</div>
+        }
+      </div>
     </section>
 
     <section class="data-section">
       <div class="section-header">
         <h2>Serviços <span class="count">({{ services().length }} de {{ totalServices() }})</span></h2>
-        <ion-input
-          [value]="buscaServicos()"
-          (ionInput)="onBuscaServicosInput($event)"
-          fill="outline"
-          placeholder="Buscar por descrição ou observação"
-          class="busca-filter"
-        ></ion-input>
+        <div class="list-controls">
+          <ion-input
+            [value]="buscaServicos()"
+            (ionInput)="onBuscaServicosInput($event)"
+            fill="outline"
+            placeholder="Buscar por descrição ou observação"
+            class="busca-filter"
+          ></ion-input>
+          <app-sort-select [options]="servicesSortOptions" [state]="servicesSort()" (stateChange)="servicesSort.set($event)"></app-sort-select>
+        </div>
         <ion-select
           [value]="filtroVeiculoId()"
           (ionChange)="onFiltroVeiculoChange($any($event.detail.value))"
@@ -141,7 +168,7 @@
           }
         </ion-select>
       </div>
-      <div class="table-card">
+      <div class="table-card has-cards">
         <div class="table-scroll">
           <table>
             <thead>
@@ -188,6 +215,45 @@
             </tbody>
           </table>
         </div>
+      </div>
+      <div class="entry-list">
+        @for (servico of sortedServices(); track servico.id) {
+          <article class="entry-card">
+            <div class="entry-main">
+              <strong class="entry-title">{{ servico.description }}</strong>
+              <span class="entry-value">{{ servico.value | currency: 'BRL' }}</span>
+            </div>
+            <div class="entry-meta">
+              <span class="entry-meta-text">
+                {{ servico.date | date: 'dd/MM/yyyy' }} · <strong>{{ servico.vehicle_name }}</strong>
+                @if (servico.mileage != null) {
+                  · {{ servico.mileage | number: '1.0-0' }} km
+                }
+                @if (servico.service_type) {
+                  · {{ serviceTypeLabel(servico.service_type) }}
+                }
+              </span>
+              <span class="entry-actions">
+                @if (serviceAttachmentKeys().has(rowKeyServico(servico))) {
+                  <button class="icon-btn" title="Baixar anexos" (click)="abrirAnexosServico($event, servico)">
+                    <ion-icon name="attach-outline"></ion-icon>
+                  </button>
+                }
+                <button class="icon-btn" title="Editar" (click)="editarServico(servico)">
+                  <ion-icon name="create"></ion-icon>
+                </button>
+                <button class="icon-btn danger" title="Excluir" (click)="excluirServico(servico)">
+                  <ion-icon name="trash"></ion-icon>
+                </button>
+              </span>
+            </div>
+            @if (servico.notes) {
+              <p class="entry-desc">{{ servico.notes }}</p>
+            }
+          </article>
+        } @empty {
+          <div class="entry-empty">Nenhum serviço registrado ainda.</div>
+        }
       </div>
       @if (services().length < totalServices()) {
         <button class="load-more-btn" (click)="carregarMaisServicos()">

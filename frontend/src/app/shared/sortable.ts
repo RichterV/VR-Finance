@@ -37,3 +37,22 @@ export function sortItems<T>(
   const dir = state.direction === 'asc' ? 1 : -1;
   return [...items].sort((a, b) => compareValues(accessor(a, column), accessor(b, column), dir));
 }
+
+/** Valor do seletor "Ordenar por" (cartões do celular) que corresponde a UNSORTED (ordem do backend). */
+export const DEFAULT_SORT_KEY = 'padrao';
+
+export interface SortOption {
+  /** `coluna:direção` (ex: `value:desc`) ou DEFAULT_SORT_KEY. */
+  readonly value: string;
+  readonly label: string;
+}
+
+export function sortStateToKey(state: SortState): string {
+  return state.column ? `${state.column}:${state.direction}` : DEFAULT_SORT_KEY;
+}
+
+export function sortKeyToState(key: string | null | undefined): SortState {
+  if (!key || key === DEFAULT_SORT_KEY) return UNSORTED;
+  const [column, direction] = key.split(':');
+  return { column, direction: direction === 'desc' ? 'desc' : 'asc' };
+}

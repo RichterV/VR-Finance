@@ -30,7 +30,9 @@
           interface="popover"
           [interfaceOptions]="{ size: 'auto' }"
           fill="outline"
-          placeholder="Mês"
+          label="Mês"
+          labelPlacement="floating"
+          [selectedText]="mes() === null ? 'Todos' : null"
         >
           <ion-select-option [value]="null">Todos os meses</ion-select-option>
           @for (m of meses; track $index) {
@@ -42,7 +44,9 @@
           (ionChange)="onAnoChange($any($event.detail.value))"
           interface="popover"
           fill="outline"
-          placeholder="Ano"
+          label="Ano"
+          labelPlacement="floating"
+          [selectedText]="ano() === null ? 'Todos' : null"
         >
           <ion-select-option [value]="null">Todos os anos</ion-select-option>
           @for (a of anos; track a) {
@@ -57,14 +61,17 @@
     } @else if (aba() === 'gastos') {
       <section class="data-section">
         <h2>Gastos <span class="count">({{ gastos().length }} de {{ totalGastos() }})</span></h2>
-        <ion-input
-          [value]="buscaGastos()"
-          (ionInput)="onBuscaGastosInput($event)"
-          fill="outline"
-          placeholder="Buscar por descrição ou categoria"
-          class="busca-filter"
-        ></ion-input>
-        <div class="table-card">
+        <div class="list-controls">
+          <ion-input
+            [value]="buscaGastos()"
+            (ionInput)="onBuscaGastosInput($event)"
+            fill="outline"
+            placeholder="Buscar por descrição ou categoria"
+            class="busca-filter"
+          ></ion-input>
+          <app-sort-select [options]="gastosSortOptions" [state]="gastosSort()" (stateChange)="gastosSort.set($event)"></app-sort-select>
+        </div>
+        <div class="table-card has-cards">
           <div class="table-scroll">
             <table>
               <thead>
@@ -115,6 +122,49 @@
             </table>
           </div>
         </div>
+        <div class="entry-list">
+          @for (gasto of sortedGastos(); track gasto.id) {
+            <article class="entry-card">
+              <div class="entry-main">
+                <span class="prio-dot" [class.essencial]="gasto.priority === 'essencial'"></span>
+                <strong class="entry-title">{{ gasto.item_name }}</strong>
+                <span class="entry-value">{{ gasto.value | currency: 'BRL' }}</span>
+              </div>
+              <div class="entry-meta">
+                <span class="entry-meta-text">
+                  {{ gasto.date | date: 'dd/MM/yyyy' }}
+                  · {{ gasto.priority === 'essencial' ? 'Essencial' : 'Não essencial' }}
+                  @if (gasto.is_installment) {
+                    · <strong>{{ gasto.installment_number }}/{{ gasto.installment_count }}</strong>
+                  }
+                </span>
+                <span class="entry-actions">
+                  @if (gastoAttachmentKeys().has(rowKeyGasto(gasto))) {
+                    <button class="icon-btn" title="Baixar anexos" (click)="abrirAnexosGasto($event, gasto)">
+                      <ion-icon name="attach-outline"></ion-icon>
+                    </button>
+                  }
+                  @if (isAntecipavel(gasto)) {
+                    <button class="icon-btn highlight" title="Antecipar pra este mês" (click)="anteciparGasto(gasto)">
+                      <ion-icon name="today-outline"></ion-icon>
+                    </button>
+                  }
+                  <button class="icon-btn" title="Editar" (click)="editarGasto(gasto)">
+                    <ion-icon name="create"></ion-icon>
+                  </button>
+                  <button class="icon-btn danger" title="Excluir" (click)="excluirGasto(gasto)">
+                    <ion-icon name="trash"></ion-icon>
+                  </button>
+                </span>
+              </div>
+              @if (gasto.description) {
+                <p class="entry-desc">{{ gasto.description }}</p>
+              }
+            </article>
+          } @empty {
+            <div class="entry-empty">Nenhum gasto encontrado para o filtro selecionado.</div>
+          }
+        </div>
         @if (gastos().length < totalGastos()) {
           <button class="load-more-btn" (click)="carregarMaisGastos()">
             Carregar mais 25 ({{ totalGastos() - gastos().length }} restantes)
@@ -124,14 +174,17 @@
     } @else {
       <section class="data-section">
         <h2>Receitas <span class="count">({{ receitas().length }} de {{ totalReceitas() }})</span></h2>
-        <ion-input
-          [value]="buscaReceitas()"
-          (ionInput)="onBuscaReceitasInput($event)"
-          fill="outline"
-          placeholder="Buscar por descrição"
-          class="busca-filter"
-        ></ion-input>
-        <div class="table-card">
+        <div class="list-controls">
+          <ion-input
+            [value]="buscaReceitas()"
+            (ionInput)="onBuscaReceitasInput($event)"
+            fill="outline"
+            placeholder="Buscar por descrição"
+            class="busca-filter"
+          ></ion-input>
+          <app-sort-select [options]="receitasSortOptions" [state]="receitasSort()" (stateChange)="receitasSort.set($event)"></app-sort-select>
+        </div>
+        <div class="table-card has-cards">
           <div class="table-scroll">
             <table>
               <thead>
@@ -174,6 +227,37 @@
               </tbody>
             </table>
           </div>
+        </div>
+        <div class="entry-list">
+          @for (receita of sortedReceitas(); track receita.id) {
+            <article class="entry-card">
+              <div class="entry-main">
+                <strong class="entry-title" [class.muted]="!receita.description">{{ receita.description || 'Receita' }}</strong>
+                <span class="entry-value income">{{ receita.value | currency: 'BRL' }}</span>
+              </div>
+              <div class="entry-meta">
+                <span class="entry-meta-text">
+                  {{ receita.date | date: 'dd/MM/yyyy' }}
+                  · Caixa {{ receita.cash_percentage }}% ({{ receita.cash_value | currency: 'BRL' }})
+                </span>
+                <span class="entry-actions">
+                  @if (receitaAttachmentKeys().has(rowKeyReceita(receita))) {
+                    <button class="icon-btn" title="Baixar anexos" (click)="abrirAnexosReceita($event, receita)">
+                      <ion-icon name="attach-outline"></ion-icon>
+                    </button>
+                  }
+                  <button class="icon-btn" title="Editar" (click)="editarReceita(receita)">
+                    <ion-icon name="create"></ion-icon>
+                  </button>
+                  <button class="icon-btn danger" title="Excluir" (click)="excluirReceita(receita)">
+                    <ion-icon name="trash"></ion-icon>
+                  </button>
+                </span>
+              </div>
+            </article>
+          } @empty {
+            <div class="entry-empty">Nenhuma receita encontrada para o filtro selecionado.</div>
+          }
         </div>
         @if (receitas().length < totalReceitas()) {
           <button class="load-more-btn" (click)="carregarMaisReceitas()">

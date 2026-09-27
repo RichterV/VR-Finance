@@ -31,7 +31,8 @@ import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask
 import { LoadingStateComponent } from '../../shared/loading-state.component';
 import { ResetPeriodButtonComponent } from '../../shared/reset-period-button.component';
 import { MESES_COMPLETOS } from '../../shared/months';
-import { SortState, sortItems, toggleSortState, UNSORTED } from '../../shared/sortable';
+import { DEFAULT_SORT_KEY, SortOption, SortState, sortItems, toggleSortState, UNSORTED } from '../../shared/sortable';
+import { SortSelectComponent } from '../../shared/sort-select.component';
 import { SortThComponent } from '../../shared/sort-th.component';
 
 function formatBRL(value: number): string {
@@ -61,6 +62,7 @@ const PAGE_SIZE = 25;
     IonSegmentButton,
     IonLabel,
     SortThComponent,
+    SortSelectComponent,
     LoadingStateComponent,
     ResetPeriodButtonComponent,
   ],
@@ -85,6 +87,20 @@ export class DadosPage {
 
   readonly gastosSort = signal<SortState>(UNSORTED);
   readonly receitasSort = signal<SortState>(UNSORTED);
+
+  readonly gastosSortOptions: readonly SortOption[] = [
+    { value: DEFAULT_SORT_KEY, label: 'Mais recentes' },
+    { value: 'date:asc', label: 'Mais antigos' },
+    { value: 'value:desc', label: 'Maior valor' },
+    { value: 'value:asc', label: 'Menor valor' },
+    { value: 'item:asc', label: 'Categoria (A–Z)' },
+  ];
+  readonly receitasSortOptions: readonly SortOption[] = [
+    { value: DEFAULT_SORT_KEY, label: 'Mais recentes' },
+    { value: 'date:asc', label: 'Mais antigos' },
+    { value: 'value:desc', label: 'Maior valor' },
+    { value: 'value:asc', label: 'Menor valor' },
+  ];
 
   readonly gastoAttachmentKeys = signal<Set<string>>(new Set());
   readonly receitaAttachmentKeys = signal<Set<string>>(new Set());

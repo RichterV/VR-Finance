@@ -12,16 +12,19 @@
 <ion-content [fullscreen]="true" class="ion-padding">
   <div class="detalhes-mes">
     <section class="data-section">
-      <h2>
-        Gastos <span class="count">({{ gastos().length }})</span>
-        @if (gastos().length) {
-          <span class="legend-top3">
-            <span class="legend-swatch"></span>
-            3 maiores gastos
-          </span>
-        }
-      </h2>
-      <div class="table-card">
+      <div class="section-title-row">
+        <h2>
+          Gastos <span class="count">({{ gastos().length }})</span>
+          @if (gastos().length) {
+            <span class="legend-top3">
+              <span class="legend-swatch"></span>
+              3 maiores gastos
+            </span>
+          }
+        </h2>
+        <app-sort-select [options]="gastosSortOptions" [state]="gastosSort()" (stateChange)="gastosSort.set($event)"></app-sort-select>
+      </div>
+      <div class="table-card has-cards">
         <div class="table-scroll">
           <table>
             <thead>
@@ -53,11 +56,39 @@
           </table>
         </div>
       </div>
+      <div class="entry-list">
+        @for (gasto of sortedGastos(); track gasto.id) {
+          <article class="entry-card" [class.top-gasto]="top3GastoIds().has(gasto.id)">
+            <div class="entry-main">
+              <span class="prio-dot" [class.essencial]="gasto.priority === 'essencial'"></span>
+              <strong class="entry-title">{{ gasto.item_name }}</strong>
+              <span class="entry-value" [class.danger]="top3GastoIds().has(gasto.id)">{{ gasto.value | currency: 'BRL' }}</span>
+            </div>
+            <div class="entry-meta">
+              <span class="entry-meta-text">
+                {{ gasto.date | date: 'dd/MM/yyyy' }}
+                · {{ gasto.priority === 'essencial' ? 'Essencial' : 'Não essencial' }}
+                @if (gasto.is_installment) {
+                  · <strong>{{ gasto.installment_number }}/{{ gasto.installment_count }}</strong>
+                }
+              </span>
+            </div>
+            @if (gasto.description) {
+              <p class="entry-desc">{{ gasto.description }}</p>
+            }
+          </article>
+        } @empty {
+          <div class="entry-empty">Nenhum gasto neste mês.</div>
+        }
+      </div>
     </section>
 
     <section class="data-section">
-      <h2>Receitas <span class="count">({{ receitas().length }})</span></h2>
-      <div class="table-card">
+      <div class="section-title-row">
+        <h2>Receitas <span class="count">({{ receitas().length }})</span></h2>
+        <app-sort-select [options]="receitasSortOptions" [state]="receitasSort()" (stateChange)="receitasSort.set($event)"></app-sort-select>
+      </div>
+      <div class="table-card has-cards">
         <div class="table-scroll">
           <table>
             <thead>
@@ -86,6 +117,24 @@
             </tbody>
           </table>
         </div>
+      </div>
+      <div class="entry-list">
+        @for (receita of sortedReceitas(); track receita.id) {
+          <article class="entry-card">
+            <div class="entry-main">
+              <strong class="entry-title" [class.muted]="!receita.description">{{ receita.description || 'Receita' }}</strong>
+              <span class="entry-value income">{{ receita.value | currency: 'BRL' }}</span>
+            </div>
+            <div class="entry-meta">
+              <span class="entry-meta-text">
+                {{ receita.date | date: 'dd/MM/yyyy' }}
+                · Caixa {{ receita.cash_percentage }}% ({{ receita.cash_value | currency: 'BRL' }})
+              </span>
+            </div>
+          </article>
+        } @empty {
+          <div class="entry-empty">Nenhuma receita neste mês.</div>
+        }
       </div>
     </section>
   </div>
