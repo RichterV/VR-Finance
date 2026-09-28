@@ -28,6 +28,16 @@ export function buildPastedFileName(mimeType: string): string {
   return `colado-${stamp}.${ext}`;
 }
 
+/**
+ * Formato curto do anexo pra exibir (ex: "PDF", "PNG"), pelo `content_type` -- validado contra a
+ * whitelist no backend, então mais confiável que a extensão do nome enviado. Tipo fora do mapa cai
+ * na extensão do nome e, sem extensão, em "ARQUIVO".
+ */
+export function attachmentFormatLabel(file: { content_type: string; original_filename: string }): string {
+  const ext = EXTENSION_BY_TYPE[file.content_type] ?? file.original_filename.match(/\.([a-z0-9]{1,5})$/i)?.[1];
+  return (ext ?? 'arquivo').toUpperCase();
+}
+
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;

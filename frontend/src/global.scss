@@ -148,6 +148,18 @@ ion-modal form .cash-card {
   margin-bottom: 14px;
 }
 
+/* Aviso nos modais de editar parcela: a edição vale pro grupo inteiro de parcelas. */
+ion-modal form .installment-note {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--app-surface-border);
+  background: var(--app-surface-glass);
+  color: var(--app-text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
 ion-modal form .cash-card ion-item {
   margin-bottom: 0;
   --padding-top: 4px;
@@ -675,4 +687,11 @@ ion-popover.category-select-popover {
   &::part(content) {
     margin-top: 18px;
   }
+}
+
+// Popover de anexos (ícone "Baixar anexos" das listagens): o padrão do Ionic (250px) espremia o
+// nome do arquivo entre o ícone e os 2-3 botões de ação, que quebrava letra por letra no celular.
+// `:has()` pra valer nas 4 telas que abrem o popover sem cada uma precisar passar um cssClass.
+ion-popover:has(app-attachments-popover) {
+  --width: min(360px, calc(100vw - 32px));
 }

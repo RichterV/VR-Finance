@@ -73,11 +73,49 @@ export class DownloadFileService {
       return { shared: true };
     }
 
+    return this.shareNatively(blob, filename, 'Salvar exportação');
+  }
+
+  /**
+   * Se dá pra enviar um anexo pra outro app (WhatsApp etc.) daqui: só no celular -- APK, ou
+   * navegador de toque (`pointer: coarse`, mesmo critério do botão de câmera) com a Web Share API
+   * aceitando arquivos (Chrome do Android; exige HTTPS, que o site já tem). No navegador do PC o
+   * botão nem aparece, pedido explícito.
+   */
+  canShareAttachment(): boolean {
+    if (Capacitor.isNativePlatform()) return true;
+    if (!window.matchMedia('(pointer: coarse)').matches) return false;
+    if (typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') return false;
+    return navigator.canShare({ files: [new File([''], 'teste.pdf', { type: 'application/pdf' })] });
+  }
+
+  /**
+   * Abre a folha de compartilhar do sistema com um anexo, pra mandar por outro app. APK: grava no
+   * cache e usa @capacitor/share (mesmo caminho de `shareFile`). Navegador do celular: Web Share
+   * API com um `File` -- sem gravar nada, o próprio navegador entrega o arquivo ao app escolhido.
+   */
+  async shareAttachment(blob: Blob, filename: string): Promise<ShareResult> {
+    if (Capacitor.isNativePlatform()) {
+      return this.shareNatively(blob, filename, 'Compartilhar anexo');
+    }
+    const file = new File([blob], filename, { type: blob.type });
+    try {
+      await navigator.share({ files: [file], title: filename });
+      return { shared: true };
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return { shared: false };
+      }
+      throw err;
+    }
+  }
+
+  private async shareNatively(blob: Blob, filename: string, dialogTitle: string): Promise<ShareResult> {
     const base64Data = await blobToBase64(blob);
     await Filesystem.writeFile({ path: filename, data: base64Data, directory: Directory.Cache });
     const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
     try {
-      await Share.share({ files: [uri], dialogTitle: 'Salvar exportação' });
+      await Share.share({ files: [uri], dialogTitle });
       return { shared: true };
     } catch (err) {
       if (err instanceof Error && err.message === 'Share canceled') {

@@ -1,4 +1,4 @@
-import { MAX_ZOOM, MIN_ZOOM, clampZoom, focalZoomScroll, touchDistance, touchMidpoint } from './pinch-zoom';
+import { MAX_ZOOM, MIN_ZOOM, clampZoom, focalZoomScroll, touchDistance, touchMidpoint, isLikelyMouseWheel } from './pinch-zoom';
 
 describe('clampZoom', () => {
   it('keeps values inside [MIN_ZOOM, MAX_ZOOM] unchanged', () => {
@@ -49,5 +49,19 @@ describe('focalZoomScroll', () => {
     const before = { scrollLeft: 0, scrollTop: 0, scrollWidth: 800, scrollHeight: 600 };
     const result = focalZoomScroll(before, { scrollWidth: 400, scrollHeight: 300 }, { x: 300, y: 200 });
     expect(result).toEqual({ left: 0, top: 0 });
+  });
+});
+
+describe('isLikelyMouseWheel', () => {
+  it('treats line-mode events (Firefox) and big integer vertical steps (Chrome) as a mouse wheel', () => {
+    expect(isLikelyMouseWheel({ deltaMode: 1, deltaX: 0, deltaY: 3 })).toBe(true);
+    expect(isLikelyMouseWheel({ deltaMode: 0, deltaX: 0, deltaY: -100 })).toBe(true);
+    expect(isLikelyMouseWheel({ deltaMode: 0, deltaX: 0, deltaY: 120 })).toBe(true);
+  });
+
+  it('treats small, fractional or diagonal pixel deltas as a trackpad', () => {
+    expect(isLikelyMouseWheel({ deltaMode: 0, deltaX: 0, deltaY: 4 })).toBe(false);
+    expect(isLikelyMouseWheel({ deltaMode: 0, deltaX: 0, deltaY: 57.5 })).toBe(false);
+    expect(isLikelyMouseWheel({ deltaMode: 0, deltaX: 2, deltaY: 100 })).toBe(false);
   });
 });

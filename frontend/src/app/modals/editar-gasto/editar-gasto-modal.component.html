@@ -57,6 +57,13 @@
       ></ion-textarea>
     </ion-item>
 
+    @if (gasto.installment_group_id && gasto.installment_count) {
+      <p class="installment-note">
+        As alterações são aplicadas às {{ gasto.installment_count }} parcelas desta compra. Parcelas antecipadas mantêm o
+        próprio valor.
+      </p>
+    }
+
     <app-attachment-picker entityType="gasto" [entityId]="attachmentEntityId" mode="edit"></app-attachment-picker>
 
     @if (errorMessage()) {

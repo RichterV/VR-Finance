@@ -33,16 +33,34 @@ export async function saveAttachmentBlob(
   }
 }
 
-/** Baixa um anexo do zero (busca o blob via API) e salva, com os toasts de feedback padrão. */
-export async function downloadAttachment(
-  file: Attachment,
-  attachmentsService: AttachmentsService,
+/** Abre a folha de compartilhar com um Blob já obtido. Cancelar a folha não é erro (sem toast). */
+export async function shareAttachmentBlob(
+  blob: Blob,
+  filename: string,
   downloadFileService: DownloadFileService,
   toastCtrl: ToastController,
 ): Promise<void> {
-  let blob: Blob;
   try {
-    blob = await firstValueFrom(attachmentsService.downloadBlob(file.id));
+    await downloadFileService.shareAttachment(blob, filename);
+  } catch (err) {
+    console.error('Erro ao compartilhar anexo', err);
+    const toast = await toastCtrl.create({
+      message: 'Não foi possível compartilhar o anexo.',
+      duration: 4000,
+      color: 'danger',
+    });
+    await toast.present();
+  }
+}
+
+/** Busca o blob de um anexo via API, com o toast de erro padrão; null se falhar. */
+async function fetchAttachmentBlob(
+  file: Attachment,
+  attachmentsService: AttachmentsService,
+  toastCtrl: ToastController,
+): Promise<Blob | null> {
+  try {
+    return await firstValueFrom(attachmentsService.downloadBlob(file.id));
   } catch (err) {
     console.error('Erro ao baixar anexo', err);
     const toast = await toastCtrl.create({
@@ -51,7 +69,30 @@ export async function downloadAttachment(
       color: 'danger',
     });
     await toast.present();
-    return;
+    return null;
   }
+}
+
+/** Baixa um anexo do zero (busca o blob via API) e abre a folha de compartilhar. */
+export async function shareAttachment(
+  file: Attachment,
+  attachmentsService: AttachmentsService,
+  downloadFileService: DownloadFileService,
+  toastCtrl: ToastController,
+): Promise<void> {
+  const blob = await fetchAttachmentBlob(file, attachmentsService, toastCtrl);
+  if (!blob) return;
+  await shareAttachmentBlob(blob, file.original_filename, downloadFileService, toastCtrl);
+}
+
+/** Baixa um anexo do zero (busca o blob via API) e salva, com os toasts de feedback padrão. */
+export async function downloadAttachment(
+  file: Attachment,
+  attachmentsService: AttachmentsService,
+  downloadFileService: DownloadFileService,
+  toastCtrl: ToastController,
+): Promise<void> {
+  const blob = await fetchAttachmentBlob(file, attachmentsService, toastCtrl);
+  if (!blob) return;
   await saveAttachmentBlob(blob, file.original_filename, downloadFileService, toastCtrl);
 }

@@ -119,6 +119,28 @@ def create_gasto(
     return rows
 
 
+ANTECIPADA_MARK = "Parcela Antecipada"
+ANTECIPADA_SUFFIX = f" - {ANTECIPADA_MARK}"
+
+
+def _is_antecipada(description: Optional[str]) -> bool:
+    return bool(description) and description.endswith(ANTECIPADA_MARK)
+
+
+def _strip_antecipada(description: Optional[str]) -> Optional[str]:
+    if not description:
+        return description
+    if description.endswith(ANTECIPADA_SUFFIX):
+        return description[: -len(ANTECIPADA_SUFFIX)] or None
+    if description == ANTECIPADA_MARK:
+        return None
+    return description
+
+
+def _with_antecipada(description: Optional[str]) -> str:
+    return f"{description}{ANTECIPADA_SUFFIX}" if description else ANTECIPADA_MARK
+
+
 @router.put("/{gasto_id}", response_model=schemas.GastoOut)
 def update_gasto(
     gasto_id: int,
@@ -146,6 +168,29 @@ def update_gasto(
     gasto.item_id = payload.item_id
     gasto.value = payload.value
     gasto.description = payload.description
+
+    # Parcelado: a edição vale pra compra inteira, replicada nas demais parcelas do grupo. Parcela
+    # antecipada preserva o que a antecipação mudou nela (valor com desconto e o sufixo na descrição).
+    if gasto.installment_group_id:
+        base_description = _strip_antecipada(payload.description)
+        siblings = (
+            db.query(models.Gasto)
+            .filter(
+                models.Gasto.user_id == current_user.id,
+                models.Gasto.installment_group_id == gasto.installment_group_id,
+                models.Gasto.id != gasto.id,
+            )
+            .all()
+        )
+        for sibling in siblings:
+            sibling.priority = payload.priority
+            sibling.item_id = payload.item_id
+            if _is_antecipada(sibling.description):
+                sibling.description = _with_antecipada(base_description)
+            else:
+                sibling.description = base_description
+                if not _is_antecipada(payload.description):
+                    sibling.value = payload.value
     db.commit()
     db.refresh(gasto)
     return gasto
@@ -171,7 +216,7 @@ def antecipar_gasto(
     gasto.date = date(today.year, today.month, day)
     if payload is not None and payload.value is not None:
         gasto.value = payload.value
-    gasto.description = f"{gasto.description} - Parcela Antecipada" if gasto.description else "Parcela Antecipada"
+    gasto.description = _with_antecipada(gasto.description)
     db.commit()
     db.refresh(gasto)
     return gasto

@@ -202,6 +202,99 @@ def test_update_gasto(client, auth_headers):
     assert body["description"] == "Corrigido"
 
 
+def _create_parcelado(client, headers, item, value=200.0, count=3, description="Notebook"):
+    return client.post(
+        "/gastos",
+        headers=headers,
+        json={
+            "priority": "nao_essencial",
+            "item_id": item["id"],
+            "value": value,
+            "description": description,
+            "is_installment": True,
+            "installment_count": count,
+        },
+    ).json()
+
+
+def _all_gastos(client, headers):
+    return {g["id"]: g for g in client.get("/gastos", headers=headers, params={"limit": 100}).json()["items"]}
+
+
+def test_update_parcela_replica_em_todas_as_parcelas_do_grupo(client, auth_headers):
+    item = _create_item(client, auth_headers, priority="nao_essencial", name="Eletrônicos")
+    other_item = _create_item(client, auth_headers, priority="essencial", name="Casa")
+    rows = _create_parcelado(client, auth_headers, item)
+    avulso = client.post(
+        "/gastos", headers=auth_headers, json={"priority": "nao_essencial", "item_id": item["id"], "value": 50.0}
+    ).json()[0]
+
+    response = client.put(
+        f"/gastos/{rows[0]['id']}",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": other_item["id"], "value": 220.0, "description": "Notebook Dell"},
+    )
+    assert response.status_code == 200
+
+    gastos = _all_gastos(client, auth_headers)
+    for original in rows:
+        atual = gastos[original["id"]]
+        assert atual["priority"] == "essencial"
+        assert atual["item_id"] == other_item["id"]
+        assert atual["value"] == 220.0
+        assert atual["description"] == "Notebook Dell"
+        assert atual["date"] == original["date"]
+        assert atual["installment_number"] == original["installment_number"]
+    assert gastos[avulso["id"]]["value"] == 50.0
+    assert gastos[avulso["id"]]["item_id"] == item["id"]
+
+
+def test_update_parcela_preserva_valor_e_marca_de_parcela_antecipada(client, auth_headers):
+    item = _create_item(client, auth_headers, priority="nao_essencial", name="Roupas")
+    rows = _create_parcelado(client, auth_headers, item, value=150.0, description="Blazer")
+    antecipada = rows[2]
+    client.post(f"/gastos/{antecipada['id']}/antecipar", headers=auth_headers, json={"value": 140.0})
+
+    response = client.put(
+        f"/gastos/{rows[0]['id']}",
+        headers=auth_headers,
+        json={"priority": "nao_essencial", "item_id": item["id"], "value": 160.0, "description": "Blazer azul"},
+    )
+    assert response.status_code == 200
+
+    gastos = _all_gastos(client, auth_headers)
+    assert gastos[rows[1]["id"]]["value"] == 160.0
+    assert gastos[rows[1]["id"]]["description"] == "Blazer azul"
+    assert gastos[antecipada["id"]]["value"] == 140.0
+    assert gastos[antecipada["id"]]["description"] == "Blazer azul - Parcela Antecipada"
+
+
+def test_update_da_parcela_antecipada_replica_descricao_sem_a_marca_e_nao_o_valor(client, auth_headers):
+    item = _create_item(client, auth_headers, priority="nao_essencial", name="Roupas")
+    rows = _create_parcelado(client, auth_headers, item, value=150.0, description="Blazer")
+    antecipada = rows[2]
+    client.post(f"/gastos/{antecipada['id']}/antecipar", headers=auth_headers, json={"value": 140.0})
+
+    response = client.put(
+        f"/gastos/{antecipada['id']}",
+        headers=auth_headers,
+        json={
+            "priority": "nao_essencial",
+            "item_id": item["id"],
+            "value": 135.0,
+            "description": "Blazer preto - Parcela Antecipada",
+        },
+    )
+    assert response.status_code == 200
+
+    gastos = _all_gastos(client, auth_headers)
+    assert gastos[antecipada["id"]]["value"] == 135.0
+    assert gastos[antecipada["id"]]["description"] == "Blazer preto - Parcela Antecipada"
+    for original in rows[:2]:
+        assert gastos[original["id"]]["value"] == 150.0
+        assert gastos[original["id"]]["description"] == "Blazer preto"
+
+
 def test_update_gasto_rejects_mismatched_priority(client, auth_headers):
     item = _create_item(client, auth_headers, priority="essencial", name="Casa")
     other_item = _create_item(client, auth_headers, priority="nao_essencial", name="Lanche")

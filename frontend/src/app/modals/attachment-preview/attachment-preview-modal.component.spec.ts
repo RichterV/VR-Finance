@@ -32,6 +32,7 @@ function touchEvent(points: Array<{ clientX: number; clientY: number }>): TouchE
 describe('AttachmentPreviewModalComponent', () => {
   let downloadBlobSpy: ReturnType<typeof vi.fn>;
   let triggerSpy: ReturnType<typeof vi.fn>;
+  let shareSpy: ReturnType<typeof vi.fn>;
   let toastCreateSpy: ReturnType<typeof vi.fn>;
   let renderPagesSpy: ReturnType<typeof vi.fn>;
 
@@ -40,7 +41,7 @@ describe('AttachmentPreviewModalComponent', () => {
       providers: [
         provideIonicAngular(),
         { provide: AttachmentsService, useValue: { downloadBlob: downloadBlobSpy } },
-        { provide: DownloadFileService, useValue: { trigger: triggerSpy } },
+        { provide: DownloadFileService, useValue: { trigger: triggerSpy, shareAttachment: shareSpy, canShareAttachment: () => true } },
         { provide: PdfPreviewService, useValue: { renderPagesAsDataUrls: renderPagesSpy } },
         { provide: ToastController, useValue: { create: toastCreateSpy } },
         { provide: ModalController, useValue: { dismiss: vi.fn() } },
@@ -54,6 +55,7 @@ describe('AttachmentPreviewModalComponent', () => {
 
   beforeEach(() => {
     triggerSpy = vi.fn().mockResolvedValue({ savedNatively: false });
+    shareSpy = vi.fn().mockResolvedValue({ shared: true });
     toastCreateSpy = vi.fn().mockResolvedValue({ present: vi.fn() });
     renderPagesSpy = vi.fn().mockResolvedValue(['data:image/png;base64,pagina1']);
   });
@@ -211,19 +213,81 @@ describe('AttachmentPreviewModalComponent', () => {
       expect(component.zoom()).toBe(1);
     });
 
-    it('zooms on Ctrl+wheel (and trackpad pinch), but leaves a plain wheel to native scrolling', () => {
-      downloadBlobSpy = vi.fn().mockReturnValue(of(new Blob(['conteudo'], { type: 'image/png' })));
-      const component = createComponent(attachment({ content_type: 'image/png' })).componentInstance;
+    describe('wheel', () => {
+      function wheel(overrides: Partial<WheelEvent>): WheelEvent {
+        return { deltaMode: 0, deltaX: 0, deltaY: -100, ctrlKey: false, shiftKey: false, clientX: 0, clientY: 0, preventDefault: vi.fn(), ...overrides } as unknown as WheelEvent;
+      }
 
-      const plain = { ctrlKey: false, deltaY: -100, clientX: 0, clientY: 0, preventDefault: vi.fn() } as unknown as WheelEvent;
-      component.onWheel(plain);
-      expect(plain.preventDefault).not.toHaveBeenCalled();
-      expect(component.zoom()).toBe(1);
+      async function imageComponent() {
+        downloadBlobSpy = vi.fn().mockReturnValue(of(new Blob(['conteudo'], { type: 'image/png' })));
+        const fixture = createComponent(attachment({ content_type: 'image/png' }));
+        await flushMicrotasks();
+        fixture.detectChanges();
+        const viewport = fixture.nativeElement.querySelector('.zoom-viewport') as HTMLElement;
+        return { component: fixture.componentInstance, viewport };
+      }
 
-      const withCtrl = { ctrlKey: true, deltaY: -100, clientX: 0, clientY: 0, preventDefault: vi.fn() } as unknown as WheelEvent;
-      component.onWheel(withCtrl);
-      expect(withCtrl.preventDefault).toHaveBeenCalled();
-      expect(component.zoom()).toBeGreaterThan(1);
+      describe('on the web', () => {
+        beforeEach(() => vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(false));
+
+        it('zooms one step per mouse wheel click, in and out', async () => {
+          const { component } = await imageComponent();
+          const up = wheel({ deltaY: -100 });
+          component.onWheel(up);
+          expect(up.preventDefault).toHaveBeenCalled();
+          expect(component.zoom()).toBe(1.5);
+
+          component.onWheel(wheel({ deltaY: 100 }));
+          expect(component.zoom()).toBe(1);
+        });
+
+        it('scrolls vertically on Ctrl+mouse wheel instead of zooming the page', async () => {
+          const { component, viewport } = await imageComponent();
+          const ctrl = wheel({ ctrlKey: true, deltaY: 100 });
+          component.onWheel(ctrl);
+          expect(ctrl.preventDefault).toHaveBeenCalled();
+          expect(viewport.scrollTop).toBe(100);
+          expect(component.zoom()).toBe(1);
+        });
+
+        it('leaves Shift+mouse wheel to native (horizontal) scrolling', async () => {
+          const { component } = await imageComponent();
+          const shift = wheel({ shiftKey: true });
+          component.onWheel(shift);
+          expect(shift.preventDefault).not.toHaveBeenCalled();
+          expect(component.zoom()).toBe(1);
+        });
+
+        it('leaves two-finger trackpad scrolling native, but still zooms on trackpad pinch', async () => {
+          const { component } = await imageComponent();
+          const swipe = wheel({ deltaY: -4.5 });
+          component.onWheel(swipe);
+          expect(swipe.preventDefault).not.toHaveBeenCalled();
+          expect(component.zoom()).toBe(1);
+
+          const pinch = wheel({ ctrlKey: true, deltaY: -40.5 });
+          component.onWheel(pinch);
+          expect(pinch.preventDefault).toHaveBeenCalled();
+          expect(component.zoom()).toBeGreaterThan(1);
+        });
+      });
+
+      describe('on the native app', () => {
+        beforeEach(() => vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true));
+
+        it('keeps zoom on Ctrl+wheel only, leaving a plain wheel to native scrolling', async () => {
+          const { component } = await imageComponent();
+          const plain = wheel({});
+          component.onWheel(plain);
+          expect(plain.preventDefault).not.toHaveBeenCalled();
+          expect(component.zoom()).toBe(1);
+
+          const withCtrl = wheel({ ctrlKey: true });
+          component.onWheel(withCtrl);
+          expect(withCtrl.preventDefault).toHaveBeenCalled();
+          expect(component.zoom()).toBeGreaterThan(1);
+        });
+      });
     });
 
     it('toggles between 2x and the original size on double click', () => {
@@ -295,5 +359,18 @@ describe('AttachmentPreviewModalComponent', () => {
     expect(triggerSpy).toHaveBeenCalledWith(blob, 'comprovante.pdf');
     expect(downloadBlobSpy).toHaveBeenCalledTimes(1);
     expect(component.downloading()).toBe(false);
+  });
+
+  it('shares the already-fetched blob on share(), without fetching again', async () => {
+    const blob = new Blob(['conteudo'], { type: 'image/png' });
+    downloadBlobSpy = vi.fn().mockReturnValue(of(blob));
+    const component = createComponent(attachment({ content_type: 'image/png', original_filename: 'foto.png' })).componentInstance;
+    await flushMicrotasks();
+
+    await component.share();
+
+    expect(shareSpy).toHaveBeenCalledWith(blob, 'foto.png');
+    expect(downloadBlobSpy).toHaveBeenCalledTimes(1);
+    expect(component.sharing()).toBe(false);
   });
 });

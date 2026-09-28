@@ -13,6 +13,11 @@
       <ion-button [disabled]="!hasBlob || downloading()" (click)="download()">
         <ion-icon slot="icon-only" name="download-outline"></ion-icon>
       </ion-button>
+      @if (canShare) {
+        <ion-button [disabled]="!hasBlob || sharing()" (click)="share()" aria-label="Compartilhar">
+          <ion-icon slot="icon-only" name="share-social-outline"></ion-icon>
+        </ion-button>
+      }
       <ion-button (click)="dismiss()">
         <ion-icon slot="icon-only" name="close"></ion-icon>
       </ion-button>

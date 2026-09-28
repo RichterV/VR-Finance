@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 
 import { Attachment, AttachmentsService } from '../services/attachments.service';
 import { AttachmentsPopoverComponent } from './attachments-popover.component';
+import { attachmentFormatLabel } from './attachment-types';
 import { DownloadFileService } from './download-file.service';
 
 function attachment(overrides: Partial<Attachment> = {}): Attachment {
@@ -22,15 +23,18 @@ function attachment(overrides: Partial<Attachment> = {}): Attachment {
 describe('AttachmentsPopoverComponent', () => {
   let downloadBlobSpy: ReturnType<typeof vi.fn>;
   let triggerSpy: ReturnType<typeof vi.fn>;
+  let shareSpy: ReturnType<typeof vi.fn>;
+  let canShare: boolean;
   let modalCreateSpy: ReturnType<typeof vi.fn>;
   let modalPresentSpy: ReturnType<typeof vi.fn>;
 
   function createComponent(files: Attachment[]) {
+    const downloadFileService = { trigger: triggerSpy, shareAttachment: shareSpy, canShareAttachment: () => canShare };
     TestBed.configureTestingModule({
       providers: [
         provideIonicAngular(),
         { provide: AttachmentsService, useValue: { downloadBlob: downloadBlobSpy } },
-        { provide: DownloadFileService, useValue: { trigger: triggerSpy } },
+        { provide: DownloadFileService, useValue: downloadFileService },
         { provide: ModalController, useValue: { create: modalCreateSpy } },
       ],
     });
@@ -43,6 +47,8 @@ describe('AttachmentsPopoverComponent', () => {
   beforeEach(() => {
     downloadBlobSpy = vi.fn();
     triggerSpy = vi.fn();
+    shareSpy = vi.fn().mockResolvedValue({ shared: true });
+    canShare = false;
     modalPresentSpy = vi.fn().mockResolvedValue(undefined);
     modalCreateSpy = vi.fn().mockResolvedValue({ present: modalPresentSpy });
   });
@@ -112,5 +118,53 @@ describe('AttachmentsPopoverComponent', () => {
       expect.objectContaining({ componentProps: { file } }),
     );
     expect(modalPresentSpy).toHaveBeenCalled();
+  });
+
+  describe('share button', () => {
+    it('is hidden when sharing is not available (desktop browser)', () => {
+      const fixture = createComponent([attachment()]);
+      expect(fixture.nativeElement.querySelector('ion-button[aria-label="Compartilhar"]')).toBeNull();
+    });
+
+    it('is shown on mobile, and hands the fetched blob to DownloadFileService.shareAttachment', async () => {
+      canShare = true;
+      const blob = new Blob(['conteudo']);
+      downloadBlobSpy.mockReturnValue(of(blob));
+      const fixture = createComponent([attachment()]);
+      expect(fixture.nativeElement.querySelector('ion-button[aria-label="Compartilhar"]')).not.toBeNull();
+
+      await fixture.componentInstance.share(attachment());
+
+      expect(shareSpy).toHaveBeenCalledWith(blob, 'comprovante.pdf');
+      expect(fixture.componentInstance.downloadingId()).toBeNull();
+    });
+
+    it('does not open the share sheet when fetching the file fails', async () => {
+      canShare = true;
+      downloadBlobSpy.mockReturnValue(throwError(() => ({ status: 404 })));
+      const fixture = createComponent([attachment()]);
+
+      await fixture.componentInstance.share(attachment());
+
+      expect(shareSpy).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.downloadingId()).toBeNull();
+    });
+  });
+
+  it('shows the file format under the file icon of each attachment', () => {
+    const fixture = createComponent([
+      attachment({ id: 1 }),
+      attachment({ id: 2, content_type: 'image/jpeg', original_filename: 'foto.jpeg' }),
+    ]);
+    const labels = [...fixture.nativeElement.querySelectorAll('.file-type span')].map((el: Element) => el.textContent?.trim());
+    expect(labels).toEqual(['PDF', 'JPG']);
+  });
+});
+
+describe('attachmentFormatLabel', () => {
+  it('uses the validated content type, falling back to the file name extension', () => {
+    expect(attachmentFormatLabel({ content_type: 'image/png', original_filename: 'sem-extensao' })).toBe('PNG');
+    expect(attachmentFormatLabel({ content_type: 'application/octet-stream', original_filename: 'nota.xml' })).toBe('XML');
+    expect(attachmentFormatLabel({ content_type: 'application/octet-stream', original_filename: 'nota' })).toBe('ARQUIVO');
   });
 });

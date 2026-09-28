@@ -14,14 +14,17 @@ import {
   ToastController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { addCircleOutline, close, downloadOutline, removeCircleOutline } from 'ionicons/icons';
+import { addCircleOutline, close, downloadOutline, removeCircleOutline, shareSocialOutline } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 
 import { Attachment, AttachmentsService } from '../../services/attachments.service';
-import { saveAttachmentBlob } from '../../shared/download-attachment.helper';
+import { saveAttachmentBlob, shareAttachmentBlob } from '../../shared/download-attachment.helper';
 import { DownloadFileService } from '../../shared/download-file.service';
 import { PdfPreviewService } from '../../shared/pdf-preview.service';
-import { MIN_ZOOM, ZOOM_STEP, clampZoom, focalZoomScroll, touchDistance, touchMidpoint } from '../../shared/pinch-zoom';
+import { MIN_ZOOM, ZOOM_STEP, clampZoom, focalZoomScroll, isLikelyMouseWheel, touchDistance, touchMidpoint } from '../../shared/pinch-zoom';
+
+/** Pixels por "linha" quando a roda vem em modo linha (Firefox), pro Ctrl+roda rolar. */
+const WHEEL_LINE_PX = 40;
 
 /**
  * Modal fullscreen de pré-visualização de um anexo, aberto pelo botão "Visualizar" (ícone de
@@ -44,7 +47,7 @@ import { MIN_ZOOM, ZOOM_STEP, clampZoom, focalZoomScroll, touchDistance, touchMi
  * -- Mouse: arrastar com o botão esquerdo (pan próprio via pointer events, mexendo no
  *    scrollLeft/scrollTop -- o scroll nativo só cobre roda/barra de rolagem, e a roda sozinha não
  *    anda na horizontal), além da roda e das barras de rolagem, que ficam visíveis.
- * Todo zoom (pinça, Ctrl+roda/pinça do trackpad, botões, duplo clique) é ancorado num ponto
+ * Todo zoom (pinça, roda do mouse na web / Ctrl+roda no app, pinça do trackpad, botões, duplo clique) é ancorado num ponto
  * focal -- o trecho que estava sob os dedos/cursor/centro continua no lugar, em vez de o zoom
  * sempre pular pro canto superior esquerdo (`focalZoomScroll`).
  */
@@ -63,6 +66,9 @@ export class AttachmentPreviewModalComponent implements OnInit, OnDestroy {
   readonly pdfPages = signal<string[]>([]);
   readonly downloading = signal(false);
   readonly zoom = signal(1);
+  readonly sharing = signal(false);
+  /** Botão "Compartilhar" só no celular (APK ou navegador de toque) -- ver `canShareAttachment`. */
+  readonly canShare: boolean;
 
   private blob: Blob | null = null;
   private objectUrl: string | null = null;
@@ -82,7 +88,8 @@ export class AttachmentPreviewModalComponent implements OnInit, OnDestroy {
     private readonly sanitizer: DomSanitizer,
     private readonly cdr: ChangeDetectorRef,
   ) {
-    addIcons({ close, downloadOutline, addCircleOutline, removeCircleOutline });
+    addIcons({ close, downloadOutline, addCircleOutline, removeCircleOutline, shareSocialOutline });
+    this.canShare = downloadFileService.canShareAttachment();
   }
 
   get isImage(): boolean {
@@ -141,6 +148,14 @@ export class AttachmentPreviewModalComponent implements OnInit, OnDestroy {
     this.downloading.set(true);
     await saveAttachmentBlob(this.blob, this.file.original_filename, this.downloadFileService, this.toastCtrl);
     this.downloading.set(false);
+  }
+
+  /** Reaproveita o blob já carregado pra pré-visualização, sem buscar de novo. */
+  async share(): Promise<void> {
+    if (!this.blob) return;
+    this.sharing.set(true);
+    await shareAttachmentBlob(this.blob, this.file.original_filename, this.downloadFileService, this.toastCtrl);
+    this.sharing.set(false);
   }
 
   dismiss(): void {
@@ -206,11 +221,32 @@ export class AttachmentPreviewModalComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Ctrl+roda do mouse, e também a pinça do trackpad (que o navegador entrega como wheel + ctrlKey). */
+  /**
+   * Roda/trackpad sobre a pré-visualização. A pinça do trackpad chega como wheel + ctrlKey e
+   * sempre dá zoom contínuo; dois dedos no trackpad sem Ctrl ficam com o scroll nativo.
+   * Roda de mouse (`isLikelyMouseWheel`):
+   * -- Web: sozinha dá zoom (um passo de lupa por clique, ancorado no cursor); Shift+roda deixa o
+   *    scroll horizontal nativo e Ctrl+roda rola na vertical (feito aqui, porque o padrão do
+   *    navegador pra Ctrl+roda é dar zoom na página inteira).
+   * -- App nativo: comportamento antigo (Ctrl+roda dá zoom, sozinha rola) -- no celular quase
+   *    nunca tem mouse, e a mudança foi pedida só pra web.
+   */
   onWheel(event: WheelEvent): void {
-    if (!event.ctrlKey) return;
+    const mouseWheel = isLikelyMouseWheel(event);
+    if (!mouseWheel || Capacitor.isNativePlatform()) {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      this.setZoom(this.zoom() * Math.exp(-event.deltaY * 0.002), event);
+      return;
+    }
+    if (event.shiftKey) return;
     event.preventDefault();
-    this.setZoom(this.zoom() * Math.exp(-event.deltaY * 0.002), event);
+    if (event.ctrlKey) {
+      const viewport = this.viewportRef?.nativeElement;
+      if (viewport) viewport.scrollTop += event.deltaMode === 0 ? event.deltaY : event.deltaY * WHEEL_LINE_PX;
+      return;
+    }
+    this.setZoom(this.zoom() + (event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP), event);
   }
 
   /** Duplo clique/toque: amplia 2x no ponto clicado, ou volta pro tamanho original se já ampliado. */

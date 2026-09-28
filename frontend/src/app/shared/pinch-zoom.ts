@@ -43,3 +43,15 @@ export function focalZoomScroll(
     top: Math.max(0, fracY * after.scrollHeight - focal.y),
   };
 }
+
+/**
+ * Heurística pra separar a roda de um mouse dos dois dedos no trackpad, que o navegador entrega
+ * como o mesmo evento `wheel`. Roda de mouse: modo "linha" (Firefox) ou degraus grandes e
+ * inteiros só no eixo Y (Chrome: ~100/120 por clique). Trackpad: deltas pequenos, fracionados
+ * e/ou com componente horizontal. Pode errar em mouse de rolagem suave (sem degraus) -- nesse
+ * caso a roda só rola, sem zoom, que é o comportamento de antes.
+ */
+export function isLikelyMouseWheel(event: Pick<WheelEvent, 'deltaMode' | 'deltaX' | 'deltaY'>): boolean {
+  if (event.deltaMode !== 0) return true;
+  return event.deltaX === 0 && Number.isInteger(event.deltaY) && Math.abs(event.deltaY) >= 50;
+}

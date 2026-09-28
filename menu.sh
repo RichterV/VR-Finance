@@ -26,16 +26,19 @@ fi
 
 REMOTE_USER="usuario-servidor"
 REMOTE_PORT="22"
-# Usa o hostname MagicDNS do Tailscale por padrao (funciona de qualquer lugar, nao so na
-# mesma rede) -- so precisa do Tailscale ativo neste PC e no servidor. "server-ip.txt"
-# permite sobrescrever (ex: forcar o IP da rede local) sem editar este script.
+# Endereco do servidor: tenta primeiro o IP da rede local (LOCAL_HOST) e, se o SSH nao
+# responder, usa o hostname MagicDNS do Tailscale (funciona de qualquer lugar, mas precisa
+# do Tailscale ativo neste PC) -- ver select_remote_host, chamado ao entrar em cada opcao
+# que fala com o servidor. "server-ip.txt" forca um endereco fixo (sem tentativa/fallback).
 SERVER_IP_FILE="$SCRIPT_DIR/server-ip.txt"
-REMOTE_HOST="seu-servidor.seu-tailnet.ts.net"
-if [ -f "$SERVER_IP_FILE" ]; then
-    REMOTE_HOST="$(head -n1 "$SERVER_IP_FILE" | tr -d '\r\n')"
-fi
+TAILSCALE_HOST="seu-servidor.seu-tailnet.ts.net"
+LOCAL_HOST="ip-local-do-servidor"
+# nginx direto na LAN (HTTP puro -- o certificado HTTPS do Tailscale so vale pro hostname)
+LOCAL_WEB_PORT="8080"
+REMOTE_HOST="$TAILSCALE_HOST"
+WEB_BASE="https://$TAILSCALE_HOST"
+SSH_OPTS=()
 MOBILE_ENV_FILE="$SCRIPT_DIR/frontend/src/environments/environment.mobile.ts"
-NETWORK_SECURITY_CONFIG_FILE="$SCRIPT_DIR/frontend/android/app/src/main/res/xml/network_security_config.xml"
 REMOTE_BACKEND_DIR="/home/usuario-servidor/vrfinance/backend"
 # Fora do home (/home/usuario-servidor tem permissao 750 -- o nginx, rodando como www-data, nao
 # conseguiria atravessar o diretorio pra servir os arquivos). /var/www e o padrao do nginx.
@@ -60,12 +63,42 @@ if [ -s "$NVM_DIR/nvm.sh" ]; then
     source "$NVM_DIR/nvm.sh"
 fi
 
+# Define REMOTE_HOST/SSH_OPTS/WEB_BASE: IP local se o SSH responder em ate 2s, senao Tailscale.
+# HostKeyAlias faz o SSH pelo IP conferir a mesma chave do servidor ja aceita pro hostname do
+# Tailscale no known_hosts (sem isso pediria pra aceitar uma chave "nova" e o teste falharia).
+select_remote_host() {
+    if [ -f "$SERVER_IP_FILE" ]; then
+        REMOTE_HOST="$(head -n1 "$SERVER_IP_FILE" | tr -d '\r\n')"
+        SSH_OPTS=()
+        WEB_BASE="https://$REMOTE_HOST"
+        if [ "$REMOTE_HOST" = "$LOCAL_HOST" ]; then
+            SSH_OPTS=(-o "HostKeyAlias=$TAILSCALE_HOST")
+            WEB_BASE="http://$LOCAL_HOST:$LOCAL_WEB_PORT"
+        fi
+        echo "Servidor: $REMOTE_HOST (fixado em server-ip.txt)"
+        return
+    fi
+    echo "Testando conexao com o servidor pela rede local ($LOCAL_HOST)..."
+    if ssh -p "$REMOTE_PORT" -o BatchMode=yes -o ConnectTimeout=2 -o "HostKeyAlias=$TAILSCALE_HOST" \
+        "$REMOTE_USER@$LOCAL_HOST" true </dev/null >/dev/null 2>&1; then
+        REMOTE_HOST="$LOCAL_HOST"
+        SSH_OPTS=(-o "HostKeyAlias=$TAILSCALE_HOST")
+        WEB_BASE="http://$LOCAL_HOST:$LOCAL_WEB_PORT"
+        echo "  OK -- usando a rede local."
+    else
+        REMOTE_HOST="$TAILSCALE_HOST"
+        SSH_OPTS=()
+        WEB_BASE="https://$TAILSCALE_HOST"
+        echo "  Sem resposta -- usando o Tailscale ($TAILSCALE_HOST)."
+    fi
+}
+
 ssh_remote() {
-    ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "$@" </dev/null
+    ssh -p "$REMOTE_PORT" "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" "$@" </dev/null
 }
 
 scp_remote() {
-    scp -P "$REMOTE_PORT" "$@"
+    scp -P "$REMOTE_PORT" "${SSH_OPTS[@]}" "$@"
 }
 
 pause() {
@@ -95,12 +128,12 @@ main_loop() {
 
         case "$opcao" in
             1) app_menu ;;
-            2) deploy_menu ;;
-            3) server_menu ;;
-            4) backup_menu ;;
+            2) select_remote_host; deploy_menu ;;
+            3) select_remote_host; server_menu ;;
+            4) select_remote_host; backup_menu ;;
             5) criar_build_app ;;
             6) ip_menu ;;
-            7) servidor_menu ;;
+            7) select_remote_host; servidor_menu ;;
             0) echo; exit 0 ;;
         esac
     done
@@ -437,7 +470,7 @@ deploy_verificar() {
     echo "[Verificacao] Aguardando o backend ficar pronto (tenta por ate 30s)..."
     local ok=0 i code
     for i in $(seq 1 15); do
-        code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "http://$REMOTE_HOST:8080/api/docs" 2>/dev/null)"
+        code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "$WEB_BASE/api/docs" 2>/dev/null)"
         if [ "$code" = "200" ]; then
             ok=1
             break
@@ -450,8 +483,8 @@ deploy_verificar() {
 
     echo
     echo "[Verificacao] Testando o site..."
-    printf "  Frontend  http://%s:8080/            -> HTTP %s\n" "$REMOTE_HOST" "$(curl -s -o /dev/null -w '%{http_code}' "http://$REMOTE_HOST:8080/")"
-    printf "  Backend   http://%s:8080/api/docs    -> HTTP %s\n" "$REMOTE_HOST" "$(curl -s -o /dev/null -w '%{http_code}' "http://$REMOTE_HOST:8080/api/docs")"
+    printf "  Frontend  %s/            -> HTTP %s\n" "$WEB_BASE" "$(curl -s -o /dev/null -w '%{http_code}' "$WEB_BASE/")"
+    printf "  Backend   %s/api/docs    -> HTTP %s\n" "$WEB_BASE" "$(curl -s -o /dev/null -w '%{http_code}' "$WEB_BASE/api/docs")"
 }
 
 # ================================================================
@@ -515,8 +548,8 @@ server_status() {
 
 server_status_rapido() {
     echo
-    printf "  Frontend  http://%s:8080/            -> HTTP %s\n" "$REMOTE_HOST" "$(curl -s -o /dev/null -w '%{http_code}' "http://$REMOTE_HOST:8080/")"
-    printf "  Backend   http://%s:8080/api/docs    -> HTTP %s\n" "$REMOTE_HOST" "$(curl -s -o /dev/null -w '%{http_code}' "http://$REMOTE_HOST:8080/api/docs")"
+    printf "  Frontend  %s/            -> HTTP %s\n" "$WEB_BASE" "$(curl -s -o /dev/null -w '%{http_code}' "$WEB_BASE/")"
+    printf "  Backend   %s/api/docs    -> HTTP %s\n" "$WEB_BASE" "$(curl -s -o /dev/null -w '%{http_code}' "$WEB_BASE/api/docs")"
 }
 
 # ================================================================
@@ -703,12 +736,12 @@ ip_menu() {
         echo "  Endereco atual usado pelo deploy/SSH:          $REMOTE_HOST"
         echo
         echo "  Sao dois enderecos separados, cada um usado numa situacao diferente:"
-        echo "  - Deploy/SSH (este menu.sh): por padrao usa o hostname MagicDNS do"
-        echo "    Tailscale (funciona de qualquer lugar, nao so em casa). So muda se"
-        echo "    voce quiser forcar outro endereco (ex: IP da rede local)."
-        echo "  - App Android nativo (o APK instalado no celular): aponta pro backend"
-        echo "    no servidor (notebook) via o hostname do Tailscale, embutido no"
-        echo "    build -- so muda se voce renomear o servidor no Tailscale."
+        echo "  - Deploy/SSH (este menu.sh): tenta primeiro o IP da rede local"
+        echo "    ($LOCAL_HOST) e, sem resposta, o hostname do Tailscale. A opcao 1"
+        echo "    fixa um endereco (sem tentativa/fallback) em server-ip.txt."
+        echo "  - App Android nativo (o APK instalado no celular): mesma logica (rede"
+        echo "    local primeiro), com o hostname do Tailscale embutido no build --"
+        echo "    so muda se voce renomear o servidor no Tailscale."
         echo
         echo "  1. Mudar o endereco usado pelo deploy/SSH (este menu.sh)"
         echo "  2. Mudar o endereco usado pelo app Android nativo (precisa gerar novo APK depois)"
@@ -736,7 +769,7 @@ ip_mudar_local() {
     fi
 
     echo "$novo_ip" > "$SERVER_IP_FILE"
-    REMOTE_HOST="$novo_ip"
+    select_remote_host
     echo
     echo "Endereco atualizado para $REMOTE_HOST (salvo em \"$SERVER_IP_FILE\" -- vale"
     echo "pra essa sessao do menu.sh e pras proximas vezes que ele for aberto)."
@@ -763,15 +796,13 @@ ip_mudar_tailscale() {
         return
     fi
 
-    sed -i -E "s#http://[^:/]+:8080/api#http://$novo_ip:8080/api#" "$MOBILE_ENV_FILE"
-
-    if [ -f "$NETWORK_SECURITY_CONFIG_FILE" ]; then
-        sed -i -E "s#(<domain[^>]*>)[^<]+(</domain>)#\1$novo_ip\2#" "$NETWORK_SECURITY_CONFIG_FILE"
-    fi
+    # HTTPS via Tailscale (certificado so vale pro hostname MagicDNS, nao pra IP).
+    # So a linha "apiUrl:" -- a "localApiUrl:" (IP da rede local, http) fica intacta.
+    sed -i -E "/^[[:space:]]*apiUrl:/ s#https?://[^/'\"]+/api#https://$novo_ip/api#" "$MOBILE_ENV_FILE"
 
     echo
-    echo "environment.mobile.ts e network_security_config.xml atualizados com o novo"
-    echo "endereco do Tailscale."
+    echo "environment.mobile.ts atualizado com o novo endereco do Tailscale"
+    echo "(https://$novo_ip/api -- use o hostname MagicDNS, o certificado nao vale pra IP)."
     echo
     echo "IMPORTANTE: o app Android ja instalado no celular continua com o IP antigo"
     echo "embutido no APK -- gere um novo APK (opcao 5, \"Criar build APP\") e"
@@ -802,7 +833,7 @@ servidor_menu() {
         read -rp "Escolha uma opcao: " opcao || { echo; echo "Entrada encerrada -- saindo."; exit 1; }
 
         case "$opcao" in
-            1) ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" ;;
+            1) ssh -p "$REMOTE_PORT" "${SSH_OPTS[@]}" "$REMOTE_USER@$REMOTE_HOST" ;;
             2) servidor_bateria ;;
             3) servidor_armazenamento ;;
             4) servidor_ram ;;
