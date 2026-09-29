@@ -18,6 +18,7 @@ def restricted_headers(client, db_session):
         "/veiculos/resumo",
         "/servicos-veiculos",
         "/export/gastos",
+        "/resumo/inflacao",
     ],
 )
 def test_disabled_module_endpoints_return_403(client, restricted_headers, path):
@@ -222,3 +223,19 @@ def test_update_me_rejects_blank_username(client, auth_headers):
 def test_update_me_requires_token(client):
     response = client.put("/auth/me", json={"username": "x", "first_name": "A", "last_name": "B"})
     assert response.status_code == 401
+
+
+def test_inflation_basket_toggle_requires_module(client, restricted_headers):
+    item = client.post(
+        "/dropdown-options", json={"priority": "essencial", "name": "Mercado"}, headers=restricted_headers
+    ).json()
+    blocked = client.put(
+        f"/dropdown-options/{item['id']}",
+        json={"name": "Mercado", "include_in_inflation": True},
+        headers=restricted_headers,
+    )
+    assert blocked.status_code == 403
+    # Renomear (sem mexer na cesta) continua liberado.
+    renamed = client.put(f"/dropdown-options/{item['id']}", json={"name": "Feira"}, headers=restricted_headers)
+    assert renamed.status_code == 200
+    assert renamed.json()["include_in_inflation"] is False

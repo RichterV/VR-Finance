@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import {
   AlertController,
   IonButton,
@@ -21,6 +21,7 @@ import {
 import { addIcons } from 'ionicons';
 import { add, close, create, trash } from 'ionicons/icons';
 
+import { AuthService } from '../../core/auth.service';
 import { HomeRefreshService } from '../../core/home-refresh.service';
 import { DropdownOption, DropdownOptionsService, Priority } from '../../services/dropdown-options.service';
 
@@ -49,12 +50,15 @@ import { DropdownOption, DropdownOptionsService, Priority } from '../../services
 export class ItensModalComponent implements OnInit {
   readonly priority = signal<Priority>('essencial');
   readonly items = signal<DropdownOption[]>([]);
+  /** Toggle "Cesta de inflação" só existe com o módulo Análise inflacionária habilitado. */
+  readonly cestaHabilitada = computed(() => this.auth.hasModule('analise_inflacionaria'));
 
   constructor(
     private readonly service: DropdownOptionsService,
     private readonly alertCtrl: AlertController,
     private readonly modalCtrl: ModalController,
     private readonly homeRefresh: HomeRefreshService,
+    private readonly auth: AuthService,
   ) {
     addIcons({ add, create, trash, close });
   }

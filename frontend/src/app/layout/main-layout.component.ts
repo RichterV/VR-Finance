@@ -46,6 +46,8 @@ interface NavItem {
   children?: NavSubItem[];
 }
 
+const INFLACAO_FRAGMENT = 'analise-inflacionaria';
+
 const HOME_ITEM: NavItem = {
   label: 'Início',
   icon: 'home-outline',
@@ -54,7 +56,7 @@ const HOME_ITEM: NavItem = {
     { label: 'Resumo mensal', route: '/home', fragment: 'resumo-mensal' },
     { label: 'Resumo anual', route: '/home', fragment: 'resumo-anual' },
     { label: 'Relatório geral', route: '/home', fragment: 'relatorio-geral' },
-    { label: 'Análise inflacionária', route: '/home', fragment: 'analise-inflacionaria' },
+    { label: 'Análise inflacionária', route: '/home', fragment: INFLACAO_FRAGMENT },
   ],
 };
 
@@ -88,10 +90,13 @@ export class MainLayoutComponent {
   /** Início sempre + módulos opcionais habilitados pro usuário + Administração (só master). */
   readonly navItems = computed<NavItem[]>(() => {
     const user = this.auth.currentUser();
-    const modules = OPTIONAL_MODULES.filter((m) => user?.modules.includes(m.key)).map(
-      ({ label, icon, route }) => ({ label, icon, route }),
+    const modules = OPTIONAL_MODULES.filter((m) => m.route && user?.modules.includes(m.key)).map(
+      ({ label, icon, route }) => ({ label, icon, route: route! }),
     );
-    return [HOME_ITEM, ...modules, ...(user?.role === 'master' ? [ADMIN_ITEM] : [])];
+    const home = user?.modules.includes('analise_inflacionaria')
+      ? HOME_ITEM
+      : { ...HOME_ITEM, children: HOME_ITEM.children?.filter((c) => c.fragment !== INFLACAO_FRAGMENT) };
+    return [home, ...modules, ...(user?.role === 'master' ? [ADMIN_ITEM] : [])];
   });
 
   readonly isDesktop = signal(MainLayoutComponent.checkDesktop());

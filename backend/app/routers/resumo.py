@@ -7,7 +7,7 @@ from sqlalchemy import extract, func
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.deps import get_current_user, get_db
+from app.deps import get_current_user, get_db, require_module
 from app.utils import add_months, last_day_of_month
 
 router = APIRouter(prefix="/resumo", tags=["resumo"])
@@ -107,7 +107,11 @@ def _basket_month_total(db: Session, user_id: int, ano: int, mes: int, item_ids:
     return total or 0.0
 
 
-@router.get("/inflacao", response_model=schemas.ResumoInflacao)
+@router.get(
+    "/inflacao",
+    response_model=schemas.ResumoInflacao,
+    dependencies=[Depends(require_module("analise_inflacionaria"))],
+)
 def resumo_inflacao(
     meses: int = Query(12, ge=1, le=36),
     ate_ano: Optional[int] = Query(None, ge=2000, le=2100),

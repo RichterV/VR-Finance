@@ -17,7 +17,7 @@ import {
   ModalController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { close } from 'ionicons/icons';
+import { close, pulseOutline } from 'ionicons/icons';
 
 import { AuthService, CurrentUser, UserPayload } from '../../core/auth.service';
 import { ModuleKey, OPTIONAL_MODULES } from '../../core/modules';
@@ -68,7 +68,7 @@ export class AdminUsuarioModalComponent implements OnInit {
     private readonly auth: AuthService,
     private readonly modalCtrl: ModalController,
   ) {
-    addIcons({ close });
+    addIcons({ close, pulseOutline });
   }
 
   get isEdit(): boolean {

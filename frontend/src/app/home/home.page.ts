@@ -32,7 +32,7 @@ import {
   removeCircleOutline,
 } from 'ionicons/icons';
 import { BaseChartDirective } from 'ng2-charts';
-import { forkJoin, Observable, Subscription, tap } from 'rxjs';
+import { forkJoin, Observable, of, Subscription, tap } from 'rxjs';
 
 import { isDesktopViewport, slideInFromRight, slideOutToRight, SIDE_MODAL_CSS_CLASS } from '../modals/side-modal.animations';
 import { AuthService } from '../core/auth.service';
@@ -96,6 +96,8 @@ export class HomePage implements OnInit, OnDestroy {
   readonly resumoAnual = signal<ResumoAnual | null>(null);
   readonly resumoGeral = signal<ResumoGeral | null>(null);
   readonly resumoInflacao = signal<ResumoInflacao | null>(null);
+  /** Módulo opcional: sem ele, a seção "Análise inflacionária" some e /resumo/inflacao nem é chamado (daria 403). */
+  readonly inflacaoHabilitada = computed(() => this.auth.hasModule('analise_inflacionaria'));
 
   /** Verdadeiro até a primeira carga dos 4 resumos terminar (evita as seções aparecerem vazias/escalonadas). */
   readonly loading = computed(
@@ -103,7 +105,7 @@ export class HomePage implements OnInit, OnDestroy {
       this.resumoMensal() === null ||
       this.resumoAnual() === null ||
       this.resumoGeral() === null ||
-      this.resumoInflacao() === null,
+      (this.inflacaoHabilitada() && this.resumoInflacao() === null),
   );
 
   /** Modo privacidade: valores ocultos por padrão, como em apps de banco. Só se aplica à Home. */
@@ -230,12 +232,12 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   /** Recarrega os 4 resumos de uma vez -- usado na carga inicial, no pull-to-refresh/"Início" e apos salvar um lancamento. */
-  private reloadAll(): Observable<[ResumoMensal, ResumoAnual, ResumoGeral, ResumoInflacao]> {
+  private reloadAll(): Observable<[ResumoMensal, ResumoAnual, ResumoGeral, ResumoInflacao | null]> {
     return forkJoin([
       this.resumoService.mensal(this.anoMensal(), this.mes()),
       this.resumoService.anual(this.anoMensal(), 12, this.corteAtual),
       this.resumoService.geral(this.corteAtual),
-      this.resumoService.inflacao(12, this.corteAtual),
+      this.inflacaoHabilitada() ? this.resumoService.inflacao(12, this.corteAtual) : of(null),
     ]).pipe(
       tap(([mensal, anual, geral, inflacao]) => {
         this.resumoMensal.set(mensal);
@@ -367,6 +369,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   private loadResumoInflacao(): void {
+    if (!this.inflacaoHabilitada()) return;
     this.resumoService.inflacao(12, this.corteAtual).subscribe((resumo) => this.resumoInflacao.set(resumo));
   }
 

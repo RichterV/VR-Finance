@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { AlertController, ModalController, provideIonicAngular } from '@ionic/angular';
 import { of } from 'rxjs';
 
+import { AuthService } from '../../core/auth.service';
 import { HomeRefreshService } from '../../core/home-refresh.service';
 import { DropdownOption, DropdownOptionsService } from '../../services/dropdown-options.service';
 import { ItensModalComponent } from './itens-modal.component';
@@ -25,6 +26,7 @@ describe('ItensModalComponent', () => {
   let alertCreateSpy: ReturnType<typeof vi.fn>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let lastAlertConfig: any;
+  let inflacaoHabilitada: boolean;
 
   function createComponent() {
     TestBed.configureTestingModule({
@@ -33,6 +35,7 @@ describe('ItensModalComponent', () => {
         { provide: DropdownOptionsService, useValue: { list: listSpy, create: createSpy, update: updateSpy, remove: removeSpy } },
         { provide: AlertController, useValue: { create: alertCreateSpy } },
         { provide: ModalController, useValue: { dismiss: vi.fn() } },
+        { provide: AuthService, useValue: { hasModule: (key: string) => key === 'analise_inflacionaria' && inflacaoHabilitada } },
       ],
     });
     const fixture = TestBed.createComponent(ItensModalComponent);
@@ -46,6 +49,7 @@ describe('ItensModalComponent', () => {
     updateSpy = vi.fn(() => of(option({})));
     removeSpy = vi.fn(() => of(undefined));
     lastAlertConfig = null;
+    inflacaoHabilitada = true;
     alertCreateSpy = vi.fn((config: unknown) => {
       lastAlertConfig = config;
       return Promise.resolve({ present: vi.fn().mockResolvedValue(undefined) });
@@ -124,5 +128,18 @@ describe('ItensModalComponent', () => {
     confirmButton.handler();
 
     expect(removeSpy).toHaveBeenCalledWith(9);
+  });
+
+  it('shows the "Cesta de inflação" toggle when the Análise inflacionária module is enabled', () => {
+    const fixture = createComponent();
+
+    expect(fixture.nativeElement.querySelector('ion-toggle')).not.toBeNull();
+  });
+
+  it('hides the "Cesta de inflação" toggle when the Análise inflacionária module is disabled', () => {
+    inflacaoHabilitada = false;
+    const fixture = createComponent();
+
+    expect(fixture.nativeElement.querySelector('ion-toggle')).toBeNull();
   });
 });

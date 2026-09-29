@@ -10,7 +10,7 @@ BolsaCurrency = Literal["BRL", "USD"]
 DevedorStatus = Literal["pago", "nao_pago"]
 EntityType = Literal["gasto", "receita", "servico_veiculo"]
 # Espelha app.modules.OPTIONAL_MODULES
-ModuleKey = Literal["veiculos", "operacoes_bolsa", "devedores", "ferramentas", "exportar_dados"]
+ModuleKey = Literal["veiculos", "operacoes_bolsa", "devedores", "ferramentas", "exportar_dados", "analise_inflacionaria"]
 
 
 # --- Auth ---

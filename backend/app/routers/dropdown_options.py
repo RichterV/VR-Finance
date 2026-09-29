@@ -63,6 +63,13 @@ def update_option(
     option = _get_owned_option(db, current_user, option_id)
     option.name = payload.name
     if payload.include_in_inflation is not None:
+        # A cesta de inflação é parte do módulo Análise inflacionária -- sem ele, o toggle nem
+        # aparece no frontend; aqui só garante o mesmo bloqueio no backend.
+        if "analise_inflacionaria" not in current_user.modules:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Módulo não habilitado para este usuário",
+            )
         option.include_in_inflation = payload.include_in_inflation
     db.commit()
     db.refresh(option)

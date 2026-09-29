@@ -12,8 +12,8 @@ router = APIRouter(prefix="/backup-status", tags=["backup-status"])
 
 @router.get("", response_model=schemas.BackupStatusOut)
 def get_backup_status(_master: models.User = Depends(require_master)):
-    """Lê o timestamp do último backup, gravado pelo menu.bat (opção 4) via SSH direto no servidor
-    logo após um backup bem-sucedido -- ver `backup_menu`/`backup_marcar_feito` em menu.bat.
+    """Lê o timestamp do último backup, gravado pelo menu.sh (opção 4) via SSH direto no servidor
+    logo após um backup bem-sucedido -- ver `backup_menu` em menu.sh.
     Restrito ao master, já que só o aviso de "faça backup" dele usa isso."""
     path = Path(settings.backup_marker_file)
     if not path.is_file():

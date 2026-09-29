@@ -80,6 +80,22 @@ def _migrate_schema() -> None:
                     )
             conn.commit()
 
+        # Versões de dados via PRAGMA user_version (0 = nenhuma aplicada), pra migrações que só
+        # podem rodar uma vez -- ao contrário de ADD COLUMN, não dá pra detectar pelo schema.
+        user_version = conn.execute(text("PRAGMA user_version")).scalar()
+        if user_version < 1:
+            # 1: Análise inflacionária virou módulo opcional. Quem já existia continua vendo a seção
+            # (sem isso, desabilitar no admin e reiniciar o backend reabilitaria o módulo).
+            conn.execute(
+                text(
+                    "INSERT INTO user_modules (user_id, module_key) "
+                    "SELECT id, 'analise_inflacionaria' FROM users WHERE role != 'master' "
+                    "AND id NOT IN (SELECT user_id FROM user_modules WHERE module_key = 'analise_inflacionaria')"
+                )
+            )
+            conn.execute(text("PRAGMA user_version = 1"))
+            conn.commit()
+
 
 _migrate_schema()
 Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
