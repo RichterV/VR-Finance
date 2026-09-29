@@ -39,6 +39,11 @@
             }
 
             <div class="user-card-section">
+              <span class="user-card-label">Último login</span>
+              <span class="last-login" [class.never]="!u.last_login_at">{{ formatLastLogin(u.last_login_at) }}</span>
+            </div>
+
+            <div class="user-card-section">
               <span class="user-card-label">Módulos</span>
               <div class="module-chips">
                 <span class="chip core">Início</span>
@@ -89,6 +94,7 @@
                 <th>Nome</th>
                 <th>Usuário</th>
                 <th>Perfil</th>
+                <th>Último login</th>
                 <th>Módulos</th>
                 <th class="actions-col">Ações</th>
               </tr>
@@ -104,6 +110,7 @@
                     }
                   </td>
                   <td>{{ u.role === 'master' ? 'Master' : 'Usuário' }}</td>
+                  <td class="last-login" [class.never]="!u.last_login_at">{{ formatLastLogin(u.last_login_at) }}</td>
                   <td>
                     <div class="module-chips">
                       <span class="chip core">Início</span>
@@ -129,7 +136,7 @@
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="5" class="empty">{{ loading() ? 'Carregando...' : 'Nenhum usuário cadastrado.' }}</td>
+                  <td colspan="6" class="empty">{{ loading() ? 'Carregando...' : 'Nenhum usuário cadastrado.' }}</td>
                 </tr>
               }
             </tbody>

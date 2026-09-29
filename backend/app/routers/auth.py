@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -20,6 +21,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuário ou senha inválidos",
         )
+    user.last_login_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    db.commit()
     token = create_access_token(subject=user.username)
     return schemas.Token(access_token=token)
 

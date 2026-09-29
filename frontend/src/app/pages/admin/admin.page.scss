@@ -45,6 +45,15 @@ h2 .count {
   }
 }
 
+.last-login {
+  white-space: nowrap;
+
+  &.never {
+    color: var(--app-text-secondary);
+    font-style: italic;
+  }
+}
+
 // --- Celular: cartões no lugar da tabela --------------------------------------------------------
 // Tabela só no desktop/tablet; abaixo de 768px ela precisava de scroll lateral e espremia os
 // módulos numa coluna estreita (um chip por linha, cortado).

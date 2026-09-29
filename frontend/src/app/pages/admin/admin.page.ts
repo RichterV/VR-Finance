@@ -22,6 +22,20 @@ import { extractHttpErrorMessage } from '../../shared/attachment-types';
 
 const MODULE_LABELS = new Map(OPTIONAL_MODULES.map((m) => [m.key, m.label]));
 
+/** "28/09/2026 14:05" no horário local, ou "Nunca" se o usuário ainda não logou. */
+export function formatLastLogin(iso: string | null): string {
+  if (!iso) return 'Nunca';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return 'Nunca';
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 /**
  * Painel de Administração (só master): lista de usuários, criar/editar (dados, senha, módulos
  * habilitados), excluir e "Mudar pra conta teste". Mexer na própria conta fica no Perfil.
@@ -58,6 +72,8 @@ export class AdminPage implements OnInit {
       error: () => this.loading.set(false),
     });
   }
+
+  readonly formatLastLogin = formatLastLogin;
 
   moduleLabel(key: ModuleKey): string {
     return MODULE_LABELS.get(key) ?? key;

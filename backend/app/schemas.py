@@ -1,7 +1,7 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 Priority = Literal["essencial", "nao_essencial"]
 ServiceType = Literal["peca", "peca_mao_de_obra", "peca_mao_de_obra_propria"]
@@ -29,9 +29,17 @@ class UserOut(BaseModel):
     modules: list[str]
     must_change_password: bool
     default_cash_percentage: float
+    last_login_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+    @field_serializer("last_login_at")
+    def _serialize_last_login_at(self, value: Optional[datetime]) -> Optional[str]:
+        # Gravado em UTC sem tzinfo; sem o offset explícito o navegador leria como horário local.
+        if value is None:
+            return None
+        return value.replace(tzinfo=timezone.utc).isoformat()
 
 
 class UserCreate(BaseModel):

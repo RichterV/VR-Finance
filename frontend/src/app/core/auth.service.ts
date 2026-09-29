@@ -19,6 +19,8 @@ export interface CurrentUser {
   must_change_password: boolean;
   /** % de caixa pré-selecionado em "Adicionar receita" (0–100). */
   default_cash_percentage: number;
+  /** Último login bem-sucedido (ISO 8601 com offset), null se nunca logou. */
+  last_login_at: string | null;
 }
 
 export interface UserPayload {

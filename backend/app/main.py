@@ -62,6 +62,11 @@ def _migrate_schema() -> None:
             conn.execute(text("ALTER TABLE users ADD COLUMN default_cash_percentage REAL NOT NULL DEFAULT 50"))
             conn.commit()
 
+        if "last_login_at" not in user_cols:
+            # Sem backfill: não há registro de logins anteriores, fica null ("Nunca") até o próximo.
+            conn.execute(text("ALTER TABLE users ADD COLUMN last_login_at DATETIME"))
+            conn.commit()
+
         if not _had_user_modules:
             # Tabela recém-criada: usuários que já existiam antes do controle de módulos ficam com
             # todos os módulos habilitados (não perdem nada que já usavam). Usuários criados depois

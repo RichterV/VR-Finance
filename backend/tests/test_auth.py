@@ -1,3 +1,8 @@
+from datetime import datetime, timedelta, timezone
+
+from tests.conftest import _create_user
+
+
 def test_login_success(client, user, user_password):
     response = client.post("/auth/login", data={"username": user.username, "password": user_password})
     assert response.status_code == 200
@@ -219,3 +224,34 @@ def test_delete_user_removes_dependent_data(client, master_headers, auth_headers
     assert db_session.query(models.DropdownOption).filter(models.DropdownOption.user_id == user.id).count() == 0
     assert db_session.query(models.Vehicle).filter(models.Vehicle.user_id == user.id).count() == 0
     assert db_session.query(models.VehicleService).filter(models.VehicleService.user_id == user.id).count() == 0
+
+
+def test_last_login_at_null_before_first_login(client, db_session, master_headers):
+    novo = _create_user(db_session, "sem-login", "senha-123")
+    users = client.get("/auth/users", headers=master_headers).json()
+    row = next(u for u in users if u["id"] == novo.id)
+    assert row["last_login_at"] is None
+
+
+def test_login_records_last_login_at_in_utc(client, user, user_password, master_headers):
+    antes = datetime.now(timezone.utc)
+    assert client.post("/auth/login", data={"username": user.username, "password": user_password}).status_code == 200
+
+    users = client.get("/auth/users", headers=master_headers).json()
+    raw = next(u for u in users if u["id"] == user.id)["last_login_at"]
+    assert raw.endswith("+00:00")  # offset explícito, senão o navegador lê como horário local
+    registrado = datetime.fromisoformat(raw)
+    assert antes - timedelta(seconds=5) <= registrado <= datetime.now(timezone.utc) + timedelta(seconds=5)
+
+
+def test_failed_login_does_not_record_last_login_at(client, user, master_headers):
+    assert client.post("/auth/login", data={"username": user.username, "password": "errada"}).status_code == 401
+    users = client.get("/auth/users", headers=master_headers).json()
+    assert next(u for u in users if u["id"] == user.id)["last_login_at"] is None
+
+
+def test_switch_to_teste_does_not_record_last_login_at(client, db_session, master_headers):
+    teste = _create_user(db_session, "teste", "senha-teste")
+    assert client.post("/auth/switch-to-teste", headers=master_headers).status_code == 200
+    users = client.get("/auth/users", headers=master_headers).json()
+    assert next(u for u in users if u["id"] == teste.id)["last_login_at"] is None
