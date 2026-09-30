@@ -67,6 +67,12 @@ def _migrate_schema() -> None:
             conn.execute(text("ALTER TABLE users ADD COLUMN last_login_at DATETIME"))
             conn.commit()
 
+        if "last_activity_at" not in user_cols:
+            # Backfill com o último login: é a melhor aproximação da última atividade que existe.
+            conn.execute(text("ALTER TABLE users ADD COLUMN last_activity_at DATETIME"))
+            conn.execute(text("UPDATE users SET last_activity_at = last_login_at"))
+            conn.commit()
+
         if not _had_user_modules:
             # Tabela recém-criada: usuários que já existiam antes do controle de módulos ficam com
             # todos os módulos habilitados (não perdem nada que já usavam). Usuários criados depois

@@ -21,6 +21,8 @@ export interface CurrentUser {
   default_cash_percentage: number;
   /** Último login bem-sucedido (ISO 8601 com offset), null se nunca logou. */
   last_login_at: string | null;
+  /** Última atividade no app (requisição autenticada ou login), ISO 8601 com offset; null se nunca usou. */
+  last_activity_at: string | null;
 }
 
 export interface UserPayload {

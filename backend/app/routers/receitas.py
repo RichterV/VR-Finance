@@ -1,4 +1,3 @@
-from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -8,6 +7,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.deps import get_current_user, get_db
 from app.routers.attachments import delete_attachments_for_key
+from app.utils import resolve_launch_date
 
 router = APIRouter(prefix="/receitas", tags=["receitas"])
 
@@ -63,7 +63,7 @@ def create_receita(
         cash_percentage=payload.cash_percentage,
         cash_value=cash_value,
         description=payload.description,
-        date=date.today(),
+        date=resolve_launch_date(payload.date),
     )
     db.add(receita)
     db.commit()

@@ -255,3 +255,61 @@ def test_switch_to_teste_does_not_record_last_login_at(client, db_session, maste
     assert client.post("/auth/switch-to-teste", headers=master_headers).status_code == 200
     users = client.get("/auth/users", headers=master_headers).json()
     assert next(u for u in users if u["id"] == teste.id)["last_login_at"] is None
+
+
+def _activity_of(client, master_headers, user_id):
+    users = client.get("/auth/users", headers=master_headers).json()
+    return next(u for u in users if u["id"] == user_id)["last_activity_at"]
+
+
+def test_last_activity_at_null_sem_uso(client, db_session, master_headers):
+    novo = _create_user(db_session, "sem-uso", "senha-123")
+    assert _activity_of(client, master_headers, novo.id) is None
+
+
+def test_requisicao_autenticada_registra_atividade_em_utc(client, db_session, user, auth_headers, master_headers):
+    user.last_activity_at = None
+    db_session.commit()
+    antes = datetime.now(timezone.utc)
+
+    assert client.get("/gastos", headers=auth_headers).status_code == 200
+
+    raw = _activity_of(client, master_headers, user.id)
+    assert raw.endswith("+00:00")
+    assert antes - timedelta(seconds=5) <= datetime.fromisoformat(raw) <= datetime.now(timezone.utc) + timedelta(seconds=5)
+
+
+def test_atividade_so_regrava_depois_do_intervalo(client, db_session, user, auth_headers):
+    recente = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=10)
+    user.last_activity_at = recente
+    db_session.commit()
+    client.get("/gastos", headers=auth_headers)
+    db_session.refresh(user)
+    assert user.last_activity_at == recente
+
+    antiga = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=2)
+    user.last_activity_at = antiga
+    db_session.commit()
+    client.get("/gastos", headers=auth_headers)
+    db_session.refresh(user)
+    assert user.last_activity_at > antiga
+
+
+def test_login_registra_atividade(client, user, user_password, master_headers):
+    assert client.post("/auth/login", data={"username": user.username, "password": user_password}).status_code == 200
+    assert _activity_of(client, master_headers, user.id) is not None
+
+
+def test_uso_via_switch_to_teste_nao_registra_atividade(client, db_session, master_headers):
+    teste = _create_user(db_session, "teste", "senha-teste")
+    token = client.post("/auth/switch-to-teste", headers=master_headers).json()["access_token"]
+    teste_headers = {"Authorization": f"Bearer {token}"}
+
+    assert client.get("/gastos", headers=teste_headers).status_code == 200
+    # Editar o perfil devolve um token novo -- que continua sem contar como atividade.
+    novo_token = client.put(
+        "/auth/me", headers=teste_headers, json={"username": "teste", "first_name": "T", "last_name": "T"}
+    ).json()["access_token"]
+    assert client.get("/gastos", headers={"Authorization": f"Bearer {novo_token}"}).status_code == 200
+
+    assert _activity_of(client, master_headers, teste.id) is None

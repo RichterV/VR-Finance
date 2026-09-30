@@ -30,6 +30,8 @@ import { GastosService } from '../../services/gastos.service';
 import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
 import { extractHttpErrorMessage } from '../../shared/attachment-types';
 import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
+import { LaunchDateFieldComponent } from '../../shared/launch-date-field.component';
+import { todayIso } from '../../shared/launch-date';
 import { CATEGORY_SELECT_POPOVER_OPTIONS } from '../../shared/select-popover';
 
 @Component({
@@ -56,6 +58,7 @@ import { CATEGORY_SELECT_POPOVER_OPTIONS } from '../../shared/select-popover';
     IonTextarea,
     IonText,
     AttachmentPickerComponent,
+    LaunchDateFieldComponent,
   ],
 })
 export class AdicionarGastoModalComponent implements OnInit {
@@ -80,6 +83,7 @@ export class AdicionarGastoModalComponent implements OnInit {
     description: this.fb.nonNullable.control(''),
     isInstallment: this.fb.nonNullable.control(false),
     installmentCount: this.fb.control<number | null>(null),
+    date: this.fb.nonNullable.control(todayIso()),
   });
 
   constructor(
@@ -115,7 +119,7 @@ export class AdicionarGastoModalComponent implements OnInit {
   async submit(): Promise<void> {
     if (this.attachmentBusy) return;
     this.errorMessage.set(null);
-    const { priority, itemId, value, description, isInstallment, installmentCount } = this.form.getRawValue();
+    const { priority, itemId, value, description, isInstallment, installmentCount, date } = this.form.getRawValue();
 
     if (!itemId || !value) {
       this.errorMessage.set('Preencha o item e o valor.');
@@ -136,6 +140,7 @@ export class AdicionarGastoModalComponent implements OnInit {
         description: description || undefined,
         is_installment: isInstallment,
         installment_count: isInstallment ? installmentCount! : undefined,
+        date,
       })
       .subscribe({
         next: (rows) => {
@@ -194,6 +199,7 @@ export class AdicionarGastoModalComponent implements OnInit {
       description: '',
       isInstallment: false,
       installmentCount: null,
+      date: todayIso(),
     });
     this.valorDisplay.set('');
     this.attachmentPicker.reset();

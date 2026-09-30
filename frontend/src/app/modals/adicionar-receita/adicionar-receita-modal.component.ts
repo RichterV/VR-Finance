@@ -27,6 +27,8 @@ import { ReceitasService } from '../../services/receitas.service';
 import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
 import { extractHttpErrorMessage } from '../../shared/attachment-types';
 import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
+import { LaunchDateFieldComponent } from '../../shared/launch-date-field.component';
+import { todayIso } from '../../shared/launch-date';
 
 @Component({
   selector: 'app-adicionar-receita-modal',
@@ -48,6 +50,7 @@ import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask
     IonTextarea,
     IonText,
     AttachmentPickerComponent,
+    LaunchDateFieldComponent,
   ],
 })
 export class AdicionarReceitaModalComponent {
@@ -74,6 +77,7 @@ export class AdicionarReceitaModalComponent {
       Validators.max(100),
     ]),
     description: this.fb.nonNullable.control(''),
+    date: this.fb.nonNullable.control(todayIso()),
   });
 
   private readonly formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
@@ -132,7 +136,7 @@ export class AdicionarReceitaModalComponent {
   async submit(): Promise<void> {
     if (this.attachmentBusy) return;
     this.errorMessage.set(null);
-    const { value, cashPercentage, description } = this.form.getRawValue();
+    const { value, cashPercentage, description, date } = this.form.getRawValue();
 
     if (!value) {
       this.errorMessage.set('Preencha o valor da receita.');
@@ -145,6 +149,7 @@ export class AdicionarReceitaModalComponent {
         value,
         cash_percentage: cashPercentage,
         description: description || undefined,
+        date,
       })
       .subscribe({
         next: (receita) => {
@@ -162,7 +167,12 @@ export class AdicionarReceitaModalComponent {
                 color: 'success',
               });
               await toast.present();
-              this.form.reset({ value: null, cashPercentage: this.defaultCashPercentage(), description: '' });
+              this.form.reset({
+                value: null,
+                cashPercentage: this.defaultCashPercentage(),
+                description: '',
+                date: todayIso(),
+              });
               this.valorDisplay.set('');
               this.attachmentPicker.reset();
             },
@@ -175,7 +185,12 @@ export class AdicionarReceitaModalComponent {
                 color: 'warning',
               });
               await toast.present();
-              this.form.reset({ value: null, cashPercentage: this.defaultCashPercentage(), description: '' });
+              this.form.reset({
+                value: null,
+                cashPercentage: this.defaultCashPercentage(),
+                description: '',
+                date: todayIso(),
+              });
               this.valorDisplay.set('');
               this.attachmentPicker.reset();
             },

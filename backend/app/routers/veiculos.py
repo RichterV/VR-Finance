@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.deps import get_current_user, get_db, require_module
-from app.utils import add_months
+from app.utils import add_months, today_local
 
 router = APIRouter(
     prefix="/veiculos",
@@ -94,7 +94,7 @@ def resumo_veiculos(
         .all()
     )
 
-    today = date.today()
+    today = today_local()
     janela = []
     for i in range(meses - 1, -1, -1):
         ref = add_months(date(today.year, today.month, 1), -i)

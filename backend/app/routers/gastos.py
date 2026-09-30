@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.deps import get_current_user, get_db
 from app.routers.attachments import delete_attachments_for_key
-from app.utils import add_months
+from app.utils import add_months, resolve_launch_date, today_local
 
 router = APIRouter(prefix="/gastos", tags=["gastos"])
 
@@ -79,7 +79,7 @@ def create_gasto(
     if payload.is_installment and not payload.installment_count:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Informe o número de parcelas")
 
-    today = date.today()
+    start_date = resolve_launch_date(payload.date)
     rows: list[models.Gasto] = []
 
     if payload.is_installment:
@@ -96,7 +96,7 @@ def create_gasto(
                     installment_count=payload.installment_count,
                     installment_number=i + 1,
                     installment_group_id=group_id,
-                    date=add_months(today, i),
+                    date=add_months(start_date, i),
                 )
             )
     else:
@@ -108,7 +108,7 @@ def create_gasto(
                 value=payload.value,
                 description=payload.description,
                 is_installment=False,
-                date=today,
+                date=start_date,
             )
         )
 
@@ -205,7 +205,7 @@ def antecipar_gasto(
 ):
     gasto = _get_owned_gasto(db, current_user, gasto_id)
 
-    today = date.today()
+    today = today_local()
     if (gasto.date.year, gasto.date.month) <= (today.year, today.month):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -48,6 +48,8 @@
       </ion-input>
     </ion-item>
 
+    <app-launch-date-field formControlName="date"></app-launch-date-field>
+
     <ion-item>
       <ion-toggle formControlName="isInstallment">Parcelado?</ion-toggle>
     </ion-item>
@@ -63,6 +65,7 @@
           placeholder="ex: 3"
         ></ion-input>
       </ion-item>
+      <p class="installment-hint">A 1ª parcela cai na data escolhida acima.</p>
     }
 
     <ion-item>

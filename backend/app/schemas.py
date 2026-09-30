@@ -10,6 +10,10 @@ BolsaCurrency = Literal["BRL", "USD"]
 DevedorStatus = Literal["pago", "nao_pago"]
 EntityType = Literal["gasto", "receita", "servico_veiculo"]
 # Espelha app.modules.OPTIONAL_MODULES
+# Alias pra campos chamados `date` com default: `date: Optional[date] = None` faria o Pydantic
+# resolver o tipo como o próprio default (None) em vez de `datetime.date`.
+DateField = date
+
 ModuleKey = Literal["veiculos", "operacoes_bolsa", "devedores", "ferramentas", "exportar_dados", "analise_inflacionaria"]
 
 
@@ -30,12 +34,13 @@ class UserOut(BaseModel):
     must_change_password: bool
     default_cash_percentage: float
     last_login_at: Optional[datetime] = None
+    last_activity_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
 
-    @field_serializer("last_login_at")
-    def _serialize_last_login_at(self, value: Optional[datetime]) -> Optional[str]:
+    @field_serializer("last_login_at", "last_activity_at")
+    def _serialize_utc_datetime(self, value: Optional[datetime]) -> Optional[str]:
         # Gravado em UTC sem tzinfo; sem o offset explícito o navegador leria como horário local.
         if value is None:
             return None
@@ -118,6 +123,8 @@ class GastoCreate(BaseModel):
     description: Optional[str] = None
     is_installment: bool = False
     installment_count: Optional[int] = Field(default=None, ge=2, le=120)
+    # Omitido = hoje. Parcelado: data da parcela 1.
+    date: Optional[DateField] = None
 
 
 class GastoUpdate(BaseModel):
@@ -160,6 +167,8 @@ class ReceitaCreate(BaseModel):
     value: float = Field(gt=0)
     cash_percentage: float = Field(ge=0, le=100)
     description: Optional[str] = None
+    # Omitido = hoje.
+    date: Optional[DateField] = None
 
 
 class ReceitaUpdate(BaseModel):

@@ -695,3 +695,23 @@ ion-popover.category-select-popover {
 ion-popover:has(app-attachments-popover) {
   --width: min(360px, calc(100vw - 32px));
 }
+
+// Calendário do campo "Data" de Adicionar Gasto/Receita (shared/launch-date-field.component.ts).
+// O ion-datetime vem com fundo claro por padrão, e o texto claro do tema sumia em cima dele.
+ion-popover.launch-date-popover {
+  --background: var(--app-surface);
+  --box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  --width: 320px;
+
+  &::part(content) {
+    border: 1px solid var(--app-surface-border);
+    border-radius: 14px;
+  }
+
+  ion-datetime {
+    --background: var(--app-surface);
+    --background-rgb: 30, 41, 59;
+    --title-color: var(--app-text-secondary);
+    color: var(--ion-text-color);
+  }
+}

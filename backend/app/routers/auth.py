@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -21,7 +21,9 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuário ou senha inválidos",
         )
-    user.last_login_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    user.last_login_at = now
+    user.last_activity_at = now
     db.commit()
     token = create_access_token(subject=user.username)
     return schemas.Token(access_token=token)
@@ -37,7 +39,7 @@ def switch_to_teste(_master: models.User = Depends(require_master), db: Session 
     teste_user = db.query(models.User).filter(models.User.username == "teste").first()
     if teste_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário 'teste' não encontrado")
-    token = create_access_token(subject=teste_user.username)
+    token = create_access_token(subject=teste_user.username, impersonated=True)
     return schemas.Token(access_token=token)
 
 
@@ -51,6 +53,7 @@ def _ensure_username_available(db: Session, username: str, exclude_user_id: Opti
 
 @router.put("/me", response_model=schemas.ProfileUpdateOut)
 def update_me(
+    request: Request,
     payload: schemas.ProfileUpdate,
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -65,7 +68,11 @@ def update_me(
     db.commit()
     db.refresh(current_user)
     return schemas.ProfileUpdateOut(
-        access_token=create_access_token(subject=current_user.username),
+        # Mantém a marca de impersonação, senão editar o perfil da conta teste pelo switch
+        # passaria a contar como atividade dela.
+        access_token=create_access_token(
+            subject=current_user.username, impersonated=getattr(request.state, "impersonated", False)
+        ),
         user=schemas.UserOut.model_validate(current_user),
     )
 

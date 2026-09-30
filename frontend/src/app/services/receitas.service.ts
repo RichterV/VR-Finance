@@ -4,13 +4,16 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 
-export interface ReceitaCreatePayload {
+export interface ReceitaUpdatePayload {
   value: number;
   cash_percentage: number;
   description?: string;
 }
 
-export type ReceitaUpdatePayload = ReceitaCreatePayload;
+export interface ReceitaCreatePayload extends ReceitaUpdatePayload {
+  /** AAAA-MM-DD; omitido = hoje. */
+  date?: string;
+}
 
 export interface ReceitaListParams {
   ano?: number;

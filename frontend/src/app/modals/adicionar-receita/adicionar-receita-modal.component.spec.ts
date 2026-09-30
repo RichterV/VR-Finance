@@ -23,6 +23,7 @@ describe('AdicionarReceitaModalComponent', () => {
     must_change_password: false,
     default_cash_percentage: pct,
     last_login_at: null,
+    last_activity_at: null,
   });
 
   function setup(pct: number): void {

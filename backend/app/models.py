@@ -23,6 +23,9 @@ class User(Base):
     # Último POST /auth/login bem-sucedido (UTC, sem tzinfo -- mesmo padrão de created_at). Null =
     # nunca logou desde que a coluna existe. "Mudar pra conta teste" não conta como login.
     last_login_at = Column(DateTime, nullable=True)
+    # Última requisição autenticada (UTC, regravada no máximo 1x por minuto -- deps.ACTIVITY_WRITE_INTERVAL)
+    # ou último login. Uso via "Mudar pra conta teste" não conta. Exibido no painel de admin.
+    last_activity_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     module_rows = relationship("UserModule", cascade="all, delete-orphan")

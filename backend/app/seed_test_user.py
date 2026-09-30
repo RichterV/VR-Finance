@@ -24,7 +24,7 @@ from app.database import SessionLocal
 from app.modules import OPTIONAL_MODULES
 from app.routers.attachments import delete_all_attachments_for_user
 from app.security import hash_password
-from app.utils import add_months, last_day_of_month
+from app.utils import add_months, last_day_of_month, today_local
 
 TEST_USERNAME = "teste"
 TEST_PASSWORD = "SenhaDeTeste@123"
@@ -354,7 +354,7 @@ def main() -> None:
             db.refresh(user)
             print(f"Usuário '{TEST_USERNAME}' criado.")
 
-        today = date.today()
+        today = today_local()
         start = date(today.year - YEARS_OF_HISTORY, 1, 1)
         months = []
         month = start

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.deps import get_current_user, get_db, require_module
-from app.utils import add_months, last_day_of_month
+from app.utils import add_months, last_day_of_month, today_local
 
 router = APIRouter(prefix="/resumo", tags=["resumo"])
 
@@ -140,7 +140,7 @@ def resumo_inflacao(
     if ate_ano is not None and ate_mes is not None:
         mes_referencia = date(ate_ano, ate_mes, 1)
     else:
-        today = date.today()
+        today = today_local()
         mes_referencia = date(today.year, today.month, 1)
 
     def _totais_cesta(qtd_meses_extra: int) -> list[tuple[int, int, float]]:
@@ -241,7 +241,7 @@ def resumo_anual(
     if corte_ativo:
         mes_referencia = date(ate_ano, ate_mes, 1)
     else:
-        today = date.today()
+        today = today_local()
         mes_referencia = date(today.year, today.month, 1)
 
     ultimos_n_meses = []

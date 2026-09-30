@@ -1,6 +1,6 @@
 from datetime import date
 
-from app.utils import add_months
+from app.utils import add_months, max_launch_date, today_local
 
 
 def _create_item(client, headers, priority="essencial", name="Casa"):
@@ -21,7 +21,7 @@ def test_create_simple_gasto(client, auth_headers):
     assert len(rows) == 1
     assert rows[0]["value"] == 150.0
     assert rows[0]["is_installment"] is False
-    assert rows[0]["date"] == date.today().isoformat()
+    assert rows[0]["date"] == today_local().isoformat()
 
 
 def test_create_installment_gasto_creates_n_rows_with_incrementing_dates(client, auth_headers):
@@ -45,7 +45,7 @@ def test_create_installment_gasto_creates_n_rows_with_incrementing_dates(client,
     group_ids = {row["installment_group_id"] for row in rows}
     assert len(group_ids) == 1
 
-    today = date.today()
+    today = today_local()
     expected_dates = [add_months(today, i).isoformat() for i in range(3)]
     assert [row["date"] for row in rows] == expected_dates
     assert [row["installment_number"] for row in rows] == [1, 2, 3]
@@ -117,7 +117,7 @@ def test_list_gastos_filters_by_ano_e_mes(client, auth_headers):
     item = _create_item(client, auth_headers)
     client.post("/gastos", headers=auth_headers, json={"priority": "essencial", "item_id": item["id"], "value": 100.0})
 
-    today = date.today()
+    today = today_local()
     matching = client.get("/gastos", headers=auth_headers, params={"ano": today.year, "mes": today.month}).json()
     assert len(matching["items"]) == 1
     assert matching["total"] == 1
@@ -366,7 +366,7 @@ def test_antecipar_gasto_moves_future_installment_to_current_month(client, auth_
     response = client.post(f"/gastos/{future_row['id']}/antecipar", headers=auth_headers)
     assert response.status_code == 200
     body = response.json()
-    assert body["date"] == date.today().isoformat()
+    assert body["date"] == today_local().isoformat()
     assert body["is_installment"] is True
     assert body["installment_number"] == future_row["installment_number"]
     assert body["installment_group_id"] == future_row["installment_group_id"]
@@ -474,3 +474,49 @@ def test_delete_gasto_not_owned_returns_404(client, auth_headers, db_session):
 
     response = client.delete(f"/gastos/{created['id']}", headers=auth_headers)
     assert response.status_code == 404
+
+
+def test_create_gasto_com_data_futura(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    futura = max_launch_date(today_local())
+
+    response = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": item["id"], "value": 80.0, "date": futura.isoformat()},
+    )
+    assert response.status_code == 201
+    assert response.json()[0]["date"] == futura.isoformat()
+
+
+def test_create_gasto_parcelado_comeca_na_data_escolhida(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    inicio = add_months(today_local(), 1)
+
+    response = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={
+            "priority": "essencial",
+            "item_id": item["id"],
+            "value": 50.0,
+            "is_installment": True,
+            "installment_count": 3,
+            "date": inicio.isoformat(),
+        },
+    )
+    assert response.status_code == 201
+    datas = sorted(r["date"] for r in response.json())
+    assert datas == [add_months(inicio, i).isoformat() for i in range(3)]
+
+
+def test_create_gasto_rejeita_data_fora_da_faixa(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    hoje = today_local()
+    for invalida in (date.fromordinal(hoje.toordinal() - 1), date.fromordinal(max_launch_date(hoje).toordinal() + 1)):
+        response = client.post(
+            "/gastos",
+            headers=auth_headers,
+            json={"priority": "essencial", "item_id": item["id"], "value": 10.0, "date": invalida.isoformat()},
+        )
+        assert response.status_code == 400

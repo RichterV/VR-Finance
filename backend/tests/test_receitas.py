@@ -1,5 +1,7 @@
 from datetime import date
 
+from app.utils import today_local
+
 
 def test_create_receita_calculates_cash_value(client, auth_headers):
     response = client.post(
@@ -12,7 +14,7 @@ def test_create_receita_calculates_cash_value(client, auth_headers):
     assert body["value"] == 1000.0
     assert body["cash_percentage"] == 30
     assert body["cash_value"] == 300.0
-    assert body["date"] == date.today().isoformat()
+    assert body["date"] == today_local().isoformat()
 
 
 def test_create_receita_requires_auth(client):
@@ -51,7 +53,7 @@ def test_list_receitas_orders_by_date_desc(client, auth_headers):
 def test_list_receitas_filters_by_ano_e_mes(client, auth_headers):
     client.post("/receitas", headers=auth_headers, json={"value": 100.0, "cash_percentage": 10})
 
-    today = date.today()
+    today = today_local()
     matching = client.get("/receitas", headers=auth_headers, params={"ano": today.year, "mes": today.month}).json()
     assert len(matching["items"]) == 1
     assert matching["total"] == 1
@@ -155,3 +157,26 @@ def test_delete_receita_not_owned_returns_404(client, auth_headers, db_session):
 
     response = client.delete(f"/receitas/{created['id']}", headers=auth_headers)
     assert response.status_code == 404
+
+
+def test_create_receita_com_data_futura(client, auth_headers):
+    from app.utils import max_launch_date
+
+    futura = max_launch_date(today_local())
+    response = client.post(
+        "/receitas",
+        headers=auth_headers,
+        json={"value": 1000.0, "cash_percentage": 10, "date": futura.isoformat()},
+    )
+    assert response.status_code == 201
+    assert response.json()["date"] == futura.isoformat()
+
+
+def test_create_receita_rejeita_data_passada(client, auth_headers):
+    ontem = date.fromordinal(today_local().toordinal() - 1)
+    response = client.post(
+        "/receitas",
+        headers=auth_headers,
+        json={"value": 1000.0, "cash_percentage": 10, "date": ontem.isoformat()},
+    )
+    assert response.status_code == 400

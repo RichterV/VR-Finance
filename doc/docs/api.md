@@ -32,7 +32,7 @@ operam sobre os dados do usuário do token (`user_id`).
 
 | método | rota | descrição |
 |---|---|---|
-| POST | `/gastos` | cria gasto. Se `is_installment=true`, cria N linhas (uma por mês) e retorna a lista completa |
+| POST | `/gastos` | cria gasto. Se `is_installment=true`, cria N linhas (uma por mês) e retorna a lista completa. `date` opcional (hoje por padrão; de hoje até o fim do mês seguinte, senão 400) — no parcelado é a data da parcela 1 |
 | GET | `/gastos?ano=&mes=&limit=&offset=` | lista paginada (`{items, total}`) de gastos do usuário, ordenados por data decrescente. `ano`/`mes` opcionais, `limit` default 25 (máx. 200) |
 | PUT | `/gastos/{id}` | edita `priority`, `item_id`, `value`, `description` (404 se o gasto não for do usuário logado) |
 | DELETE | `/gastos/{id}` | exclui o gasto |
@@ -44,7 +44,7 @@ para itens já removidos por soft delete (`active=false`), já que a relação c
 
 | método | rota | descrição |
 |---|---|---|
-| POST | `/receitas` | cria receita, calculando `cash_value` a partir de `value` e `cash_percentage` |
+| POST | `/receitas` | cria receita, calculando `cash_value` a partir de `value` e `cash_percentage`. `date` opcional (mesma regra de `/gastos`) |
 | GET | `/receitas?ano=&mes=&limit=&offset=` | lista paginada (`{items, total}`) de receitas do usuário, ordenadas por data decrescente. `ano`/`mes` opcionais, `limit` default 25 (máx. 200) |
 | PUT | `/receitas/{id}` | edita `value`, `cash_percentage`, `description` — recalcula `cash_value` |
 | DELETE | `/receitas/{id}` | exclui a receita |

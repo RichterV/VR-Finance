@@ -12,6 +12,8 @@ export interface GastoCreatePayload {
   description?: string;
   is_installment: boolean;
   installment_count?: number;
+  /** AAAA-MM-DD; omitido = hoje. Parcelado: data da parcela 1. */
+  date?: string;
 }
 
 export interface GastoUpdatePayload {

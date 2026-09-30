@@ -1,5 +1,7 @@
 from datetime import date
 
+from app.utils import today_local
+
 
 def _create_item(client, headers, priority="essencial", name="Casa"):
     return client.post("/dropdown-options", headers=headers, json={"priority": priority, "name": name}).json()
@@ -28,7 +30,7 @@ def _seed_mes_atual(client, headers):
 
 def test_resumo_mensal_disponivel_para_gastar(client, auth_headers):
     _seed_mes_atual(client, auth_headers)
-    today = date.today()
+    today = today_local()
 
     response = client.get(
         "/resumo/mensal", headers=auth_headers, params={"ano": today.year, "mes": today.month}
@@ -49,7 +51,7 @@ def test_resumo_mensal_disponivel_para_gastar(client, auth_headers):
 
 
 def test_resumo_mensal_sem_lancamentos_nao_divide_por_zero(client, auth_headers):
-    today = date.today()
+    today = today_local()
     response = client.get(
         "/resumo/mensal", headers=auth_headers, params={"ano": today.year, "mes": today.month}
     )
@@ -62,7 +64,7 @@ def test_resumo_mensal_sem_lancamentos_nao_divide_por_zero(client, auth_headers)
 
 def test_resumo_anual_agrega_totais_do_mes_atual(client, auth_headers):
     _seed_mes_atual(client, auth_headers)
-    today = date.today()
+    today = today_local()
 
     response = client.get("/resumo/anual", headers=auth_headers, params={"ano": today.year})
     assert response.status_code == 200
@@ -75,7 +77,7 @@ def test_resumo_anual_agrega_totais_do_mes_atual(client, auth_headers):
 
 
 def test_resumo_anual_aceita_janela_configuravel_de_meses(client, auth_headers):
-    today = date.today()
+    today = today_local()
 
     response = client.get("/resumo/anual", headers=auth_headers, params={"ano": today.year, "meses": 24})
     assert response.status_code == 200
@@ -252,7 +254,7 @@ def test_resumo_isolado_por_usuario(client, db_session, auth_headers):
     other_login = client.post("/auth/login", data={"username": "outro", "password": "senha123"})
     other_headers = {"Authorization": f"Bearer {other_login.json()['access_token']}"}
 
-    today = date.today()
+    today = today_local()
     response = client.get(
         "/resumo/mensal", headers=other_headers, params={"ano": today.year, "mes": today.month}
     )

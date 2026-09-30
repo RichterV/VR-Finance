@@ -22,6 +22,7 @@ describe('AdminUsuarioModalComponent', () => {
     must_change_password: false,
     default_cash_percentage: 50,
     last_login_at: null,
+    last_activity_at: null,
   };
   const comum: CurrentUser = {
     id: 2,
@@ -33,6 +34,7 @@ describe('AdminUsuarioModalComponent', () => {
     must_change_password: false,
     default_cash_percentage: 50,
     last_login_at: null,
+    last_activity_at: null,
   };
 
   function setup(user?: CurrentUser): void {

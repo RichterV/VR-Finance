@@ -22,8 +22,8 @@ import { extractHttpErrorMessage } from '../../shared/attachment-types';
 
 const MODULE_LABELS = new Map(OPTIONAL_MODULES.map((m) => [m.key, m.label]));
 
-/** "28/09/2026 14:05" no horário local, ou "Nunca" se o usuário ainda não logou. */
-export function formatLastLogin(iso: string | null): string {
+/** "28/09/2026 14:05" no horário local, ou "Nunca" se o usuário ainda não usou o app. */
+export function formatLastActivity(iso: string | null): string {
   if (!iso) return 'Nunca';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return 'Nunca';
@@ -73,7 +73,7 @@ export class AdminPage implements OnInit {
     });
   }
 
-  readonly formatLastLogin = formatLastLogin;
+  readonly formatLastActivity = formatLastActivity;
 
   moduleLabel(key: ModuleKey): string {
     return MODULE_LABELS.get(key) ?? key;

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.deps import get_current_user, get_db, require_module
 from app.routers.attachments import delete_attachments_for_key
+from app.utils import today_local
 
 router = APIRouter(
     prefix="/servicos-veiculos",
@@ -143,7 +144,7 @@ def create_service(
     current_user: models.User = Depends(get_current_user),
 ):
     _get_owned_vehicle(db, current_user, payload.vehicle_id)
-    _validate_mileage_order(db, payload.vehicle_id, payload.mileage, date.today())
+    _validate_mileage_order(db, payload.vehicle_id, payload.mileage, today_local())
     service = models.VehicleService(
         user_id=current_user.id,
         vehicle_id=payload.vehicle_id,
@@ -152,7 +153,7 @@ def create_service(
         value=payload.value,
         service_type=payload.service_type,
         mileage=payload.mileage,
-        date=date.today(),
+        date=today_local(),
     )
     db.add(service)
     db.commit()

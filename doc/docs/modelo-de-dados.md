@@ -60,7 +60,7 @@ soft delete — a FK continua válida, só some da lista de itens ativos.
 | cash_percentage | REAL | percentual definido no slider (0–100) |
 | cash_value | REAL | calculado: `value * cash_percentage / 100` |
 | description | TEXT nullable | |
-| date | DATE | data automática (dia do cadastro) |
+| date | DATE | escolhida no cadastro: hoje por padrão, ou até o fim do mês seguinte (não editável depois) |
 | created_at | DATETIME | |
 
 ## `vehicles`

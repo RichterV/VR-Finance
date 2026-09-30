@@ -1,5 +1,7 @@
 from datetime import date
 
+from app.utils import today_local
+
 from app import models
 
 
@@ -41,7 +43,7 @@ def test_sem_categoria_marcada_retorna_cesta_vazia(client, auth_headers):
 def test_variacao_mes_a_mes_e_calculada_sobre_a_soma_da_cesta(client, auth_headers, db_session, user):
     casa = _create_item_na_cesta(client, auth_headers, "Casa")
     alimentacao = _create_item_na_cesta(client, auth_headers, "Alimentação")
-    hoje = date.today()
+    hoje = today_local()
     mes_anterior = 12 if hoje.month == 1 else hoje.month - 1
     ano_mes_anterior = hoje.year - 1 if hoje.month == 1 else hoje.year
 
@@ -72,7 +74,7 @@ def test_variacao_mes_a_mes_e_calculada_sobre_a_soma_da_cesta(client, auth_heade
 
 def test_variacao_ano_a_ano_compara_com_mesmo_mes_do_ano_anterior(client, auth_headers, db_session, user):
     casa = _create_item_na_cesta(client, auth_headers, "Casa")
-    hoje = date.today()
+    hoje = today_local()
 
     db_session.add_all(
         [
@@ -96,7 +98,7 @@ def test_variacao_ano_a_ano_compara_com_mesmo_mes_do_ano_anterior(client, auth_h
 
 def test_caixa_real_pct_bate_com_a_formula_ja_usada_no_resumo_anual(client, auth_headers, db_session, user):
     casa = _create_item_na_cesta(client, auth_headers, "Casa")
-    hoje = date.today()
+    hoje = today_local()
 
     db_session.add(_gasto(user.id, casa["id"], 400.0, hoje.year, hoje.month))
     db_session.add(models.Receita(user_id=user.id, value=1000.0, cash_percentage=20, cash_value=200.0, date=hoje))
@@ -120,7 +122,7 @@ def test_categoria_nao_marcada_ou_nao_essencial_fica_fora_da_cesta(client, auth_
     db_session.query(models.DropdownOption).filter(models.DropdownOption.id == lazer["id"]).update(
         {"include_in_inflation": True}
     )
-    hoje = date.today()
+    hoje = today_local()
 
     db_session.add_all(
         [
@@ -140,7 +142,7 @@ def test_categoria_nao_marcada_ou_nao_essencial_fica_fora_da_cesta(client, auth_
 
 def test_mes_base_sem_gasto_na_cesta_gera_variacao_none(client, auth_headers, db_session, user):
     casa = _create_item_na_cesta(client, auth_headers, "Casa")
-    hoje = date.today()
+    hoje = today_local()
 
     db_session.add(_gasto(user.id, casa["id"], 500.0, hoje.year, hoje.month))
     db_session.commit()

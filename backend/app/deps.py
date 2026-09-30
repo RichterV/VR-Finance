@@ -1,4 +1,6 @@
-from fastapi import Depends, HTTPException, status
+from datetime import datetime, timedelta, timezone
+
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt import PyJWTError
 from sqlalchemy.orm import Session
@@ -9,6 +11,10 @@ from app.security import decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
+# users.last_activity_at só é regravado se o valor salvo tiver mais que isso -- evita um UPDATE no
+# SQLite a cada requisição (a Home sozinha dispara várias em paralelo).
+ACTIVITY_WRITE_INTERVAL = timedelta(minutes=1)
+
 
 def get_db():
     db = SessionLocal()
@@ -18,7 +24,15 @@ def get_db():
         db.close()
 
 
+def _record_activity(db: Session, user: models.User) -> None:
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    if user.last_activity_at is None or now - user.last_activity_at >= ACTIVITY_WRITE_INTERVAL:
+        user.last_activity_at = now
+        db.commit()
+
+
 def get_current_user_allow_password_change(
+    request: Request,
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> models.User:
@@ -30,13 +44,19 @@ def get_current_user_allow_password_change(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        username = decode_access_token(token)
+        payload = decode_access_token(token)
     except PyJWTError:
         raise credentials_error
 
-    user = db.query(models.User).filter(models.User.username == username).first()
+    user = db.query(models.User).filter(models.User.username == payload.get("sub")).first()
     if user is None:
         raise credentials_error
+
+    # Uso via "Mudar pra conta teste" é do master, não da conta -- não conta como atividade dela.
+    impersonated = bool(payload.get("imp"))
+    request.state.impersonated = impersonated
+    if not impersonated:
+        _record_activity(db, user)
     return user
 
 

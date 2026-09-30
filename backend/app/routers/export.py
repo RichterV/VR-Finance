@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app import models
 from app.config import settings
 from app.deps import get_current_user, get_db, require_module
+from app.utils import today_local
 
 router = APIRouter(
     prefix="/export",
@@ -281,7 +282,7 @@ def export_modulo(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Módulo não habilitado para este usuário")
     files = _BUILDERS[modulo](db, current_user)
     zip_bytes = _build_zip(files)
-    filename = f"export_{modulo}_{date.today().isoformat()}.zip"
+    filename = f"export_{modulo}_{today_local().isoformat()}.zip"
     return Response(
         content=zip_bytes,
         media_type="application/zip",
