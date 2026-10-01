@@ -5,6 +5,7 @@ import { addIcons } from 'ionicons';
 import { add, cameraOutline, documentOutline, trashOutline } from 'ionicons/icons';
 import { Observable, forkJoin, of } from 'rxjs';
 
+import { markExpectedExternalActivity } from '../core/expected-exit';
 import { Attachment, AttachmentsService, EntityType } from '../services/attachments.service';
 import {
   ALLOWED_ATTACHMENT_TYPES,
@@ -45,7 +46,7 @@ interface DisplayItem {
           class="add-attachment-btn"
           [class.drag-over]="dragOver()"
           [disabled]="uploading()"
-          (click)="fileInput.click()"
+          (click)="openPicker(fileInput)"
           (dragover)="onDragOver($event)"
           (dragleave)="onDragLeave($event)"
           (drop)="onDrop($event)"
@@ -60,7 +61,7 @@ interface DisplayItem {
             title="Tirar foto"
             aria-label="Tirar foto"
             [disabled]="uploading()"
-            (click)="cameraInput.click()"
+            (click)="openPicker(cameraInput)"
           >
             <ion-icon name="camera-outline"></ion-icon>
           </button>
@@ -276,6 +277,12 @@ export class AttachmentPickerComponent implements OnInit {
     if (this.mode === 'edit' && this.entityId != null) {
       this.attachmentsService.list(this.entityType, this.entityId).subscribe((files) => this.existingFiles.set(files));
     }
+  }
+
+  /** Seletor de arquivo e câmera tiram o app do primeiro plano -- avisa o bloqueio do app (APK) pra não pedir digital na volta. */
+  openPicker(input: HTMLInputElement): void {
+    markExpectedExternalActivity();
+    input.click();
   }
 
   onFilesSelected(ev: Event): void {

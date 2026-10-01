@@ -8,6 +8,12 @@
       <ion-button (click)="toggleValores()" [title]="valoresOcultos() ? 'Mostrar valores' : 'Ocultar valores'">
         <ion-icon slot="icon-only" [name]="valoresOcultos() ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
       </ion-button>
+      <ion-button class="bell-btn" (click)="abrirNotificacoes()" [title]="notificacoes.naoLidas() ? notificacoes.naoLidas() + ' notificação(ões) não lida(s)' : 'Notificações'">
+        <ion-icon slot="icon-only" name="notifications-outline"></ion-icon>
+        @if (notificacoes.naoLidas() > 0) {
+          <span class="bell-badge">{{ notificacoes.naoLidas() }}</span>
+        }
+      </ion-button>
       <ion-button (click)="abrirAdicionarGasto()">
         <ion-icon slot="start" name="remove-circle-outline"></ion-icon>
         <span class="btn-text">Adicionar gasto</span>
@@ -46,6 +52,22 @@
       }
       <p class="subtitle">Aqui está o resumo das suas finanças</p>
     </header>
+
+    @if (notificacoes.resumoPendente(); as resumo) {
+      <div class="digest-banner">
+        <span class="digest-icon"><ion-icon name="stats-chart-outline"></ion-icon></span>
+        <div class="digest-text">
+          <span class="digest-title">Seu resumo de {{ nomeMes(resumo.mes) }} chegou</span>
+          <span class="digest-teaser">{{ teaserResumo(resumo) }}</span>
+        </div>
+        <div class="digest-actions">
+          <ion-button size="small" (click)="abrirResumo(resumo)">Ver resumo</ion-button>
+          <ion-button size="small" fill="clear" class="digest-dismiss" title="Dispensar" (click)="dispensarResumo(resumo)">
+            <ion-icon slot="icon-only" name="close"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
+    }
 
     <section class="dashboard-section" id="resumo-mensal">
       <div class="section-header">

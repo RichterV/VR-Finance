@@ -1,0 +1,42 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Notificações</ion-title>
+    <ion-buttons slot="end">
+      @if (notificacoes.naoLidas() > 0) {
+        <ion-button (click)="markAllRead()" title="Marcar todas como lidas">
+          <ion-icon slot="icon-only" name="checkmark-done-outline"></ion-icon>
+        </ion-button>
+      }
+      <ion-button (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  @if (notificacoes.items().length) {
+    <div class="notif-list">
+      @for (n of notificacoes.items(); track n.id) {
+        <button type="button" class="notif" [class.unread]="!n.lida" (click)="open(n)">
+          <span class="notif-icon"><ion-icon name="stats-chart-outline"></ion-icon></span>
+          <span class="notif-text">
+            <span class="notif-title">{{ n.titulo }}</span>
+            <span class="notif-sub">Gerado em {{ n.created_at | date: 'dd/MM/yyyy' }}</span>
+          </span>
+          @if (!n.lida) {
+            <span class="unread-dot" aria-label="Não lida"></span>
+          }
+          <ion-icon class="chevron" name="chevron-forward"></ion-icon>
+        </button>
+      }
+    </div>
+    <p class="retention-note">Ficam guardados os resumos dos últimos 12 meses.</p>
+  } @else {
+    <div class="empty">
+      <ion-icon name="notifications-off-outline"></ion-icon>
+      <p class="empty-title">Nenhuma notificação ainda</p>
+      <p>No começo de cada mês aparece aqui um resumo do mês anterior: o que subiu, o que caiu e o que mudou.</p>
+    </div>
+  }
+</ion-content>

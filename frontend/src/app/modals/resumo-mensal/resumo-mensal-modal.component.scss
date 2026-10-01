@@ -1,0 +1,445 @@
+@use "../../../theme/mixins" as ds;
+
+.resumo {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 24px;
+}
+
+// --- Cabeçalho ---------------------------------------------------------------------------------
+.hero {
+  padding: 22px 22px 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.28);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(var(--ion-color-primary-rgb), 0.22), transparent 60%),
+    var(--app-surface-glass);
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ion-color-primary);
+  }
+
+  h1 {
+    margin: 8px 0 4px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--app-text-primary);
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--app-text-secondary);
+  }
+}
+
+// --- Indicadores -------------------------------------------------------------------------------
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.kpi {
+  @include ds.app-card-compact;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.kpi-label {
+  font-size: 0.78rem;
+  color: var(--app-text-secondary);
+}
+
+.kpi-value {
+  font-size: 1.12rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+
+  ion-icon {
+    font-size: 0.85rem;
+  }
+
+  .delta-ref {
+    font-weight: 400;
+    color: var(--app-text-secondary);
+    margin-left: 2px;
+  }
+}
+
+.good {
+  color: var(--ion-color-success);
+}
+
+.bad {
+  color: var(--ion-color-danger);
+}
+
+.neutral {
+  color: var(--app-text-secondary);
+  font-weight: 400;
+}
+
+// --- Cartões genéricos -------------------------------------------------------------------------
+.card {
+  @include ds.app-card;
+  padding: 18px 18px;
+}
+
+.card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--app-text-primary);
+}
+
+.card-caption {
+  margin: 10px 2px 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--app-text-secondary);
+}
+
+.card .card-caption {
+  margin: 12px 0 0;
+}
+
+.block h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 2px 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--app-text-primary);
+
+  ion-icon {
+    font-size: 1.15rem;
+  }
+}
+
+.ic-bad {
+  color: var(--ion-color-danger);
+}
+
+.ic-good {
+  color: var(--ion-color-success);
+}
+
+.ic-warn {
+  color: var(--ion-color-warning);
+}
+
+// --- Taxa de poupança --------------------------------------------------------------------------
+.savings-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.savings-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ion-color-success);
+
+  &.bad {
+    color: var(--ion-color-warning);
+  }
+}
+
+.savings-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.savings-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--ion-color-primary-shade), var(--ion-color-primary));
+  transition: width 0.4s ease;
+}
+
+.savings-goal {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 18px;
+  border-radius: 1px;
+  background: var(--app-text-primary);
+  transform: translateX(-1px);
+}
+
+.savings-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 12px;
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: var(--app-text-secondary);
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.goal-swatch {
+  width: 2px;
+  height: 12px;
+  border-radius: 1px;
+  background: var(--app-text-primary);
+}
+
+// --- Mês estável / aviso -----------------------------------------------------------------------
+.stable,
+.warning {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  > ion-icon {
+    flex-shrink: 0;
+    font-size: 1.6rem;
+  }
+
+  strong {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--app-text-primary);
+  }
+
+  p,
+  span {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    color: var(--app-text-secondary);
+  }
+}
+
+.stable > ion-icon {
+  color: var(--ion-color-success);
+}
+
+.warning {
+  border-color: rgba(var(--ion-color-warning-rgb), 0.45);
+  background: rgba(var(--ion-color-warning-rgb), 0.08);
+
+  > ion-icon {
+    color: var(--ion-color-warning);
+  }
+
+  .warning-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  ion-button {
+    --color: var(--ion-color-warning);
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
+// --- Listas (categorias, parcelamentos) --------------------------------------------------------
+.list {
+  padding: 4px 18px;
+}
+
+.cat-row,
+.row {
+  padding: 14px 0;
+
+  & + & {
+    border-top: 1px solid var(--app-surface-border);
+  }
+}
+
+.cat-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cat-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cat-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--app-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cat-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text-primary);
+}
+
+.cat-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bar {
+  height: 5px;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.bar-media {
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.bar-valor.bad {
+  background: var(--ion-color-danger);
+}
+
+.bar-valor.good {
+  background: var(--ion-color-success);
+}
+
+.cat-meta {
+  font-size: 0.78rem;
+  color: var(--app-text-secondary);
+  font-variant-numeric: tabular-nums;
+
+  b {
+    font-weight: 600;
+  }
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: -6px 2px 0;
+  font-size: 0.74rem;
+  color: var(--app-text-secondary);
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.sw {
+  width: 14px;
+  height: 5px;
+  border-radius: 999px;
+}
+
+.sw-valor {
+  background: linear-gradient(90deg, var(--ion-color-danger) 50%, var(--ion-color-success) 50%);
+}
+
+.sw-media {
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.row,
+.row-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.row-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.row-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--app-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-sub {
+  font-size: 0.78rem;
+  color: var(--app-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-value {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+// --- Gastos pontuais ---------------------------------------------------------------------------
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--app-surface-border);
+  background: var(--app-surface-glass);
+  font-size: 0.85rem;
+  color: var(--app-text-primary);
+
+  b {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}

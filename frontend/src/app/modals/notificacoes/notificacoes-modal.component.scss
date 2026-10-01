@@ -1,0 +1,109 @@
+@use "../../../theme/mixins" as ds;
+
+.notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notif {
+  @include ds.app-card-compact;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: var(--app-surface-hover);
+  }
+
+  &.unread {
+    border-color: rgba(var(--ion-color-primary-rgb), 0.4);
+  }
+}
+
+.notif-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: var(--ion-color-primary);
+  background: rgba(var(--ion-color-primary-rgb), 0.12);
+}
+
+.notif-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notif-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--app-text-primary);
+}
+
+.notif.unread .notif-title {
+  font-weight: 700;
+}
+
+.notif-sub {
+  font-size: 0.78rem;
+  color: var(--app-text-secondary);
+}
+
+.unread-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ion-color-primary);
+  box-shadow: 0 0 0 4px rgba(var(--ion-color-primary-rgb), 0.15);
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--app-text-secondary);
+}
+
+.retention-note {
+  margin: 14px 2px 0;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--app-text-secondary);
+}
+
+.empty {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--app-text-secondary);
+
+  ion-icon {
+    font-size: 2.4rem;
+    opacity: 0.6;
+  }
+
+  .empty-title {
+    margin: 12px 0 4px;
+    font-weight: 600;
+    color: var(--app-text-primary);
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+}

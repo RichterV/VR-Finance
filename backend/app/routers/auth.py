@@ -187,6 +187,7 @@ def delete_user(
     db.query(models.Gasto).filter(models.Gasto.user_id == user_id).delete(synchronize_session=False)
     db.query(models.Receita).filter(models.Receita.user_id == user_id).delete(synchronize_session=False)
     db.query(models.DropdownOption).filter(models.DropdownOption.user_id == user_id).delete(synchronize_session=False)
+    db.query(models.Notificacao).filter(models.Notificacao.user_id == user_id).delete(synchronize_session=False)
     delete_all_attachments_for_user(db, user_id)
     db.delete(user)
     db.commit()

@@ -1,0 +1,210 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Resumo do mês</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="toggleOcultos()" [title]="ocultos() ? 'Mostrar valores' : 'Ocultar valores'">
+        <ion-icon slot="icon-only" [name]="ocultos() ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+      </ion-button>
+      <ion-button (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="resumo">
+    <header class="hero">
+      <span class="eyebrow">
+        <ion-icon name="calendar-outline"></ion-icon>
+        Resumo mensal
+      </span>
+      <h1>{{ tituloMes() }}</h1>
+      <p>Comparado com a média de {{ periodoBase() }}</p>
+    </header>
+
+    <section class="kpi-grid">
+      @for (kpi of kpis(); track kpi.key) {
+        <div class="kpi">
+          <span class="kpi-label">{{ kpi.label }}</span>
+          <span class="kpi-value">{{ money(kpi.indicador.valor) }}</span>
+          @if (kpi.indicador.variacao_pct !== null) {
+            <span class="delta" [class]="'delta ' + tom(kpi.indicador.variacao_pct, kpi.subirEhBom)">
+              @if (tom(kpi.indicador.variacao_pct, kpi.subirEhBom) !== 'neutral') {
+                <ion-icon [name]="kpi.indicador.variacao_pct > 0 ? 'arrow-up' : 'arrow-down'"></ion-icon>
+              }
+              {{ pct(kpi.indicador.variacao_pct, false) }}
+              <span class="delta-ref">vs. média</span>
+            </span>
+          } @else {
+            <span class="delta neutral">Sem histórico</span>
+          }
+        </div>
+      }
+    </section>
+
+    @if (p().taxa_poupanca.valor_pct !== null) {
+      <section class="card savings">
+        <div class="savings-head">
+          <span class="card-title">Taxa de poupança</span>
+          <span
+            class="savings-value"
+            [class.bad]="p().taxa_poupanca.meta_pct !== null && p().taxa_poupanca.valor_pct! < p().taxa_poupanca.meta_pct!"
+          >{{ pct(p().taxa_poupanca.valor_pct!, false) }}</span>
+        </div>
+        <div class="savings-track" role="img" [attr.aria-label]="'Taxa de poupança de ' + pct(p().taxa_poupanca.valor_pct!, false)">
+          <div class="savings-fill" [style.width.%]="clampPct(p().taxa_poupanca.valor_pct)"></div>
+          @if (p().taxa_poupanca.meta_pct !== null) {
+            <div class="savings-goal" [style.left.%]="clampPct(p().taxa_poupanca.meta_pct)"></div>
+          }
+        </div>
+        <div class="savings-legend">
+          @if (p().taxa_poupanca.meta_pct !== null) {
+            <span><i class="goal-swatch"></i>Pretendido: {{ pct(p().taxa_poupanca.meta_pct!, false) }}</span>
+          }
+          @if (p().taxa_poupanca.media_pct !== null) {
+            <span>Média: {{ pct(p().taxa_poupanca.media_pct!, false) }}</span>
+          }
+        </div>
+        <p class="card-caption">Quanto da receita do mês sobrou depois dos gastos.</p>
+      </section>
+    }
+
+    @if (mesEstavel()) {
+      <section class="card stable">
+        <ion-icon name="checkmark-circle-outline"></ion-icon>
+        <div>
+          <strong>Mês estável</strong>
+          <p>Nenhuma categoria variou muito em relação à média dos últimos meses.</p>
+        </div>
+      </section>
+    }
+
+    @if (p().subiram.length) {
+      <section class="block">
+        <h2><ion-icon name="trending-up-outline" class="ic-bad"></ion-icon>Subiram</h2>
+        <div class="card list">
+          @for (c of p().subiram; track c.item_id) {
+            <div class="cat-row">
+              <div class="cat-main">
+                <span class="prio-dot" [class.essencial]="c.priority === 'essencial'"></span>
+                <span class="cat-name">{{ c.item_name }}</span>
+                <span class="cat-value">{{ money(c.valor) }}</span>
+              </div>
+              <div class="cat-bars">
+                <div class="bar bar-media" [style.width.%]="barras(c).media"></div>
+                <div class="bar bar-valor bad" [style.width.%]="barras(c).valor"></div>
+              </div>
+              <span class="cat-meta"><b class="bad">{{ pct(c.variacao_pct) }}</b> · média de {{ money(c.media) }}</span>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    @if (p().cairam.length) {
+      <section class="block">
+        <h2><ion-icon name="trending-down-outline" class="ic-good"></ion-icon>Caíram</h2>
+        <div class="card list">
+          @for (c of p().cairam; track c.item_id) {
+            <div class="cat-row">
+              <div class="cat-main">
+                <span class="prio-dot" [class.essencial]="c.priority === 'essencial'"></span>
+                <span class="cat-name">{{ c.item_name }}</span>
+                <span class="cat-value">{{ money(c.valor) }}</span>
+              </div>
+              <div class="cat-bars">
+                <div class="bar bar-media" [style.width.%]="barras(c).media"></div>
+                <div class="bar bar-valor good" [style.width.%]="barras(c).valor"></div>
+              </div>
+              <span class="cat-meta"><b class="good">{{ pct(c.variacao_pct) }}</b> · média de {{ money(c.media) }}</span>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    @if (p().subiram.length || p().cairam.length) {
+      <p class="legend">
+        <span><i class="sw sw-valor"></i>Este mês</span>
+        <span><i class="sw sw-media"></i>Média</span>
+        <span><span class="prio-dot essencial"></span>Essencial</span>
+        <span><span class="prio-dot"></span>Não essencial</span>
+      </p>
+    }
+
+    @if (p().pontuais.length) {
+      <section class="block">
+        <h2><ion-icon name="flash-outline" class="ic-warn"></ion-icon>Gastos pontuais</h2>
+        <div class="chips">
+          @for (g of p().pontuais; track g.item_id) {
+            <span class="chip">
+              <span class="prio-dot" [class.essencial]="g.priority === 'essencial'"></span>
+              {{ g.item_name }} <b>{{ money(g.valor) }}</b>
+            </span>
+          }
+        </div>
+        <p class="card-caption">Categorias sem gasto frequente nos últimos meses — não entram na comparação.</p>
+      </section>
+    }
+
+    @if (temParcelamentos()) {
+      <section class="block">
+        <h2>Parcelamentos</h2>
+        <div class="card list">
+          @for (n of p().parcelamentos_novos; track $index) {
+            <div class="row">
+              <div class="row-text">
+                <span class="row-title">{{ n.descricao }}</span>
+                <span class="row-sub">Novo · {{ n.parcelas }}x de {{ money(n.valor_parcela) }}</span>
+              </div>
+              <span class="row-value bad">+{{ money(n.valor_parcela) }}/mês</span>
+            </div>
+          }
+          @for (e of p().parcelamentos_encerrados; track $index) {
+            <div class="row">
+              <div class="row-text">
+                <span class="row-title">{{ e.descricao }}</span>
+                <span class="row-sub">Última parcela ({{ e.parcelas }}x)</span>
+              </div>
+              <span class="row-value good">{{ money(e.valor_parcela) }}/mês livres</span>
+            </div>
+          }
+        </div>
+        @if (p().parcelamentos_encerrados.length) {
+          <p class="card-caption">A partir do mês que vem, {{ money(totalLiberado()) }} por mês deixam de estar comprometidos.</p>
+        }
+      </section>
+    }
+
+    @if (p().inflacao; as inf) {
+      <section class="card row-card">
+        <div class="row-text">
+          <span class="row-title">Inflação da sua cesta</span>
+          <span class="row-sub">{{ inf.cesta.join(', ') }}</span>
+        </div>
+        @if (inf.variacao_pct !== null) {
+          <span class="row-value" [class]="'row-value ' + tom(inf.variacao_pct, false)">{{ pct(inf.variacao_pct) }}</span>
+        } @else {
+          <span class="row-value neutral">—</span>
+        }
+      </section>
+    }
+
+    @if (p().devedores; as dev) {
+      @if (dev.parcelas_atrasadas > 0) {
+        <section class="card warning">
+          <ion-icon name="alert-circle-outline"></ion-icon>
+          <div class="warning-text">
+            <strong>{{ dev.parcelas_atrasadas }} {{ dev.parcelas_atrasadas === 1 ? 'parcela' : 'parcelas' }} de devedor em atraso</strong>
+            <span>{{ money(dev.valor_atrasado) }} a receber</span>
+          </div>
+          <ion-button fill="clear" size="small" (click)="verDevedores()">
+            Ver
+            <ion-icon slot="end" name="arrow-forward"></ion-icon>
+          </ion-button>
+        </section>
+      }
+    }
+  </div>
+</ion-content>

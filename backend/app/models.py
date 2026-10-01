@@ -137,6 +137,27 @@ class VehicleService(Base):
         return self.vehicle.name
 
 
+class Notificacao(Base):
+    """Avisos da central de notificações do app. Hoje só o resumo da virada do mês
+    (tipo "resumo_mensal", gerado sob demanda por app/resumo_mensal.py); payload é o conteúdo já
+    calculado, em JSON -- uma foto do momento da geração, não recalculada depois."""
+
+    __tablename__ = "notificacoes"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    tipo = Column(String, nullable=False)  # "resumo_mensal"
+    ano = Column(Integer, nullable=False)  # mês de referência do aviso
+    mes = Column(Integer, nullable=False)
+    titulo = Column(String, nullable=False)
+    payload = Column(String, nullable=False)  # JSON
+    lida_em = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Um aviso por tipo e mês -- duas requisições simultâneas gerando o mesmo resumo não duplicam.
+    __table_args__ = (UniqueConstraint("user_id", "tipo", "ano", "mes", name="uq_notificacoes_user_tipo_mes"),)
+
+
 class Attachment(Base):
     __tablename__ = "attachments"
 

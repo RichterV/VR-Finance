@@ -8,6 +8,128 @@
   gap: 40px;
 }
 
+// Sino do header: contador sobreposto ao ícone, no canto superior direito.
+.bell-btn {
+  position: relative;
+}
+
+.bell-badge {
+  position: absolute;
+  top: 3px;
+  right: -3px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--ion-color-primary);
+  color: var(--ion-color-primary-contrast);
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--ion-background-color);
+  pointer-events: none;
+}
+
+// Card "Seu resumo de <mês> chegou" -- some quando o resumo é aberto ou dispensado.
+.digest-banner {
+  @include ds.app-card;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  margin-top: -16px;
+  border-color: rgba(var(--ion-color-primary-rgb), 0.35);
+  background:
+    radial-gradient(circle at 0% 50%, rgba(var(--ion-color-primary-rgb), 0.16), transparent 55%),
+    var(--app-surface-glass);
+  animation: digest-in 0.35s ease-out;
+}
+
+.digest-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  color: var(--ion-color-primary-contrast);
+  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
+  box-shadow: 0 6px 16px rgba(var(--ion-color-primary-rgb), 0.3);
+}
+
+.digest-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.digest-title {
+  font-weight: 700;
+  color: var(--app-text-primary);
+}
+
+.digest-teaser {
+  font-size: 0.85rem;
+  color: var(--app-text-secondary);
+}
+
+.digest-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  ion-button:not(.digest-dismiss) {
+    --border-radius: 10px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .digest-dismiss {
+    --color: var(--app-text-secondary);
+    margin: 0;
+  }
+}
+
+@media (max-width: 576px) {
+  .digest-banner {
+    flex-wrap: wrap;
+    position: relative;
+    padding-right: 44px;
+  }
+
+  .digest-actions {
+    width: 100%;
+    padding-left: 60px;
+
+    ion-button:not(.digest-dismiss) {
+      flex: 1;
+    }
+
+    .digest-dismiss {
+      position: absolute;
+      top: 6px;
+      right: 4px;
+    }
+  }
+}
+
+@keyframes digest-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .dashboard-header {
   .subtitle {
     margin: 4px 0 0;

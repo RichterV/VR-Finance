@@ -23,20 +23,24 @@ import { addIcons } from 'ionicons';
 import {
   addCircleOutline,
   barChartOutline,
+  close,
   documentTextOutline,
   expandOutline,
   eyeOffOutline,
   eyeOutline,
+  notificationsOutline,
   personOutline,
   pricetagsOutline,
   removeCircleOutline,
+  statsChartOutline,
 } from 'ionicons/icons';
 import { BaseChartDirective } from 'ng2-charts';
-import { forkJoin, Observable, of, Subscription, tap } from 'rxjs';
+import { catchError, forkJoin, Observable, of, Subscription, tap } from 'rxjs';
 
 import { isDesktopViewport, slideInFromRight, slideOutToRight, SIDE_MODAL_CSS_CLASS } from '../modals/side-modal.animations';
 import { AuthService } from '../core/auth.service';
 import { HomeRefreshService } from '../core/home-refresh.service';
+import { Notificacao, NotificacoesService } from '../services/notificacoes.service';
 import { Corte, ItemPercentual, ResumoAnual, ResumoGeral, ResumoInflacao, ResumoMensal, ResumoService } from '../services/resumo.service';
 import { LoadingStateComponent } from '../shared/loading-state.component';
 import { ResetPeriodButtonComponent } from '../shared/reset-period-button.component';
@@ -167,6 +171,7 @@ export class HomePage implements OnInit, OnDestroy {
     private readonly modalCtrl: ModalController,
     private readonly homeRefresh: HomeRefreshService,
     private readonly route: ActivatedRoute,
+    readonly notificacoes: NotificacoesService,
   ) {
     addIcons({
       removeCircleOutline,
@@ -178,6 +183,9 @@ export class HomePage implements OnInit, OnDestroy {
       eyeOutline,
       eyeOffOutline,
       documentTextOutline,
+      notificationsOutline,
+      statsChartOutline,
+      close,
     });
     const currentYear = new Date().getFullYear();
     this.anos = Array.from({ length: 6 }, (_, i) => currentYear - i);
@@ -224,10 +232,20 @@ export class HomePage implements OnInit, OnDestroy {
    */
   ionViewWillEnter(): void {
     this.reloadAll().subscribe();
+    this.loadNotificacoes();
+  }
+
+  /** Fora do forkJoin dos resumos de propósito: uma falha aqui não pode travar o dashboard. */
+  private loadNotificacoes(): void {
+    this.notificacoes
+      .load()
+      .pipe(catchError(() => of([])))
+      .subscribe();
   }
 
   /** Clicar em "Início" ja na Home (menu lateral do desktop) ou puxar a tela pra baixo (pull-to-refresh no app) cai aqui. */
   onPullToRefresh(event: CustomEvent): void {
+    this.loadNotificacoes();
     this.reloadAll().subscribe(() => (event.target as HTMLIonRefresherElement).complete());
   }
 
@@ -408,6 +426,54 @@ export class HomePage implements OnInit, OnDestroy {
   async abrirPerfil(): Promise<void> {
     const { PerfilModalComponent } = await import('../modals/perfil/perfil-modal.component');
     const modal = await this.modalCtrl.create({ component: PerfilModalComponent, ...this.sideModalOptions() });
+    await modal.present();
+  }
+
+  nomeMes(mes: number): string {
+    return MESES_COMPLETOS[mes - 1].toLowerCase();
+  }
+
+  /** Uma linha de prévia do resumo pro card da Home (só %, nunca R$ -- vale mesmo com valores ocultos). */
+  teaserResumo(n: Notificacao): string {
+    const p = n.payload;
+    const partes: string[] = [];
+    const variacao = p.gastos.variacao_pct;
+    if (variacao !== null && Math.abs(variacao) >= 1) {
+      const texto = Math.abs(variacao).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+      partes.push(`Gastos ${variacao > 0 ? '+' : '−'}${texto}% vs. média`);
+    }
+    if (p.subiram.length) {
+      partes.push(`${p.subiram[0].item_name} subiu ${Math.round(p.subiram[0].variacao_pct)}%`);
+    } else if (p.cairam.length) {
+      partes.push(`${p.cairam[0].item_name} caiu ${Math.round(Math.abs(p.cairam[0].variacao_pct))}%`);
+    }
+    if (p.parcelamentos_encerrados.length) {
+      partes.push(`${p.parcelamentos_encerrados.length} parcelamento(s) encerrado(s)`);
+    }
+    return partes.length ? partes.join(' · ') : 'Veja como foi o mês em relação aos anteriores';
+  }
+
+  async abrirResumo(n: Notificacao): Promise<void> {
+    const { ResumoMensalModalComponent } = await import('../modals/resumo-mensal/resumo-mensal-modal.component');
+    const modal = await this.modalCtrl.create({
+      component: ResumoMensalModalComponent,
+      componentProps: { notificacao: n, valoresOcultos: this.valoresOcultos() },
+      ...this.sideModalOptions(),
+    });
+    await modal.present();
+  }
+
+  dispensarResumo(n: Notificacao): void {
+    this.notificacoes.markRead(n.id).subscribe();
+  }
+
+  async abrirNotificacoes(): Promise<void> {
+    const { NotificacoesModalComponent } = await import('../modals/notificacoes/notificacoes-modal.component');
+    const modal = await this.modalCtrl.create({
+      component: NotificacoesModalComponent,
+      componentProps: { valoresOcultos: this.valoresOcultos() },
+      ...this.sideModalOptions(),
+    });
     await modal.present();
   }
 

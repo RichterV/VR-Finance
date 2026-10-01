@@ -8,6 +8,9 @@ import {
   IonIcon,
   IonInput,
   IonItem,
+  IonNote,
+  IonSelect,
+  IonSelectOption,
   IonText,
   IonTitle,
   IonToolbar,
@@ -17,7 +20,9 @@ import {
 import { addIcons } from 'ionicons';
 import { close, logOutOutline } from 'ionicons/icons';
 
+import { AppLockService, LOCK_TIMEOUT_OPTIONS } from '../../core/app-lock.service';
 import { AuthService } from '../../core/auth.service';
+import { CATEGORY_SELECT_POPOVER_OPTIONS } from '../../shared/select-popover';
 
 function passwordsMatchValidator(newControlName: string, confirmControlName: string) {
   return (group: AbstractControl): ValidationErrors | null => {
@@ -34,6 +39,17 @@ function passwordsMatchValidator(newControlName: string, confirmControlName: str
 @Component({
   selector: 'app-perfil-modal',
   templateUrl: './perfil-modal.component.html',
+  styles: [
+    `
+      .lock-hint {
+        display: block;
+        margin: 8px 4px 0;
+        font-size: 0.8rem;
+        line-height: 1.45;
+        color: var(--app-text-secondary);
+      }
+    `,
+  ],
   imports: [
     ReactiveFormsModule,
     IonHeader,
@@ -45,12 +61,21 @@ function passwordsMatchValidator(newControlName: string, confirmControlName: str
     IonContent,
     IonItem,
     IonInput,
+    IonNote,
+    IonSelect,
+    IonSelectOption,
     IonText,
   ],
 })
 export class PerfilModalComponent implements OnInit {
   readonly profileSaving = signal(false);
   readonly profileError = signal<string | null>(null);
+
+  /** Bloqueio ao voltar pro app: só no APK, e só se o aparelho tiver digital/PIN/padrão. */
+  readonly lockAvailable = signal(false);
+  readonly lockTimeout = signal<number | null>(null);
+  readonly lockOptions = LOCK_TIMEOUT_OPTIONS;
+  readonly selectPopoverOptions = CATEGORY_SELECT_POPOVER_OPTIONS;
 
   readonly passwordSaving = signal(false);
   readonly passwordError = signal<string | null>(null);
@@ -75,12 +100,25 @@ export class PerfilModalComponent implements OnInit {
     readonly auth: AuthService,
     private readonly toastCtrl: ToastController,
     private readonly modalCtrl: ModalController,
+    private readonly appLock: AppLockService,
   ) {
     addIcons({ close, logOutOutline });
   }
 
   ngOnInit(): void {
     this.resetProfileForm();
+    void this.loadLockSettings();
+  }
+
+  private async loadLockSettings(): Promise<void> {
+    if (!this.appLock.isAvailable || !(await this.appLock.canAuthenticate())) return;
+    this.lockTimeout.set(await this.appLock.getTimeoutMinutes());
+    this.lockAvailable.set(true);
+  }
+
+  onLockTimeoutChange(minutes: number): void {
+    this.lockTimeout.set(minutes);
+    this.appLock.setTimeoutMinutes(minutes);
   }
 
   private resetProfileForm(): void {

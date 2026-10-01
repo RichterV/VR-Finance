@@ -371,3 +371,85 @@ class AttachmentExistsOut(BaseModel):
 
 class BackupStatusOut(BaseModel):
     last_backup_at: Optional[datetime] = None
+
+
+# --- Notificações / resumo da virada do mês ---
+
+class IndicadorMensal(BaseModel):
+    valor: float
+    media: Optional[float]  # média dos meses base com dados; None = sem histórico pra comparar
+    variacao_pct: Optional[float]
+
+
+class TaxaPoupanca(BaseModel):
+    valor_pct: Optional[float]  # caixa real ÷ receita do mês; None = mês sem receita
+    media_pct: Optional[float]
+    meta_pct: Optional[float]  # caixa pretendido ÷ receita (o que o usuário pretendia guardar)
+
+
+class VariacaoCategoria(BaseModel):
+    item_id: int
+    item_name: str
+    priority: Priority
+    valor: float
+    media: float
+    diferenca: float
+    variacao_pct: float
+
+
+class GastoPontual(BaseModel):
+    item_id: int
+    item_name: str
+    priority: Priority
+    valor: float
+
+
+class ParcelamentoResumo(BaseModel):
+    descricao: str
+    item_name: str
+    valor_parcela: float
+    parcelas: int
+
+
+class InflacaoResumo(BaseModel):
+    cesta: list[str]
+    total_cesta: float
+    variacao_pct: Optional[float]
+
+
+class DevedoresResumo(BaseModel):
+    parcelas_atrasadas: int
+    valor_atrasado: float
+
+
+class ResumoMensalPayload(BaseModel):
+    ano: int
+    mes: int
+    meses_base: int  # quantos meses anteriores formam a média de comparação
+    gastos: IndicadorMensal
+    receita: IndicadorMensal
+    caixa_real: IndicadorMensal
+    caixa_pretendido: IndicadorMensal
+    taxa_poupanca: TaxaPoupanca
+    subiram: list[VariacaoCategoria]
+    cairam: list[VariacaoCategoria]
+    pontuais: list[GastoPontual]
+    parcelamentos_novos: list[ParcelamentoResumo]
+    parcelamentos_encerrados: list[ParcelamentoResumo]
+    inflacao: Optional[InflacaoResumo] = None  # None = módulo desabilitado ou cesta vazia
+    devedores: Optional[DevedoresResumo] = None  # None = módulo desabilitado
+
+
+class NotificacaoOut(BaseModel):
+    id: int
+    tipo: Literal["resumo_mensal"]
+    ano: int
+    mes: int
+    titulo: str
+    lida: bool
+    created_at: datetime
+    payload: ResumoMensalPayload
+
+    @field_serializer("created_at")
+    def _serialize_utc_datetime(self, value: datetime) -> str:
+        return value.replace(tzinfo=timezone.utc).isoformat()

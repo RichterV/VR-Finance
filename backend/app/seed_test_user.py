@@ -137,6 +137,8 @@ def _reset_user_data(db, user: models.User) -> None:
     db.query(models.Gasto).filter(models.Gasto.user_id == user.id).delete()
     db.query(models.Receita).filter(models.Receita.user_id == user.id).delete()
     db.query(models.DropdownOption).filter(models.DropdownOption.user_id == user.id).delete()
+    # Resumos mensais antigos refletiam a base anterior -- o próximo é gerado de novo sob demanda.
+    db.query(models.Notificacao).filter(models.Notificacao.user_id == user.id).delete()
 
 
 def _seed_categorias(db, user: models.User) -> dict[str, models.DropdownOption]:

@@ -86,4 +86,26 @@
       {{ passwordSaving() ? 'Salvando...' : 'Trocar senha' }}
     </ion-button>
   </form>
+
+  @if (lockAvailable()) {
+    <h2 class="ion-margin-top">Segurança</h2>
+    <ion-item>
+      <ion-select
+        label="Pedir digital ao voltar pro app"
+        labelPlacement="stacked"
+        interface="popover"
+        [interfaceOptions]="selectPopoverOptions"
+        [value]="lockTimeout()"
+        (ionChange)="onLockTimeoutChange($any($event.detail.value))"
+      >
+        @for (option of lockOptions; track option.value) {
+          <ion-select-option [value]="option.value">{{ option.label }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-item>
+    <ion-note class="lock-hint">
+      Depois desse tempo com o app em segundo plano, ele pede sua digital (ou o bloqueio de tela do
+      celular) antes de mostrar seus dados. Vale só neste aparelho.
+    </ion-note>
+  }
 </ion-content>

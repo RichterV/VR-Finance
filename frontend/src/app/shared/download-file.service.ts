@@ -3,6 +3,8 @@ import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 
+import { markExpectedExternalActivity } from '../core/expected-exit';
+
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -100,6 +102,7 @@ export class DownloadFileService {
     }
     const file = new File([blob], filename, { type: blob.type });
     try {
+      markExpectedExternalActivity();
       await navigator.share({ files: [file], title: filename });
       return { shared: true };
     } catch (err) {
@@ -115,6 +118,7 @@ export class DownloadFileService {
     await Filesystem.writeFile({ path: filename, data: base64Data, directory: Directory.Cache });
     const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
     try {
+      markExpectedExternalActivity();
       await Share.share({ files: [uri], dialogTitle });
       return { shared: true };
     } catch (err) {
