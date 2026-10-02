@@ -3,52 +3,93 @@ from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import extract, func
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.deps import get_current_user, get_db, require_module
-from app.utils import add_months, last_day_of_month, today_local
+from app.utils import add_months, month_range, today_local, year_range
 
 router = APIRouter(prefix="/resumo", tags=["resumo"])
 
 
-def _month_totals(db: Session, user_id: int, ano: int, mes: int) -> dict:
-    gastos = (
-        db.query(models.Gasto)
-        .filter(
-            models.Gasto.user_id == user_id,
-            extract("year", models.Gasto.date) == ano,
-            extract("month", models.Gasto.date) == mes,
-        )
-        .all()
-    )
-    total_essenciais = sum(g.value for g in gastos if g.priority == "essencial")
-    total_nao_essenciais = sum(g.value for g in gastos if g.priority == "nao_essencial")
-    total_gastos = total_essenciais + total_nao_essenciais
-
-    receitas = (
-        db.query(models.Receita)
-        .filter(
-            models.Receita.user_id == user_id,
-            extract("year", models.Receita.date) == ano,
-            extract("month", models.Receita.date) == mes,
-        )
-        .all()
-    )
-    total_receita = sum(r.value for r in receitas)
-    total_caixa_pretendido = sum(r.cash_value for r in receitas)
-
+def _empty_totals() -> dict:
     return {
-        "total_gastos": total_gastos,
-        "total_essenciais": total_essenciais,
-        "total_nao_essenciais": total_nao_essenciais,
-        "quantidade_gastos": len(gastos),
-        "total_receita": total_receita,
-        "total_caixa_pretendido": total_caixa_pretendido,
-        "quantidade_receitas": len(receitas),
-        "total_caixa_real": total_receita - total_gastos,
+        "total_gastos": 0.0,
+        "total_essenciais": 0.0,
+        "total_nao_essenciais": 0.0,
+        "quantidade_gastos": 0,
+        "total_receita": 0.0,
+        "total_caixa_pretendido": 0.0,
+        "quantidade_receitas": 0,
+        "total_caixa_real": 0.0,
     }
+
+
+def _date_bounds(column, inicio: Optional[date], fim: Optional[date]) -> list:
+    conditions = []
+    if inicio is not None:
+        conditions.append(column >= inicio)
+    if fim is not None:
+        conditions.append(column < fim)
+    return conditions
+
+
+def monthly_totals(
+    db: Session, user_id: int, inicio: Optional[date] = None, fim: Optional[date] = None
+) -> dict[tuple[int, int], dict]:
+    """Totais por (ano, mês) entre inicio (inclusive) e fim (exclusivo), em 2 consultas agrupadas
+    -- antes eram 2 consultas por mês. Com os dois limites, todo mês da faixa aparece (zerado se não
+    teve lançamento); sem limite, só os meses que têm algum lançamento."""
+    ym_gasto = func.strftime("%Y-%m", models.Gasto.date)
+    gastos = (
+        db.query(ym_gasto, models.Gasto.priority, func.sum(models.Gasto.value), func.count(models.Gasto.id))
+        .filter(models.Gasto.user_id == user_id, *_date_bounds(models.Gasto.date, inicio, fim))
+        .group_by(ym_gasto, models.Gasto.priority)
+        .all()
+    )
+    ym_receita = func.strftime("%Y-%m", models.Receita.date)
+    receitas = (
+        db.query(
+            ym_receita, func.sum(models.Receita.value), func.sum(models.Receita.cash_value), func.count(models.Receita.id)
+        )
+        .filter(models.Receita.user_id == user_id, *_date_bounds(models.Receita.date, inicio, fim))
+        .group_by(ym_receita)
+        .all()
+    )
+
+    result: dict[tuple[int, int], dict] = {}
+    if inicio is not None and fim is not None:
+        ref = date(inicio.year, inicio.month, 1)
+        while ref < fim:
+            result[(ref.year, ref.month)] = _empty_totals()
+            ref = add_months(ref, 1)
+
+    def _bucket(ym: str) -> dict:
+        key = (int(ym[:4]), int(ym[5:7]))
+        return result.setdefault(key, _empty_totals())
+
+    for ym, priority, total, count in gastos:
+        bucket = _bucket(ym)
+        bucket["total_essenciais" if priority == "essencial" else "total_nao_essenciais"] += total or 0.0
+        bucket["quantidade_gastos"] += count
+    for ym, total, cash, count in receitas:
+        bucket = _bucket(ym)
+        bucket["total_receita"] += total or 0.0
+        bucket["total_caixa_pretendido"] += cash or 0.0
+        bucket["quantidade_receitas"] += count
+    for bucket in result.values():
+        # Somas de floats arredondadas a centavos (os valores gravados já têm 2 casas).
+        for key in ("total_essenciais", "total_nao_essenciais", "total_receita", "total_caixa_pretendido"):
+            bucket[key] = round(bucket[key], 2)
+        bucket["total_gastos"] = round(bucket["total_essenciais"] + bucket["total_nao_essenciais"], 2)
+        bucket["total_caixa_real"] = round(bucket["total_receita"] - bucket["total_gastos"], 2)
+    return result
+
+
+def _month_totals(db: Session, user_id: int, ano: int, mes: int) -> dict:
+    inicio, fim = month_range(ano, mes)
+    return monthly_totals(db, user_id, inicio, fim)[(ano, mes)]
 
 
 def _percentuais_itens(
@@ -66,15 +107,17 @@ def _percentuais_itens(
             func.sum(models.Gasto.value).label("total"),
         )
         .join(models.DropdownOption, models.DropdownOption.id == models.Gasto.item_id)
-        .filter(
-            models.Gasto.user_id == user_id,
-            extract("year", models.Gasto.date) == ano,
-        )
+        .filter(models.Gasto.user_id == user_id)
     )
     if mes is not None:
-        query = query.filter(extract("month", models.Gasto.date) == mes)
+        inicio, fim = month_range(ano, mes)
     elif ate_mes is not None:
-        query = query.filter(extract("month", models.Gasto.date) <= ate_mes)
+        if ate_mes < 1:  # corte num ano anterior: nada desse ano entra
+            return []
+        inicio, fim = date(ano, 1, 1), month_range(ano, ate_mes)[1]
+    else:
+        inicio, fim = year_range(ano)
+    query = query.filter(models.Gasto.date >= inicio, models.Gasto.date < fim)
 
     rows = query.group_by(models.Gasto.item_id, models.DropdownOption.name, models.Gasto.priority).all()
     total_geral = sum(row.total for row in rows) or 0
@@ -91,20 +134,37 @@ def _percentuais_itens(
     ]
 
 
-def _basket_month_total(db: Session, user_id: int, ano: int, mes: int, item_ids: list[int]) -> float:
+def basket_monthly_totals(
+    db: Session, user_id: int, item_ids: list[int], inicio: date, fim: date
+) -> dict[tuple[int, int], float]:
+    """Gasto na cesta de inflação por (ano, mês), todos os meses da faixa -- uma consulta só."""
+    result: dict[tuple[int, int], float] = {}
+    ref = date(inicio.year, inicio.month, 1)
+    while ref < fim:
+        result[(ref.year, ref.month)] = 0.0
+        ref = add_months(ref, 1)
     if not item_ids:
-        return 0.0
-    total = (
-        db.query(func.sum(models.Gasto.value))
+        return result
+    ym = func.strftime("%Y-%m", models.Gasto.date)
+    rows = (
+        db.query(ym, func.sum(models.Gasto.value))
         .filter(
             models.Gasto.user_id == user_id,
             models.Gasto.item_id.in_(item_ids),
-            extract("year", models.Gasto.date) == ano,
-            extract("month", models.Gasto.date) == mes,
+            models.Gasto.date >= inicio,
+            models.Gasto.date < fim,
         )
-        .scalar()
+        .group_by(ym)
+        .all()
     )
-    return total or 0.0
+    for ym_value, total in rows:
+        result[(int(ym_value[:4]), int(ym_value[5:7]))] = round(total or 0.0, 2)
+    return result
+
+
+def _basket_month_total(db: Session, user_id: int, ano: int, mes: int, item_ids: list[int]) -> float:
+    inicio, fim = month_range(ano, mes)
+    return basket_monthly_totals(db, user_id, item_ids, inicio, fim)[(ano, mes)]
 
 
 @router.get(
@@ -143,6 +203,14 @@ def resumo_inflacao(
         today = today_local()
         mes_referencia = date(today.year, today.month, 1)
 
+    # Uma consulta da cesta cobrindo a janela inteira (12 meses extras de base pro ano a ano) e uma
+    # de totais pros pontos de caixa real -- antes era uma consulta por mês de cada.
+    fim_janela = add_months(mes_referencia, 1)
+    cesta_por_mes = basket_monthly_totals(
+        db, current_user.id, item_ids, add_months(mes_referencia, -(meses + 12 - 1)), fim_janela
+    )
+    totais_por_mes = monthly_totals(db, current_user.id, add_months(mes_referencia, -(meses - 1)), fim_janela)
+
     def _totais_cesta(qtd_meses_extra: int) -> list[tuple[int, int, float]]:
         """(ano, mes, total_cesta) dos ultimos `meses + qtd_meses_extra` meses, do mais antigo
         pro mais recente, terminando em mes_referencia -- os meses extras servem so de base de
@@ -150,8 +218,7 @@ def resumo_inflacao(
         pontos = []
         for i in range(meses + qtd_meses_extra - 1, -1, -1):
             ref = add_months(mes_referencia, -i)
-            total = _basket_month_total(db, current_user.id, ref.year, ref.month, item_ids)
-            pontos.append((ref.year, ref.month, total))
+            pontos.append((ref.year, ref.month, cesta_por_mes[(ref.year, ref.month)]))
         return pontos
 
     def _variacao_pct(atual: float, base: float) -> Optional[float]:
@@ -160,7 +227,7 @@ def resumo_inflacao(
         return (atual - base) / base * 100 if base else None
 
     def _caixa_real_pct(ano: int, mes: int) -> float:
-        m = _month_totals(db, current_user.id, ano, mes)
+        m = totais_por_mes[(ano, mes)]
         return (m["total_caixa_real"] / m["total_gastos"] * 100) if m["total_gastos"] else 0
 
     # Mes a mes: 1 mes extra de base pra comparar o primeiro ponto da serie.
@@ -220,7 +287,8 @@ def resumo_anual(
     else:
         ultimo_mes = 12
 
-    meses_totais = [_month_totals(db, current_user.id, ano, m) for m in range(1, ultimo_mes + 1)]
+    totais_ano = monthly_totals(db, current_user.id, *year_range(ano))
+    meses_totais = [totais_ano[(ano, m)] for m in range(1, ultimo_mes + 1)]
 
     total_gastos = sum(m["total_gastos"] for m in meses_totais)
     total_essenciais = sum(m["total_essenciais"] for m in meses_totais)
@@ -244,10 +312,10 @@ def resumo_anual(
         today = today_local()
         mes_referencia = date(today.year, today.month, 1)
 
-    ultimos_n_meses = []
-    for i in range(meses - 1, -1, -1):
-        ref = add_months(mes_referencia, -i)
-        ultimos_n_meses.append((ref.year, ref.month, _month_totals(db, current_user.id, ref.year, ref.month)))
+    janela = monthly_totals(
+        db, current_user.id, add_months(mes_referencia, -(meses - 1)), add_months(mes_referencia, 1)
+    )
+    ultimos_n_meses = [(ref_ano, ref_mes, m) for (ref_ano, ref_mes), m in sorted(janela.items())]
 
     evolucao_12_meses = [
         {
@@ -329,69 +397,60 @@ def resumo_geral(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    cutoff = last_day_of_month(ate_ano, ate_mes) if ate_ano is not None and ate_mes is not None else None
+    fim = add_months(date(ate_ano, ate_mes, 1), 1) if ate_ano is not None and ate_mes is not None else None
+    # Totais agrupados por mês no banco (antes carregava todo lançamento e somava em Python).
+    por_ano_mes = monthly_totals(db, current_user.id, None, fim)
 
-    gastos_query = db.query(models.Gasto).filter(models.Gasto.user_id == current_user.id)
-    if cutoff is not None:
-        gastos_query = gastos_query.filter(models.Gasto.date <= cutoff)
-    gastos = gastos_query.all()
+    def _zero() -> dict:
+        return {"essenciais": 0.0, "nao_essenciais": 0.0, "receita": 0.0, "caixa_pretendido": 0.0}
 
-    receitas_query = db.query(models.Receita).filter(models.Receita.user_id == current_user.id)
-    if cutoff is not None:
-        receitas_query = receitas_query.filter(models.Receita.date <= cutoff)
-    receitas = receitas_query.all()
+    por_ano: dict[int, dict] = defaultdict(_zero)
+    por_mes_acumulado: dict[int, dict] = defaultdict(_zero)
+    for (ano, mes), m in por_ano_mes.items():
+        # Soma por mês do calendário (jan, fev, ...) somando todos os anos — revela sazonalidade
+        # (ex: dezembro sempre mais alto), independente de qual ano cada gasto caiu.
+        for acumulado in (por_ano[ano], por_mes_acumulado[mes]):
+            acumulado["essenciais"] += m["total_essenciais"]
+            acumulado["nao_essenciais"] += m["total_nao_essenciais"]
+            acumulado["receita"] += m["total_receita"]
+            acumulado["caixa_pretendido"] += m["total_caixa_pretendido"]
 
-    anos = sorted({g.date.year for g in gastos} | {r.date.year for r in receitas})
+    def _caixa_real(acumulado: dict) -> float:
+        return round(acumulado["receita"] - (acumulado["essenciais"] + acumulado["nao_essenciais"]), 2)
 
-    anos_resumo = []
-    for ano in anos:
-        gastos_ano = [g for g in gastos if g.date.year == ano]
-        receitas_ano = [r for r in receitas if r.date.year == ano]
-        total_essenciais = sum(g.value for g in gastos_ano if g.priority == "essencial")
-        total_nao_essenciais = sum(g.value for g in gastos_ano if g.priority == "nao_essencial")
-        total_receita = sum(r.value for r in receitas_ano)
-        total_caixa_pretendido = sum(r.cash_value for r in receitas_ano)
-        anos_resumo.append(
-            schemas.ResumoGeralAno(
-                ano=ano,
-                total_essenciais=total_essenciais,
-                total_nao_essenciais=total_nao_essenciais,
-                total_receita=total_receita,
-                total_caixa_pretendido=total_caixa_pretendido,
-                total_caixa_real=total_receita - (total_essenciais + total_nao_essenciais),
-            )
+    anos_resumo = [
+        schemas.ResumoGeralAno(
+            ano=ano,
+            total_essenciais=round(acumulado["essenciais"], 2),
+            total_nao_essenciais=round(acumulado["nao_essenciais"], 2),
+            total_receita=round(acumulado["receita"], 2),
+            total_caixa_pretendido=round(acumulado["caixa_pretendido"], 2),
+            total_caixa_real=_caixa_real(acumulado),
         )
+        for ano, acumulado in sorted(por_ano.items())
+    ]
 
-    total_essenciais_geral = sum(g.value for g in gastos if g.priority == "essencial")
-    total_nao_essenciais_geral = sum(g.value for g in gastos if g.priority == "nao_essencial")
-    total_receita_geral = sum(r.value for r in receitas)
-    total_caixa_pretendido_geral = sum(r.cash_value for r in receitas)
-    total_caixa_real_geral = total_receita_geral - (total_essenciais_geral + total_nao_essenciais_geral)
+    geral = _zero()
+    for acumulado in por_ano.values():
+        for key in geral:
+            geral[key] += acumulado[key]
+    total_essenciais_geral = round(geral["essenciais"], 2)
+    total_nao_essenciais_geral = round(geral["nao_essenciais"], 2)
+    total_receita_geral = round(geral["receita"], 2)
+    total_caixa_pretendido_geral = round(geral["caixa_pretendido"], 2)
+    total_caixa_real_geral = _caixa_real(geral)
 
-    # Soma por mês do calendário (jan, fev, ...) somando todos os anos — revela sazonalidade
-    # (ex: dezembro sempre mais alto), independente de qual ano cada gasto caiu.
-    por_mes_acumulado = defaultdict(lambda: {"essenciais": 0.0, "nao_essenciais": 0.0, "receita": 0.0, "caixa_pretendido": 0.0})
-    for g in gastos:
-        campo = "essenciais" if g.priority == "essencial" else "nao_essenciais"
-        por_mes_acumulado[g.date.month][campo] += g.value
-    for r in receitas:
-        por_mes_acumulado[r.date.month]["receita"] += r.value
-        por_mes_acumulado[r.date.month]["caixa_pretendido"] += r.cash_value
-
-    por_mes = []
-    for mes in range(1, 13):
-        acumulado = por_mes_acumulado[mes]
-        caixa_real = acumulado["receita"] - (acumulado["essenciais"] + acumulado["nao_essenciais"])
-        por_mes.append(
-            schemas.ResumoGeralMes(
-                mes=mes,
-                total_essenciais=acumulado["essenciais"],
-                total_nao_essenciais=acumulado["nao_essenciais"],
-                total_receita=acumulado["receita"],
-                total_caixa_pretendido=acumulado["caixa_pretendido"],
-                total_caixa_real=caixa_real,
-            )
+    por_mes = [
+        schemas.ResumoGeralMes(
+            mes=mes,
+            total_essenciais=round(por_mes_acumulado[mes]["essenciais"], 2),
+            total_nao_essenciais=round(por_mes_acumulado[mes]["nao_essenciais"], 2),
+            total_receita=round(por_mes_acumulado[mes]["receita"], 2),
+            total_caixa_pretendido=round(por_mes_acumulado[mes]["caixa_pretendido"], 2),
+            total_caixa_real=_caixa_real(por_mes_acumulado[mes]),
         )
+        for mes in range(1, 13)
+    ]
 
     return schemas.ResumoGeral(
         anos=anos_resumo,

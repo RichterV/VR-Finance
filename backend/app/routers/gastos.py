@@ -4,13 +4,13 @@ from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import extract, or_
-from sqlalchemy.orm import Session
+from sqlalchemy import or_
+from sqlalchemy.orm import Session, joinedload
 
 from app import models, schemas
 from app.deps import get_current_user, get_db
 from app.routers.attachments import delete_attachments_for_key
-from app.utils import add_months, resolve_launch_date, today_local
+from app.utils import add_months, like_contains, period_filters, resolve_launch_date, today_local
 
 router = APIRouter(prefix="/gastos", tags=["gastos"])
 
@@ -37,18 +37,19 @@ def list_gastos(
     current_user: models.User = Depends(get_current_user),
 ):
     query = db.query(models.Gasto).filter(models.Gasto.user_id == current_user.id)
-    if ano is not None:
-        query = query.filter(extract("year", models.Gasto.date) == ano)
-    if mes is not None:
-        query = query.filter(extract("month", models.Gasto.date) == mes)
+    query = query.filter(*period_filters(models.Gasto.date, ano, mes))
     if busca:
-        termo = f"%{busca.strip()}%"
+        termo = like_contains(busca)
         query = query.join(models.DropdownOption, models.Gasto.item_id == models.DropdownOption.id).filter(
-            or_(models.Gasto.description.ilike(termo), models.DropdownOption.name.ilike(termo))
+            or_(
+                models.Gasto.description.ilike(termo, escape="\\"),
+                models.DropdownOption.name.ilike(termo, escape="\\"),
+            )
         )
     total = query.count()
     items = (
-        query.order_by(models.Gasto.date.desc(), models.Gasto.id.desc())
+        query.options(joinedload(models.Gasto.item))
+        .order_by(models.Gasto.date.desc(), models.Gasto.id.desc())
         .offset(offset)
         .limit(limit)
         .all()
@@ -150,15 +151,15 @@ def update_gasto(
 ):
     gasto = _get_owned_gasto(db, current_user, gasto_id)
 
-    item = (
-        db.query(models.DropdownOption)
-        .filter(
-            models.DropdownOption.id == payload.item_id,
-            models.DropdownOption.user_id == current_user.id,
-            models.DropdownOption.active.is_(True),
-        )
-        .first()
+    item_query = db.query(models.DropdownOption).filter(
+        models.DropdownOption.id == payload.item_id,
+        models.DropdownOption.user_id == current_user.id,
     )
+    # Categoria excluída (soft delete) continua valendo pro gasto que já é dela -- senão editar só o
+    # valor de um gasto antigo dava 404. Trocar pra outra categoria continua exigindo uma ativa.
+    if payload.item_id != gasto.item_id:
+        item_query = item_query.filter(models.DropdownOption.active.is_(True))
+    item = item_query.first()
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item não encontrado")
     if item.priority != payload.priority:

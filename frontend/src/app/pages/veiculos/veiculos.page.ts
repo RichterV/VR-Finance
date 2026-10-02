@@ -1,7 +1,6 @@
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import {
-  AlertController,
   IonBackButton,
   IonButton,
   IonButtons,
@@ -34,6 +33,7 @@ import { DEFAULT_SORT_KEY, SortOption, SortState, sortItems, toggleSortState, UN
 import { SortSelectComponent } from '../../shared/sort-select.component';
 import { SortThComponent } from '../../shared/sort-th.component';
 import { buildVeiculosChartData, VEICULOS_CHART_OPTIONS } from './veiculos-chart';
+import { UndoDeleteService } from '../../shared/undo-delete.service';
 
 function formatBRL(value: number): string {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -68,6 +68,7 @@ const PAGE_SIZE = 25;
   ],
 })
 export class VeiculosPage {
+  private readonly undoDelete = inject(UndoDeleteService);
   readonly serviceTypeLabels = SERVICE_TYPE_LABELS;
   readonly meses = MESES_COMPLETOS;
   readonly anos: number[];
@@ -108,13 +109,18 @@ export class VeiculosPage {
   );
 
   readonly chartData = computed(() => buildVeiculosChartData(this.resumo()));
+  /** Texto do gráfico pra leitor de tela. */
+  readonly chartLabel = computed(() => {
+    const resumo = this.resumo();
+    const nomes = resumo?.veiculos.map((v) => v.vehicle_name).join(', ') ?? '';
+    return `Gráfico de linhas: gasto mensal com manutenção por veículo nos últimos ${resumo?.meses.length ?? 12} meses${nomes ? ` (${nomes})` : ''}.`;
+  });
   readonly chartOptions = VEICULOS_CHART_OPTIONS;
 
   constructor(
     private readonly veiculosService: VeiculosService,
     private readonly servicosService: ServicosVeiculosService,
     private readonly attachmentsService: AttachmentsService,
-    private readonly alertCtrl: AlertController,
     private readonly toastCtrl: ToastController,
     private readonly modalCtrl: ModalController,
     private readonly popoverCtrl: PopoverController,
@@ -130,6 +136,11 @@ export class VeiculosPage {
    * reaparece, não só na primeira criação da instância. Sem isso, trocar de conta mostrava os dados
    * da conta anterior até um F5 manual.
    */
+  /** Exclusões com "Desfazer" ainda pendentes são confirmadas ao sair da página. */
+  ionViewWillLeave(): void {
+    this.undoDelete.flushAll();
+  }
+
   ionViewWillEnter(): void {
     this.reload();
   }
@@ -277,26 +288,16 @@ export class VeiculosPage {
     }
   }
 
-  async excluirVeiculo(vehicle: Vehicle): Promise<void> {
-    const alert = await this.alertCtrl.create({
-      header: 'Excluir veículo',
-      message: `Remover o veículo "${vehicle.name}"? O histórico de serviços dele deixa de aparecer, mas não é excluído.`,
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Excluir',
-          role: 'destructive',
-          handler: () => {
-            this.veiculosService.remove(vehicle.id).subscribe(async () => {
-              this.reload();
-              const toast = await this.toastCtrl.create({ message: 'Veículo excluído.', duration: 2000, color: 'success' });
-              await toast.present();
-            });
-          },
-        },
-      ],
+  excluirVeiculo(vehicle: Vehicle): void {
+    this.undoDelete.schedule({
+      message: `Veículo "${vehicle.name}" excluído. O histórico de serviços dele fica guardado.`,
+      hide: () => this.vehicles.update((lista) => lista.filter((v) => v.id !== vehicle.id)),
+      restore: () => this.reload(),
+      commit: () => this.veiculosService.remove(vehicle.id),
+      // Cards de resumo e gráfico dependem da lista de veículos.
+      onCommitted: () => this.reload(),
+      errorMessage: 'Erro ao excluir o veículo.',
     });
-    await alert.present();
   }
 
   async editarServico(servico: ServicoVeiculo): Promise<void> {
@@ -313,26 +314,18 @@ export class VeiculosPage {
     }
   }
 
-  async excluirServico(servico: ServicoVeiculo): Promise<void> {
-    const alert = await this.alertCtrl.create({
-      header: 'Excluir serviço',
-      message: `Remover o serviço "${servico.description}" de ${formatBRL(servico.value)}? Essa ação não pode ser desfeita.`,
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Excluir',
-          role: 'destructive',
-          handler: () => {
-            this.servicosService.remove(servico.id).subscribe(async () => {
-              this.reload();
-              const toast = await this.toastCtrl.create({ message: 'Serviço excluído.', duration: 2000, color: 'success' });
-              await toast.present();
-            });
-          },
-        },
-      ],
+  excluirServico(servico: ServicoVeiculo): void {
+    this.undoDelete.schedule({
+      message: `Serviço "${servico.description}" de ${formatBRL(servico.value)} excluído.`,
+      hide: () => {
+        this.services.update((lista) => lista.filter((s) => s.id !== servico.id));
+        this.totalServices.update((n) => n - 1);
+      },
+      restore: () => this.reload(),
+      commit: () => this.servicosService.remove(servico.id),
+      onCommitted: () => this.reload(),
+      errorMessage: 'Erro ao excluir o serviço.',
     });
-    await alert.present();
   }
 
   toggleVehiclesSort(column: string): void {

@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, BeforeValidator, Field, StringConstraints, field_serializer
 
 Priority = Literal["essencial", "nao_essencial"]
 ServiceType = Literal["peca", "peca_mao_de_obra", "peca_mao_de_obra_propria"]
@@ -13,6 +13,23 @@ EntityType = Literal["gasto", "receita", "servico_veiculo"]
 # Alias pra campos chamados `date` com default: `date: Optional[date] = None` faria o Pydantic
 # resolver o tipo como o próprio default (None) em vez de `datetime.date`.
 DateField = date
+
+
+
+def _round_money(value):
+    # Antes do Field(gt=0): 0,004 vira 0,00 e é rejeitado, em vez de passar e ser gravado como zero.
+    if value is None or isinstance(value, bool):
+        return value
+    try:
+        return round(float(value), 2)
+    except (TypeError, ValueError):
+        return value  # o Pydantic devolve o erro de tipo normal
+
+
+# Valor em R$ sempre com 2 casas (o banco guarda REAL -- sem isso ficavam valores como 411.10848).
+Money = Annotated[float, BeforeValidator(_round_money)]
+# Texto obrigatório: espaços nas pontas removidos e vazio rejeitado (422).
+NonBlank = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 ModuleKey = Literal["veiculos", "operacoes_bolsa", "devedores", "ferramentas", "exportar_dados", "analise_inflacionaria"]
 
@@ -91,15 +108,21 @@ class PasswordChange(BaseModel):
     new_password: str = Field(min_length=6)
 
 
+class PasswordChangeOut(BaseModel):
+    detail: str
+    # Token novo: a troca revoga todos os tokens anteriores, inclusive o deste aparelho.
+    access_token: str
+
+
 # --- Dropdown options ---
 
 class DropdownOptionCreate(BaseModel):
     priority: Priority
-    name: str
+    name: NonBlank
 
 
 class DropdownOptionUpdate(BaseModel):
-    name: str
+    name: NonBlank
     include_in_inflation: Optional[bool] = None
 
 
@@ -119,7 +142,7 @@ class DropdownOptionOut(BaseModel):
 class GastoCreate(BaseModel):
     priority: Priority
     item_id: int
-    value: float = Field(gt=0)
+    value: Money = Field(gt=0)
     description: Optional[str] = None
     is_installment: bool = False
     installment_count: Optional[int] = Field(default=None, ge=2, le=120)
@@ -130,12 +153,12 @@ class GastoCreate(BaseModel):
 class GastoUpdate(BaseModel):
     priority: Priority
     item_id: int
-    value: float = Field(gt=0)
+    value: Money = Field(gt=0)
     description: Optional[str] = None
 
 
 class GastoAntecipar(BaseModel):
-    value: Optional[float] = Field(default=None, gt=0)
+    value: Optional[Money] = Field(default=None, gt=0)
 
 
 class GastoOut(BaseModel):
@@ -164,7 +187,7 @@ class GastoPage(BaseModel):
 # --- Receitas ---
 
 class ReceitaCreate(BaseModel):
-    value: float = Field(gt=0)
+    value: Money = Field(gt=0)
     cash_percentage: float = Field(ge=0, le=100)
     description: Optional[str] = None
     # Omitido = hoje.
@@ -172,7 +195,7 @@ class ReceitaCreate(BaseModel):
 
 
 class ReceitaUpdate(BaseModel):
-    value: float = Field(gt=0)
+    value: Money = Field(gt=0)
     cash_percentage: float = Field(ge=0, le=100)
     description: Optional[str] = None
 
@@ -198,12 +221,12 @@ class ReceitaPage(BaseModel):
 # --- Veículos ---
 
 class VehicleCreate(BaseModel):
-    name: str
+    name: NonBlank
     year: int = Field(ge=1900, le=2100)
 
 
 class VehicleUpdate(BaseModel):
-    name: str
+    name: NonBlank
     year: int = Field(ge=1900, le=2100)
 
 
@@ -219,9 +242,9 @@ class VehicleOut(BaseModel):
 
 class VehicleServiceCreate(BaseModel):
     vehicle_id: int
-    description: str
+    description: NonBlank
     notes: Optional[str] = None
-    value: float = Field(ge=0)
+    value: Money = Field(ge=0)
     service_type: Optional[ServiceType] = None
     mileage: int = Field(ge=0)
 
@@ -453,3 +476,73 @@ class NotificacaoOut(BaseModel):
     @field_serializer("created_at")
     def _serialize_utc_datetime(self, value: datetime) -> str:
         return value.replace(tzinfo=timezone.utc).isoformat()
+
+
+# --- Analytics (anomalia, previsão do fim do mês, indicadores) ---
+
+class AnomaliaOut(BaseModel):
+    anomalo: bool
+    mediana: Optional[float]  # mediana dos lançamentos avulsos da categoria nos últimos 12 meses
+    multiplo: Optional[float]  # valor ÷ mediana
+    amostras: int
+
+
+class PrevisaoOut(BaseModel):
+    ano: int
+    mes: int
+    dia: int
+    historico_suficiente: bool  # menos de 3 meses com gasto avulso = previsão pouco confiável
+    receita: float
+    receita_estimada: bool  # sem receita lançada no mês: mediana dos últimos 6 meses
+    comprometido: float  # todo gasto do mês já lançado (inclusive parcelas e datas futuras)
+    variavel_ate_hoje: float
+    variavel_restante: float  # quanto ainda deve sair de gasto variável até o fim do mês
+    caixa_pretendido: float
+    saldo_previsto: float
+    saldo_min: float
+    saldo_max: float
+
+
+class PontoIndicador(BaseModel):
+    ano: int
+    mes: int
+    valor: Optional[float]
+
+
+class IndicadorPoupanca(BaseModel):
+    atual_3m_pct: Optional[float]
+    serie: list[PontoIndicador]
+
+
+class IndicadorComprometimento(BaseModel):
+    pct: Optional[float]  # parcelas dos próximos 6 meses ÷ (receita média × 6)
+    total: float
+    receita_media: float
+    meses: list[PontoIndicador]
+
+
+class CustoFixoItem(BaseModel):
+    descricao: str
+    item_name: str
+    valor: float
+
+
+class IndicadorCustoFixo(BaseModel):
+    pct: Optional[float]
+    total: float
+    itens: list[CustoFixoItem]
+
+
+class IndicadorEssencial(BaseModel):
+    atual_pct: Optional[float]
+    inclinacao_pp_mes: Optional[float]
+    serie: list[PontoIndicador]
+
+
+class IndicadoresOut(BaseModel):
+    ano: int
+    mes: int
+    poupanca: IndicadorPoupanca
+    comprometimento: IndicadorComprometimento
+    custo_fixo: IndicadorCustoFixo
+    essencial: IndicadorEssencial

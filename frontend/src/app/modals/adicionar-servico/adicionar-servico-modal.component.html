@@ -2,7 +2,7 @@
   <ion-toolbar>
     <ion-title>Adicionar serviço</ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="dismiss()">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
         <ion-icon slot="icon-only" name="close"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -29,12 +29,10 @@
 
     <div class="field-row">
       <ion-item class="col-grow value-primary">
-        <ion-input
+        <ion-input appAutofocus
           labelPlacement="stacked"
           type="text"
-          inputmode="decimal"
-          [value]="valorDisplay()"
-          (ionInput)="onValorInput($event)"
+          [appCurrencyInput]="form.controls.value"
           placeholder="0,00"
         >
           <div slot="label">Valor</div>

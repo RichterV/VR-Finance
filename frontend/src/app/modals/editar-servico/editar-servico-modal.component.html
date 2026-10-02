@@ -2,7 +2,7 @@
   <ion-toolbar>
     <ion-title>Editar serviço</ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="dismiss()">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
         <ion-icon slot="icon-only" name="close"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -32,9 +32,7 @@
         <ion-input
           labelPlacement="stacked"
           type="text"
-          inputmode="decimal"
-          [value]="valorDisplay()"
-          (ionInput)="onValorInput($event)"
+          [appCurrencyInput]="form.controls.value"
           placeholder="0,00"
         >
           <div slot="label">Valor</div>

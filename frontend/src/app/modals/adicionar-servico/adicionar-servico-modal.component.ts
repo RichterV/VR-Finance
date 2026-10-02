@@ -24,7 +24,9 @@ import { ServiceType, ServicosVeiculosService } from '../../services/servicos-ve
 import { Vehicle, VeiculosService } from '../../services/veiculos.service';
 import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
 import { extractHttpErrorMessage } from '../../shared/attachment-types';
-import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
+import { CurrencyInputDirective } from '../../shared/currency-input.directive';
+import { AutofocusDirective } from '../../shared/autofocus.directive';
+import { commitAttachments } from '../../shared/save-with-attachments';
 
 export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
   peca: 'Peça',
@@ -37,6 +39,8 @@ export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
   templateUrl: './adicionar-servico-modal.component.html',
   styleUrls: ['./adicionar-servico-modal.component.scss'],
   imports: [
+    AutofocusDirective,
+    CurrencyInputDirective,
     ReactiveFormsModule,
     IonHeader,
     IonToolbar,
@@ -65,7 +69,6 @@ export class AdicionarServicoModalComponent implements OnInit {
   readonly vehicles = signal<Vehicle[]>([]);
   readonly saving = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly valorDisplay = signal('');
   private readonly savedAny = signal(false);
 
   readonly serviceTypes = Object.entries(SERVICE_TYPE_LABELS) as [ServiceType, string][];
@@ -93,12 +96,6 @@ export class AdicionarServicoModalComponent implements OnInit {
     this.veiculosService.list().subscribe((vehicles) => this.vehicles.set(vehicles));
   }
 
-  onValorInput(ev: CustomEvent): void {
-    const reais = parseCentsInput(String((ev.detail as { value?: string })?.value ?? ''));
-    this.valorDisplay.set(reais === 0 ? '' : formatCurrencyValue(reais));
-    this.form.controls.value.setValue(reais);
-  }
-
   async submit(): Promise<void> {
     if (this.attachmentBusy) return;
     this.errorMessage.set(null);
@@ -122,24 +119,14 @@ export class AdicionarServicoModalComponent implements OnInit {
       .subscribe({
         next: (servico) => {
           this.savedAny.set(true);
-          this.attachmentPicker.commit(servico.id).subscribe({
-            next: async () => {
-              this.saving.set(false);
-              const toast = await this.toastCtrl.create({ message: 'Serviço salvo.', duration: 2000, color: 'success' });
-              await toast.present();
-              this.resetForm();
-            },
-            error: async (err) => {
-              this.saving.set(false);
-              console.error('Erro ao enviar anexos do serviço', err);
-              const toast = await this.toastCtrl.create({
-                message: `Serviço salvo, mas houve erro ao enviar os anexos: ${extractHttpErrorMessage(err)}`,
-                duration: 4000,
-                color: 'warning',
-              });
-              await toast.present();
-              this.resetForm();
-            },
+          void commitAttachments({
+            commit: this.attachmentPicker.commit(servico.id),
+            toastCtrl: this.toastCtrl,
+            successMessage: 'Serviço salvo.',
+            savedLabel: 'Serviço salvo',
+          }).then(() => {
+            this.saving.set(false);
+            this.resetForm();
           });
         },
         error: (err) => {
@@ -163,7 +150,6 @@ export class AdicionarServicoModalComponent implements OnInit {
       serviceType: null,
       mileage: null,
     });
-    this.valorDisplay.set('');
     this.attachmentPicker.reset();
   }
 }

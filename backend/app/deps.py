@@ -48,8 +48,20 @@ def get_current_user_allow_password_change(
     except PyJWTError:
         raise credentials_error
 
-    user = db.query(models.User).filter(models.User.username == payload.get("sub")).first()
-    if user is None:
+    # Busca por uid e confere username e versão: o SQLite pode reaproveitar o id de um usuário
+    # excluído, e a versão muda a cada troca/reset de senha (revoga os tokens antigos). Token sem
+    # uid/tv (emitido antes dessa regra) não vale mais -- um login a mais, uma vez só.
+    user_id, token_version = payload.get("uid"), payload.get("tv")
+    if not isinstance(user_id, int) or not isinstance(token_version, int):
+        raise credentials_error
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user is None or user.username != payload.get("sub") or (user.token_version or 0) != token_version:
+        raise credentials_error
+    issued_at = payload.get("iat")
+    if user.created_at is not None and (
+        not isinstance(issued_at, (int, float))
+        or issued_at < user.created_at.replace(tzinfo=timezone.utc).timestamp()
+    ):
         raise credentials_error
 
     # Uso via "Mudar pra conta teste" é do master, não da conta -- não conta como atividade dela.

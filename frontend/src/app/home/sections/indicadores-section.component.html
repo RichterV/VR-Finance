@@ -1,0 +1,90 @@
+@switch (indicadores.state()) {
+  @case ('loading') {
+    <app-section-skeleton [cards]="4"></app-section-skeleton>
+  }
+  @case ('error') {
+    <app-error-state title="Não foi possível carregar os indicadores" (retry)="carregar()"></app-error-state>
+  }
+  @default {
+    @if (indicadores.data(); as ind) {
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Taxa de poupança</span>
+          <span
+            class="stat-value"
+            [class.positivo]="(ind.poupanca.atual_3m_pct ?? 0) > 0"
+            [class.negativo]="(ind.poupanca.atual_3m_pct ?? 0) < 0"
+            >{{ pct(ind.poupanca.atual_3m_pct) }}</span
+          >
+          <span class="kpi-context">Do que entrou, quanto sobrou — média dos últimos 3 meses</span>
+          @if (!valoresOcultos()) {
+            <app-sparkline [values]="poupancaSerie()" [color]="colors.poupanca"></app-sparkline>
+          }
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">Comprometimento futuro</span>
+          <span class="stat-value" [class.alerta]="(ind.comprometimento.pct ?? 0) >= 30">{{ pct(ind.comprometimento.pct) }}</span>
+          <span class="kpi-context">{{ currency(ind.comprometimento.total) }} em parcelas nos próximos 6 meses, sobre a receita média</span>
+          @if (!valoresOcultos() && ind.comprometimento.total > 0) {
+            <div class="mini-bars" aria-hidden="true">
+              @for (b of barrasFuturas(); track b.label) {
+                <div class="mini-bar">
+                  <span class="mini-bar-fill" [style.height.%]="b.altura"></span>
+                  <span class="mini-bar-label">{{ b.label }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">Custo fixo</span>
+          <span class="stat-value">{{ pct(ind.custo_fixo.pct) }}</span>
+          <span class="kpi-context">{{ currency(ind.custo_fixo.total) }}/mês em contas que se repetem, sobre a receita</span>
+          @if (ind.custo_fixo.itens.length) {
+            <button
+              type="button"
+              class="kpi-toggle"
+              [attr.aria-expanded]="mostrarFixos()"
+              (click)="mostrarFixos.set(!mostrarFixos())"
+            >
+              {{ mostrarFixos() ? 'Ocultar' : 'Ver' }} {{ ind.custo_fixo.itens.length }}
+              {{ ind.custo_fixo.itens.length === 1 ? 'conta' : 'contas' }}
+              <ion-icon [name]="mostrarFixos() ? 'chevron-up-outline' : 'chevron-down-outline'" aria-hidden="true"></ion-icon>
+            </button>
+            @if (mostrarFixos()) {
+              <ul class="fixos-list">
+                @for (item of ind.custo_fixo.itens; track item.descricao) {
+                  <li>
+                    <span class="fixo-nome">{{ item.descricao }} <small>{{ item.item_name }}</small></span>
+                    <span class="fixo-valor">{{ currency(item.valor) }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          }
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">Gastos essenciais</span>
+          <span class="stat-value">{{ pct(ind.essencial.atual_pct) }}</span>
+          <span class="kpi-context">
+            @if (ind.essencial.inclinacao_pp_mes !== null) {
+              <ion-icon
+                [name]="ind.essencial.inclinacao_pp_mes >= 0 ? 'trending-up-outline' : 'trending-down-outline'"
+                aria-hidden="true"
+              ></ion-icon>
+              Tendência de {{ pp(ind.essencial.inclinacao_pp_mes) }} nos últimos 12 meses
+            } @else {
+              Do total de gastos do mês
+            }
+          </span>
+          @if (!valoresOcultos()) {
+            <app-sparkline [values]="essencialSerie()" [color]="colors.essencial"></app-sparkline>
+          }
+        </div>
+      </div>
+    }
+  }
+}

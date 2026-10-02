@@ -79,7 +79,7 @@
           <h3>Evolução de gastos</h3>
         </div>
         <div class="chart-wrap">
-          <canvas baseChart [type]="'line'" [data]="chartData()" [options]="chartOptions"></canvas>
+          <canvas baseChart role="img" [attr.aria-label]="chartLabel()" [type]="'line'" [data]="chartData()" [options]="chartOptions"></canvas>
         </div>
       </section>
     }
@@ -103,10 +103,10 @@
                 <td>{{ vehicle.name }}</td>
                 <td>{{ vehicle.year }}</td>
                 <td class="actions-col">
-                  <button class="icon-btn" (click)="editarVeiculo(vehicle)">
+                  <button aria-label="Editar" class="icon-btn" (click)="editarVeiculo(vehicle)">
                     <ion-icon name="create"></ion-icon>
                   </button>
-                  <button class="icon-btn danger" (click)="excluirVeiculo(vehicle)">
+                  <button aria-label="Excluir" class="icon-btn danger" (click)="excluirVeiculo(vehicle)">
                     <ion-icon name="trash"></ion-icon>
                   </button>
                 </td>
@@ -126,10 +126,10 @@
               <strong class="entry-title">{{ vehicle.name }}</strong>
               <span class="entry-meta-text">{{ vehicle.year }}</span>
               <span class="entry-actions">
-                <button class="icon-btn" title="Editar" (click)="editarVeiculo(vehicle)">
+                <button aria-label="Editar" class="icon-btn" title="Editar" (click)="editarVeiculo(vehicle)">
                   <ion-icon name="create"></ion-icon>
                 </button>
-                <button class="icon-btn danger" title="Excluir" (click)="excluirVeiculo(vehicle)">
+                <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirVeiculo(vehicle)">
                   <ion-icon name="trash"></ion-icon>
                 </button>
               </span>
@@ -195,14 +195,14 @@
                   <td class="num">{{ servico.mileage ?? '-' }}</td>
                   <td class="actions-col">
                     @if (serviceAttachmentKeys().has(rowKeyServico(servico))) {
-                      <button class="icon-btn" title="Baixar anexos" (click)="abrirAnexosServico($event, servico)">
+                      <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexosServico($event, servico)">
                         <ion-icon name="attach-outline"></ion-icon>
                       </button>
                     }
-                    <button class="icon-btn" (click)="editarServico(servico)">
+                    <button aria-label="Editar" class="icon-btn" (click)="editarServico(servico)">
                       <ion-icon name="create"></ion-icon>
                     </button>
-                    <button class="icon-btn danger" (click)="excluirServico(servico)">
+                    <button aria-label="Excluir" class="icon-btn danger" (click)="excluirServico(servico)">
                       <ion-icon name="trash"></ion-icon>
                     </button>
                   </td>
@@ -235,14 +235,14 @@
               </span>
               <span class="entry-actions">
                 @if (serviceAttachmentKeys().has(rowKeyServico(servico))) {
-                  <button class="icon-btn" title="Baixar anexos" (click)="abrirAnexosServico($event, servico)">
+                  <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexosServico($event, servico)">
                     <ion-icon name="attach-outline"></ion-icon>
                   </button>
                 }
-                <button class="icon-btn" title="Editar" (click)="editarServico(servico)">
+                <button aria-label="Editar" class="icon-btn" title="Editar" (click)="editarServico(servico)">
                   <ion-icon name="create"></ion-icon>
                 </button>
-                <button class="icon-btn danger" title="Excluir" (click)="excluirServico(servico)">
+                <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirServico(servico)">
                   <ion-icon name="trash"></ion-icon>
                 </button>
               </span>

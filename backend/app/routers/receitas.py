@@ -1,13 +1,12 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import extract
 from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.deps import get_current_user, get_db
 from app.routers.attachments import delete_attachments_for_key
-from app.utils import resolve_launch_date
+from app.utils import like_contains, period_filters, resolve_launch_date
 
 router = APIRouter(prefix="/receitas", tags=["receitas"])
 
@@ -34,12 +33,9 @@ def list_receitas(
     current_user: models.User = Depends(get_current_user),
 ):
     query = db.query(models.Receita).filter(models.Receita.user_id == current_user.id)
-    if ano is not None:
-        query = query.filter(extract("year", models.Receita.date) == ano)
-    if mes is not None:
-        query = query.filter(extract("month", models.Receita.date) == mes)
+    query = query.filter(*period_filters(models.Receita.date, ano, mes))
     if busca:
-        query = query.filter(models.Receita.description.ilike(f"%{busca.strip()}%"))
+        query = query.filter(models.Receita.description.ilike(like_contains(busca), escape="\\"))
     total = query.count()
     items = (
         query.order_by(models.Receita.date.desc(), models.Receita.id.desc())
@@ -56,7 +52,7 @@ def create_receita(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    cash_value = payload.value * payload.cash_percentage / 100
+    cash_value = round(payload.value * payload.cash_percentage / 100, 2)
     receita = models.Receita(
         user_id=current_user.id,
         value=payload.value,
@@ -81,7 +77,7 @@ def update_receita(
     receita = _get_owned_receita(db, current_user, receita_id)
     receita.value = payload.value
     receita.cash_percentage = payload.cash_percentage
-    receita.cash_value = payload.value * payload.cash_percentage / 100
+    receita.cash_value = round(payload.value * payload.cash_percentage / 100, 2)
     receita.description = payload.description
     db.commit()
     db.refresh(receita)

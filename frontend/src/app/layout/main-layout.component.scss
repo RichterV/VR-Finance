@@ -251,3 +251,10 @@ ion-menu ion-item.active-nav-item ion-icon {
   display: flex;
   flex-direction: column;
 }
+
+// Categorias / Perfil (só no celular): separados da navegação por rota.
+.action-list {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--app-surface-border);
+}

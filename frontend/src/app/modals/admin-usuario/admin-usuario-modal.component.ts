@@ -21,6 +21,7 @@ import { close, pulseOutline } from 'ionicons/icons';
 
 import { AuthService, CurrentUser, UserPayload } from '../../core/auth.service';
 import { ModuleKey, OPTIONAL_MODULES } from '../../core/modules';
+import { httpErrorMessage } from '../../shared/http-error';
 
 /**
  * Criar (sem `user`) ou editar (com `user`) uma conta pelo painel de Administração. Novo usuário
@@ -162,7 +163,7 @@ export class AdminUsuarioModalComponent implements OnInit {
       error: (err) => {
         this.saving.set(false);
         this.errorMessage.set(
-          err?.status === 400 ? 'Esse nome de usuário já existe.' : 'Erro ao salvar usuário.',
+          err?.status === 400 ? 'Esse nome de usuário já existe.' : httpErrorMessage(err, 'Erro ao salvar usuário.'),
         );
       },
     });

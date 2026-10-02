@@ -17,6 +17,7 @@ import {
   IonTextarea,
   IonTitle,
   IonToolbar,
+  AlertController,
   ModalController,
   ToastController,
 } from '@ionic/angular';
@@ -26,14 +27,18 @@ import { close } from 'ionicons/icons';
 import { DropdownOption, DropdownOptionsService, Priority } from '../../services/dropdown-options.service';
 import { Gasto, GastosService } from '../../services/gastos.service';
 import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
-import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
+
 import { CATEGORY_SELECT_POPOVER_OPTIONS } from '../../shared/select-popover';
+import { httpErrorMessage } from '../../shared/http-error';
+import { CurrencyInputDirective } from '../../shared/currency-input.directive';
+import { confirmIfAnomalous } from '../../shared/anomaly-check';
 
 @Component({
   selector: 'app-editar-gasto-modal',
   templateUrl: './editar-gasto-modal.component.html',
   styleUrls: ['./editar-gasto-modal.component.scss'],
   imports: [
+    CurrencyInputDirective,
     ReactiveFormsModule,
     IonHeader,
     IonToolbar,
@@ -70,8 +75,9 @@ export class EditarGastoModalComponent implements OnInit {
 
   readonly items = signal<DropdownOption[]>([]);
   readonly saving = signal(false);
+  /** Conferindo se o valor é fora do comum pra categoria (antes de salvar). */
+  readonly checking = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly valorDisplay = signal('');
 
   readonly form = this.fb.nonNullable.group({
     priority: this.fb.nonNullable.control<Priority>('essencial', Validators.required),
@@ -85,6 +91,7 @@ export class EditarGastoModalComponent implements OnInit {
     private readonly dropdownService: DropdownOptionsService,
     private readonly gastosService: GastosService,
     private readonly toastCtrl: ToastController,
+    private readonly alertCtrl: AlertController,
     private readonly modalCtrl: ModalController,
   ) {
     addIcons({ close });
@@ -97,7 +104,6 @@ export class EditarGastoModalComponent implements OnInit {
       value: this.gasto.value,
       description: this.gasto.description ?? '',
     });
-    this.valorDisplay.set(formatCurrencyValue(this.gasto.value));
     this.loadItems(this.gasto.priority);
   }
 
@@ -110,20 +116,22 @@ export class EditarGastoModalComponent implements OnInit {
     this.dropdownService.list(priority).subscribe((items) => this.items.set(items));
   }
 
-  onValorInput(ev: CustomEvent): void {
-    const reais = parseCentsInput(String((ev.detail as { value?: string })?.value ?? ''));
-    this.valorDisplay.set(reais === 0 ? '' : formatCurrencyValue(reais));
-    this.form.controls.value.setValue(reais);
-  }
-
   async submit(): Promise<void> {
-    if (this.attachmentBusy) return;
+    if (this.attachmentBusy || this.checking() || this.saving()) return;
     this.errorMessage.set(null);
     const { priority, itemId, value, description } = this.form.getRawValue();
 
     if (!itemId || !value) {
       this.errorMessage.set('Preencha o item e o valor.');
       return;
+    }
+
+    if (!this.gasto.is_installment && value !== this.gasto.value) {
+      const itemName = this.items().find((i) => i.id === itemId)?.name ?? 'essa categoria';
+      this.checking.set(true);
+      const confirmado = await confirmIfAnomalous(this.gastosService, this.alertCtrl, { itemId: itemId, value, itemName });
+      this.checking.set(false);
+      if (!confirmado) return;
     }
 
     this.saving.set(true);
@@ -136,9 +144,9 @@ export class EditarGastoModalComponent implements OnInit {
           await toast.present();
           this.modalCtrl.dismiss(updated, 'saved');
         },
-        error: async () => {
+        error: async (err: unknown) => {
           this.saving.set(false);
-          const toast = await this.toastCtrl.create({ message: 'Erro ao atualizar o gasto.', duration: 2500, color: 'danger' });
+          const toast = await this.toastCtrl.create({ message: httpErrorMessage(err, 'Erro ao atualizar o gasto.'), duration: 2500, color: 'danger' });
           await toast.present();
         },
       });

@@ -65,7 +65,7 @@ def test_attachments_of_disabled_module_are_blocked(client, db_session):
     upload = client.post(
         "/attachments/upload",
         data={"entity_type": "servico_veiculo", "entity_id": entity_id},
-        files={"file": ("a.png", b"\x89PNG fake", "image/png")},
+        files={"file": ("a.png", b"\x89PNG\r\n\x1a\n fake", "image/png")},
         headers=headers,
     )
     assert upload.status_code == 201

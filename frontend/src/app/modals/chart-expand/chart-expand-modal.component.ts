@@ -17,6 +17,7 @@ import { BaseChartDirective } from 'ng2-charts';
 
 import { buildComboChartData, buildLineChartData, COMBO_CHART_OPTIONS, LINE_CHART_OPTIONS } from '../../home/dashboard-charts';
 import { CaixaMes, EvolucaoMes, ResumoService } from '../../services/resumo.service';
+import { describeCombo, describeEvolucao } from '../../home/chart-descriptions';
 
 const JANELAS = [12, 24, 36];
 
@@ -52,6 +53,8 @@ export class ChartExpandModalComponent implements OnInit {
   readonly lineChartOptions = LINE_CHART_OPTIONS;
 
   readonly comboChartData = computed(() => buildComboChartData(this.caixaPretendidoVsReal()));
+  readonly lineChartLabel = computed(() => describeEvolucao(this.evolucao(), false));
+  readonly comboChartLabel = computed(() => describeCombo(this.caixaPretendidoVsReal(), false));
   readonly comboChartOptions = COMBO_CHART_OPTIONS;
 
   constructor(

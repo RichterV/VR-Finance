@@ -2,7 +2,7 @@
   <ion-toolbar>
     <ion-title>Detalhes de {{ tituloPeriodo }}</ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="dismiss()">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
         <ion-icon slot="icon-only" name="close"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -60,7 +60,7 @@
         @for (gasto of sortedGastos(); track gasto.id) {
           <article class="entry-card" [class.top-gasto]="top3GastoIds().has(gasto.id)">
             <div class="entry-main">
-              <span class="prio-dot" [class.essencial]="gasto.priority === 'essencial'"></span>
+              <app-prio-dot [priority]="gasto.priority"></app-prio-dot>
               <strong class="entry-title">{{ gasto.item_name }}</strong>
               <span class="entry-value" [class.danger]="top3GastoIds().has(gasto.id)">{{ gasto.value | currency: 'BRL' }}</span>
             </div>

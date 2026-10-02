@@ -1,31 +1,31 @@
-import { Component, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   IonButton,
   IonButtons,
   IonCheckbox,
   IonContent,
+  IonFab,
+  IonFabButton,
+  IonFabList,
   IonHeader,
   IonIcon,
-  IonLabel,
   IonMenuButton,
   IonRefresher,
   IonRefresherContent,
-  IonSegment,
-  IonSegmentButton,
   IonSelect,
   IonSelectOption,
   IonTitle,
   IonToolbar,
-  ModalController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
+  add,
   addCircleOutline,
   barChartOutline,
   close,
   documentTextOutline,
-  expandOutline,
   eyeOffOutline,
   eyeOutline,
   notificationsOutline,
@@ -34,34 +34,33 @@ import {
   removeCircleOutline,
   statsChartOutline,
 } from 'ionicons/icons';
-import { BaseChartDirective } from 'ng2-charts';
-import { catchError, forkJoin, Observable, of, Subscription, tap } from 'rxjs';
+import { Subscription, catchError, debounceTime, of } from 'rxjs';
 
-import { isDesktopViewport, slideInFromRight, slideOutToRight, SIDE_MODAL_CSS_CLASS } from '../modals/side-modal.animations';
 import { AuthService } from '../core/auth.service';
 import { HomeRefreshService } from '../core/home-refresh.service';
+import { ModalLauncherService } from '../core/modal-launcher.service';
 import { Notificacao, NotificacoesService } from '../services/notificacoes.service';
-import { Corte, ItemPercentual, ResumoAnual, ResumoGeral, ResumoInflacao, ResumoMensal, ResumoService } from '../services/resumo.service';
-import { LoadingStateComponent } from '../shared/loading-state.component';
-import { ResetPeriodButtonComponent } from '../shared/reset-period-button.component';
+import { Corte } from '../services/resumo.service';
 import { MESES_COMPLETOS } from '../shared/months';
-import { Priority } from '../services/dropdown-options.service';
-import {
-  COMBO_CHART_OPTIONS,
-  INFLACAO_CHART_OPTIONS,
-  LINE_CHART_OPTIONS,
-  buildComboChartData,
-  buildInflacaoChartData,
-  buildLineChartData,
-} from './dashboard-charts';
-import {
-  GERAL_CHART_OPTIONS,
-  TOTAIS_GERAIS_CHART_OPTIONS,
-  buildPorAnoChartData,
-  buildPorMesChartData,
-  buildTotaisGeraisChartData,
-} from './relatorio-geral-charts';
+import { ResetPeriodButtonComponent } from '../shared/reset-period-button.component';
+import { AnualSectionComponent } from './sections/anual-section.component';
+import { GeralSectionComponent } from './sections/geral-section.component';
+import { IndicadoresSectionComponent } from './sections/indicadores-section.component';
+import { InflacaoSectionComponent } from './sections/inflacao-section.component';
+import { MensalSectionComponent } from './sections/mensal-section.component';
 
+/** Lançamentos salvos em sequência viram uma recarga só da Home. */
+const REFRESH_DEBOUNCE_MS = 400;
+/** Voltar pra Home só recarrega se os dados tiverem mais que isso (ou houver recarga pendente). */
+const STALE_AFTER_MS = 30_000;
+/** Pull-to-refresh nunca fica girando mais que isso, mesmo se alguma seção não responder. */
+const REFRESHER_TIMEOUT_MS = 15_000;
+
+/**
+ * Dashboard único: cada seção (Mensal, Indicadores, Anual, Geral, Inflação) é um componente que
+ * carrega os próprios dados e trata o próprio erro. A Home só guarda o estado compartilhado
+ * (período, corte, privacidade) e dispara recargas.
+ */
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
@@ -78,108 +77,72 @@ import {
     IonSelect,
     IonSelectOption,
     IonCheckbox,
-    IonSegment,
-    IonSegmentButton,
-    IonLabel,
-    BaseChartDirective,
-    RouterLink,
-    LoadingStateComponent,
-    ResetPeriodButtonComponent,
     IonRefresher,
     IonRefresherContent,
+    IonFab,
+    IonFabButton,
+    IonFabList,
+    NgTemplateOutlet,
+    RouterLink,
+    ResetPeriodButtonComponent,
+    MensalSectionComponent,
+    IndicadoresSectionComponent,
+    AnualSectionComponent,
+    GeralSectionComponent,
+    InflacaoSectionComponent,
   ],
 })
 export class HomePage implements OnInit, OnDestroy {
+  readonly auth = inject(AuthService);
+  readonly notificacoes = inject(NotificacoesService);
+  readonly modals = inject(ModalLauncherService);
+  private readonly homeRefresh = inject(HomeRefreshService);
+  private readonly route = inject(ActivatedRoute);
+
   readonly meses = MESES_COMPLETOS;
   readonly anos: number[];
 
   readonly mes = signal(new Date().getMonth() + 1);
   readonly anoMensal = signal(new Date().getFullYear());
 
-  readonly resumoMensal = signal<ResumoMensal | null>(null);
-  readonly resumoAnual = signal<ResumoAnual | null>(null);
-  readonly resumoGeral = signal<ResumoGeral | null>(null);
-  readonly resumoInflacao = signal<ResumoInflacao | null>(null);
-  /** Módulo opcional: sem ele, a seção "Análise inflacionária" some e /resumo/inflacao nem é chamado (daria 403). */
+  /** Módulo opcional: sem ele, a seção "Análise inflacionária" some (e /resumo/inflacao nem é chamado). */
   readonly inflacaoHabilitada = computed(() => this.auth.hasModule('analise_inflacionaria'));
 
-  /** Verdadeiro até a primeira carga dos 4 resumos terminar (evita as seções aparecerem vazias/escalonadas). */
-  readonly loading = computed(
-    () =>
-      this.resumoMensal() === null ||
-      this.resumoAnual() === null ||
-      this.resumoGeral() === null ||
-      (this.inflacaoHabilitada() && this.resumoInflacao() === null),
-  );
-
-  /** Modo privacidade: valores ocultos por padrão, como em apps de banco. Só se aplica à Home. */
+  /** Modo privacidade: valores ocultos sempre que a Home abre, como em apps de banco. */
   readonly valoresOcultos = signal(true);
 
   /**
-   * "Mostrar apenas até o mês selecionado" — quando ligado, Anual, Geral e Inflação só consideram
-   * lançamentos até o mês/ano do seletor do Resumo Mensal (ignora meses futuros já lançados, ex:
-   * parcelas). É um único estado compartilhado entre as 4 seções; na Mensal não tem efeito, já que
-   * ela mesma só olha pra um mês. Ligado por padrão -- sem isso, parcelas futuras já lançadas (ex:
-   * uma compra parcelada em 6x) inflam os totais anuais/gerais e a cesta de inflação com meses que
-   * ainda nem chegaram.
+   * "Mostrar apenas até o mês selecionado" — quando ligado, Indicadores, Anual, Geral e Inflação só
+   * consideram lançamentos até o mês/ano do seletor do Resumo Mensal (ignora parcelas futuras já
+   * lançadas). Um único estado compartilhado entre as seções; ligado por padrão.
    */
   readonly limitarAteMesSelecionado = signal(true);
 
-  private get corteAtual(): Corte | undefined {
-    return this.limitarAteMesSelecionado() ? { ateAno: this.anoMensal(), ateMes: this.mes() } : undefined;
-  }
+  readonly corte = computed<Corte | undefined>(
+    () => (this.limitarAteMesSelecionado() ? { ateAno: this.anoMensal(), ateMes: this.mes() } : undefined),
+    // Mesmo corte = mesmo valor: as seções que não dependem do mês não recarregam à toa.
+    { equal: (a, b) => a?.ateAno === b?.ateAno && a?.ateMes === b?.ateMes },
+  );
 
-  readonly lineChartData = computed(() => buildLineChartData(this.resumoAnual()?.evolucao_12_meses ?? []));
-  readonly lineChartOptions = computed(() => this.maskChartOptions(LINE_CHART_OPTIONS, ['y']));
-
-  readonly comboChartData = computed(() => buildComboChartData(this.resumoAnual()?.caixa_pretendido_vs_real ?? []));
-  readonly comboChartOptions = computed(() => this.maskChartOptions(COMBO_CHART_OPTIONS, ['y', 'y1']));
-
-  readonly porAnoChartData = computed(() => buildPorAnoChartData(this.resumoGeral()?.anos ?? []));
-  readonly porAnoChartOptions = computed(() => this.maskChartOptions(GERAL_CHART_OPTIONS, ['y']));
-
-  readonly totaisGeraisChartData = computed(() => buildTotaisGeraisChartData(this.resumoGeral()));
-  readonly totaisGeraisChartOptions = computed(() => this.maskChartOptions(TOTAIS_GERAIS_CHART_OPTIONS, ['y']));
-
-  readonly porMesChartData = computed(() => buildPorMesChartData(this.resumoGeral()));
-  readonly porMesChartOptions = computed(() => this.maskChartOptions(GERAL_CHART_OPTIONS, ['y']));
-
-  /** Mês a mês / Ano a ano -- alterna qual série da Análise inflacionária é exibida. */
-  readonly inflacaoJanela = signal<'mensal' | 'anual'>('mensal');
-  readonly inflacaoPontos = computed(() => {
-    const resumo = this.resumoInflacao();
-    if (!resumo) return [];
-    return this.inflacaoJanela() === 'mensal' ? resumo.mensal : resumo.anual;
-  });
-  readonly inflacaoHeadline = computed(() => {
-    const resumo = this.resumoInflacao();
-    if (!resumo) return null;
-    return this.inflacaoJanela() === 'mensal' ? resumo.headline_mom_pct : resumo.headline_yoy_pct;
-  });
-  readonly inflacaoChartData = computed(() => buildInflacaoChartData(this.inflacaoPontos()));
-  readonly inflacaoChartOptions = computed(() => this.maskChartOptions(INFLACAO_CHART_OPTIONS, ['y', 'y1']));
-
-  /** Chave da barra de percentual com o tooltip de valor em R$ aberto por clique (null = nenhuma). */
-  readonly activeTooltip = signal<string | null>(null);
+  /** Incrementado pra forçar todas as seções a recarregar. */
+  readonly reloadToken = signal(0);
+  private lastLoadedAt = Date.now();
+  private refreshPending = false;
+  private refresher: HTMLIonRefresherElement | null = null;
+  private refresherPendentes = 0;
+  private refresherTimeout?: ReturnType<typeof setTimeout>;
 
   private refreshSubscription?: Subscription;
   private fragmentSubscription?: Subscription;
 
-  constructor(
-    readonly auth: AuthService,
-    private readonly resumoService: ResumoService,
-    private readonly modalCtrl: ModalController,
-    private readonly homeRefresh: HomeRefreshService,
-    private readonly route: ActivatedRoute,
-    readonly notificacoes: NotificacoesService,
-  ) {
+  constructor() {
     addIcons({
+      add,
       removeCircleOutline,
       addCircleOutline,
       pricetagsOutline,
       personOutline,
       barChartOutline,
-      expandOutline,
       eyeOutline,
       eyeOffOutline,
       documentTextOutline,
@@ -192,50 +155,39 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.refreshSubscription = this.homeRefresh.refresh$.subscribe(() => this.reloadAll().subscribe());
+    // Lançamento salvo (os modais ficam abertos pra lançar em série) ou "Início" no menu: uma recarga
+    // depois que a sequência para, não uma por lançamento.
+    this.refreshSubscription = this.homeRefresh.refresh$.pipe(debounceTime(REFRESH_DEBOUNCE_MS)).subscribe(() => {
+      this.refreshPending = true;
+      this.recarregar();
+    });
     this.fragmentSubscription = this.route.fragment.subscribe((fragment) => this.scrollToFragment(fragment));
   }
 
   ngOnDestroy(): void {
     this.refreshSubscription?.unsubscribe();
     this.fragmentSubscription?.unsubscribe();
-  }
-
-  /** Navegação vinda dos subitens do menu ("Resumo mensal"/"Resumo anual"/"Relatório geral") -- rola até a seção. */
-  private scrollToFragment(fragment: string | null, attemptsLeft = 20): void {
-    if (!fragment) return;
-    const el = document.getElementById(fragment);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      return;
-    }
-    if (attemptsLeft <= 0) return;
-    requestAnimationFrame(() => this.scrollToFragment(fragment, attemptsLeft - 1));
-  }
-
-  /** Abre/fecha o tooltip de valor em R$ de uma barra de percentual (clique, pra suportar toque). */
-  toggleTooltip(key: string, event: Event): void {
-    event.stopPropagation();
-    this.activeTooltip.update((current) => (current === key ? null : key));
-  }
-
-  @HostListener('document:click')
-  closeTooltip(): void {
-    this.activeTooltip.set(null);
+    clearTimeout(this.refresherTimeout);
   }
 
   /**
-   * O ion-router-outlet mantém a instância da Home em cache (mesma razão documentada no login) --
-   * sem isso, trocar de conta (logout + login de novo, ou "Mudar pra conta teste") reaproveitava a
-   * instância antiga e continuava mostrando os dados da conta anterior até um F5 manual, já que
-   * ngOnInit só roda uma vez por instância.
+   * O ion-router-outlet mantém a instância da Home em cache -- ao voltar pra ela, recarrega só se os
+   * dados estiverem velhos ou houver recarga pendente (antes recarregava tudo, sempre).
    */
   ionViewWillEnter(): void {
-    this.reloadAll().subscribe();
+    if (this.refreshPending || Date.now() - this.lastLoadedAt > STALE_AFTER_MS) {
+      this.recarregar();
+    }
     this.loadNotificacoes();
   }
 
-  /** Fora do forkJoin dos resumos de propósito: uma falha aqui não pode travar o dashboard. */
+  private recarregar(): void {
+    this.refreshPending = false;
+    this.lastLoadedAt = Date.now();
+    this.reloadToken.update((n) => n + 1);
+  }
+
+  /** Fora das seções de propósito: uma falha aqui não pode afetar o dashboard. */
   private loadNotificacoes(): void {
     this.notificacoes
       .load()
@@ -243,112 +195,51 @@ export class HomePage implements OnInit, OnDestroy {
       .subscribe();
   }
 
-  /** Clicar em "Início" ja na Home (menu lateral do desktop) ou puxar a tela pra baixo (pull-to-refresh no app) cai aqui. */
   onPullToRefresh(event: CustomEvent): void {
+    this.refresher = event.target as HTMLIonRefresherElement;
+    this.refresherPendentes = this.inflacaoHabilitada() ? 5 : 4;
+    clearTimeout(this.refresherTimeout);
+    this.refresherTimeout = setTimeout(() => this.completarRefresher(), REFRESHER_TIMEOUT_MS);
     this.loadNotificacoes();
-    this.reloadAll().subscribe(() => (event.target as HTMLIonRefresherElement).complete());
+    this.recarregar();
   }
 
-  /** Recarrega os 4 resumos de uma vez -- usado na carga inicial, no pull-to-refresh/"Início" e apos salvar um lancamento. */
-  private reloadAll(): Observable<[ResumoMensal, ResumoAnual, ResumoGeral, ResumoInflacao | null]> {
-    return forkJoin([
-      this.resumoService.mensal(this.anoMensal(), this.mes()),
-      this.resumoService.anual(this.anoMensal(), 12, this.corteAtual),
-      this.resumoService.geral(this.corteAtual),
-      this.inflacaoHabilitada() ? this.resumoService.inflacao(12, this.corteAtual) : of(null),
-    ]).pipe(
-      tap(([mensal, anual, geral, inflacao]) => {
-        this.resumoMensal.set(mensal);
-        this.resumoAnual.set(anual);
-        this.resumoGeral.set(geral);
-        this.resumoInflacao.set(inflacao);
-      }),
-    );
+  /** Cada seção avisa quando terminou de carregar (com sucesso ou erro). */
+  onSectionSettled(): void {
+    if (!this.refresher) return;
+    this.refresherPendentes -= 1;
+    if (this.refresherPendentes <= 0) this.completarRefresher();
   }
 
-  /** Itens do grupo (essencial/não essencial), do maior para o menor percentual. */
-  itemsForPriority(items: ItemPercentual[], priority: Priority): ItemPercentual[] {
-    return items.filter((item) => item.priority === priority).sort((a, b) => b.percentual - a.percentual);
+  private completarRefresher(): void {
+    clearTimeout(this.refresherTimeout);
+    void this.refresher?.complete();
+    this.refresher = null;
   }
 
-  /** Maior percentual do grupo — usado para a barra mais alta preencher 100% e as demais seguirem a proporção. */
-  maxPercentual(items: ItemPercentual[]): number {
-    return items[0]?.percentual || 1;
-  }
-
-  /** Percentual de `valor` sobre `total` (ex: essenciais sobre o total de gastos do período). */
-  percentDoTotal(valor: number, total: number): number {
-    return total ? (valor / total) * 100 : 0;
+  /** Navegação vinda dos subitens do menu ("Resumo mensal", "Indicadores"...) -- rola até a seção. */
+  private scrollToFragment(fragment: string | null, attemptsLeft = 20): void {
+    if (!fragment) return;
+    const el = document.getElementById(fragment);
+    if (el) {
+      const reduzir = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      el.scrollIntoView({ behavior: reduzir ? 'auto' : 'smooth', block: 'start' });
+      return;
+    }
+    if (attemptsLeft <= 0) return;
+    requestAnimationFrame(() => this.scrollToFragment(fragment, attemptsLeft - 1));
   }
 
   toggleValores(): void {
     this.valoresOcultos.update((oculto) => !oculto);
   }
 
-  /** Valor em R$, mascarado no modo privacidade. */
-  maskCurrency(valor: number): string {
-    return this.valoresOcultos() ? '••••••' : valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
-
-  /** Contagem simples (qtd. de gastos/receitas), mascarada no modo privacidade. */
-  maskCount(valor: number): string {
-    return this.valoresOcultos() ? '••' : String(valor);
-  }
-
-  /** Percentual de um item sobre o total do grupo, mascarado no modo privacidade. */
-  maskItemPercent(valor: number): string {
-    return this.valoresOcultos() ? '••%' : `${valor.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
-  }
-
-  /** "(XX,X%)" ao lado do valor de Essenciais/Não essenciais, mascarado no modo privacidade. */
-  maskPercentParen(valor: number, total: number): string {
-    if (this.valoresOcultos()) return '(••%)';
-    const percentual = this.percentDoTotal(valor, total).toLocaleString('pt-BR', {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    });
-    return `(${percentual}%)`;
-  }
-
-  /** Largura da barra de percentual — zerada no modo privacidade pra não vazar proporções. */
-  maskWidth(largura: number): number {
-    return this.valoresOcultos() ? 0 : largura;
-  }
-
-  /** Some com os ticks numéricos dos eixos de valor do gráfico e desliga o tooltip, no modo privacidade. */
-  private maskChartOptions(base: any, axisKeys: string[]): any {
-    if (!this.valoresOcultos()) return base;
-    const scales: Record<string, any> = { ...(base.scales ?? {}) };
-    for (const key of axisKeys) {
-      if (scales[key]) {
-        scales[key] = { ...scales[key], ticks: { ...scales[key].ticks, callback: () => '' } };
-      }
-    }
-    return {
-      ...base,
-      scales,
-      plugins: { ...base.plugins, tooltip: { ...(base.plugins?.tooltip ?? {}), enabled: false } },
-    };
-  }
-
   onMesChange(value: number): void {
     this.mes.set(value);
-    this.loadResumoMensal();
-    if (this.limitarAteMesSelecionado()) {
-      this.loadResumoAnual();
-      this.loadResumoGeral();
-      this.loadResumoInflacao();
-    }
   }
 
   onAnoMensalChange(value: number): void {
     this.anoMensal.set(value);
-    this.loadResumoMensal();
-    this.loadResumoAnual();
-    if (this.limitarAteMesSelecionado()) {
-      this.loadResumoGeral();
-      this.loadResumoInflacao();
-    }
   }
 
   periodoMensalIsDefault(): boolean {
@@ -360,73 +251,15 @@ export class HomePage implements OnInit, OnDestroy {
   resetPeriodoMensal(): void {
     const hoje = new Date();
     this.mes.set(hoje.getMonth() + 1);
-    this.onAnoMensalChange(hoje.getFullYear());
+    this.anoMensal.set(hoje.getFullYear());
   }
 
-  setLimitarAteMesSelecionado(value: boolean): void {
-    this.limitarAteMesSelecionado.set(value);
-    this.loadResumoAnual();
-    this.loadResumoGeral();
-    this.loadResumoInflacao();
+  toggleLimitarAteMesSelecionado(): void {
+    this.limitarAteMesSelecionado.update((v) => !v);
   }
 
-  onInflacaoJanelaChange(value: 'mensal' | 'anual'): void {
-    this.inflacaoJanela.set(value);
-  }
-
-  private loadResumoMensal(): void {
-    this.resumoService.mensal(this.anoMensal(), this.mes()).subscribe((resumo) => this.resumoMensal.set(resumo));
-  }
-
-  private loadResumoAnual(): void {
-    this.resumoService.anual(this.anoMensal(), 12, this.corteAtual).subscribe((resumo) => this.resumoAnual.set(resumo));
-  }
-
-  private loadResumoGeral(): void {
-    this.resumoService.geral(this.corteAtual).subscribe((resumo) => this.resumoGeral.set(resumo));
-  }
-
-  private loadResumoInflacao(): void {
-    if (!this.inflacaoHabilitada()) return;
-    this.resumoService.inflacao(12, this.corteAtual).subscribe((resumo) => this.resumoInflacao.set(resumo));
-  }
-
-  private sideModalOptions() {
-    return isDesktopViewport()
-      ? { cssClass: SIDE_MODAL_CSS_CLASS, enterAnimation: slideInFromRight, leaveAnimation: slideOutToRight }
-      : {};
-  }
-
-  async abrirAdicionarGasto(): Promise<void> {
-    const { AdicionarGastoModalComponent } = await import(
-      '../modals/adicionar-gasto/adicionar-gasto-modal.component'
-    );
-    // O proprio modal chama HomeRefreshService assim que o gasto e' salvo (nao precisa
-    // esperar o modal fechar, que aqui fica aberto de proposito pra permitir salvar varios
-    // em sequencia).
-    const modal = await this.modalCtrl.create({ component: AdicionarGastoModalComponent, ...this.sideModalOptions() });
-    await modal.present();
-  }
-
-  async abrirAdicionarReceita(): Promise<void> {
-    const { AdicionarReceitaModalComponent } = await import(
-      '../modals/adicionar-receita/adicionar-receita-modal.component'
-    );
-    // Mesmo motivo do abrirAdicionarGasto acima.
-    const modal = await this.modalCtrl.create({ component: AdicionarReceitaModalComponent, ...this.sideModalOptions() });
-    await modal.present();
-  }
-
-  async abrirItens(): Promise<void> {
-    const { ItensModalComponent } = await import('../modals/itens/itens-modal.component');
-    const modal = await this.modalCtrl.create({ component: ItensModalComponent, ...this.sideModalOptions() });
-    await modal.present();
-  }
-
-  async abrirPerfil(): Promise<void> {
-    const { PerfilModalComponent } = await import('../modals/perfil/perfil-modal.component');
-    const modal = await this.modalCtrl.create({ component: PerfilModalComponent, ...this.sideModalOptions() });
-    await modal.present();
+  abrirDetalhesMes(): void {
+    void this.modals.detalhesMes(this.anoMensal(), this.mes());
   }
 
   nomeMes(mes: number): string {
@@ -453,47 +286,15 @@ export class HomePage implements OnInit, OnDestroy {
     return partes.length ? partes.join(' · ') : 'Veja como foi o mês em relação aos anteriores';
   }
 
-  async abrirResumo(n: Notificacao): Promise<void> {
-    const { ResumoMensalModalComponent } = await import('../modals/resumo-mensal/resumo-mensal-modal.component');
-    const modal = await this.modalCtrl.create({
-      component: ResumoMensalModalComponent,
-      componentProps: { notificacao: n, valoresOcultos: this.valoresOcultos() },
-      ...this.sideModalOptions(),
-    });
-    await modal.present();
+  abrirResumo(n: Notificacao): void {
+    void this.modals.resumoMensal(n, this.valoresOcultos());
   }
 
   dispensarResumo(n: Notificacao): void {
     this.notificacoes.markRead(n.id).subscribe();
   }
 
-  async abrirNotificacoes(): Promise<void> {
-    const { NotificacoesModalComponent } = await import('../modals/notificacoes/notificacoes-modal.component');
-    const modal = await this.modalCtrl.create({
-      component: NotificacoesModalComponent,
-      componentProps: { valoresOcultos: this.valoresOcultos() },
-      ...this.sideModalOptions(),
-    });
-    await modal.present();
-  }
-
-  async abrirDetalhesMes(): Promise<void> {
-    const { DetalhesMesModalComponent } = await import('../modals/detalhes-mes/detalhes-mes-modal.component');
-    const modal = await this.modalCtrl.create({
-      component: DetalhesMesModalComponent,
-      componentProps: { ano: this.anoMensal(), mes: this.mes() },
-      cssClass: 'fullscreen-modal',
-    });
-    await modal.present();
-  }
-
-  async expandirGrafico(chartType: 'line' | 'bar', title: string): Promise<void> {
-    const { ChartExpandModalComponent } = await import('../modals/chart-expand/chart-expand-modal.component');
-    const modal = await this.modalCtrl.create({
-      component: ChartExpandModalComponent,
-      componentProps: { chartType, title, ano: this.anoMensal() },
-      cssClass: 'fullscreen-modal',
-    });
-    await modal.present();
+  abrirNotificacoes(): void {
+    void this.modals.notificacoes(this.valoresOcultos());
   }
 }

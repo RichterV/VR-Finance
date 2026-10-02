@@ -25,16 +25,21 @@ import { AuthService } from '../../core/auth.service';
 import { HomeRefreshService } from '../../core/home-refresh.service';
 import { ReceitasService } from '../../services/receitas.service';
 import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
-import { extractHttpErrorMessage } from '../../shared/attachment-types';
-import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
+
 import { LaunchDateFieldComponent } from '../../shared/launch-date-field.component';
 import { todayIso } from '../../shared/launch-date';
+import { httpErrorMessage } from '../../shared/http-error';
+import { CurrencyInputDirective } from '../../shared/currency-input.directive';
+import { AutofocusDirective } from '../../shared/autofocus.directive';
+import { commitAttachments } from '../../shared/save-with-attachments';
 
 @Component({
   selector: 'app-adicionar-receita-modal',
   templateUrl: './adicionar-receita-modal.component.html',
   styleUrls: ['./adicionar-receita-modal.component.scss'],
   imports: [
+    AutofocusDirective,
+    CurrencyInputDirective,
     ReactiveFormsModule,
     CurrencyPipe,
     IonHeader,
@@ -63,7 +68,6 @@ export class AdicionarReceitaModalComponent {
 
   readonly saving = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly valorDisplay = signal('');
   private readonly savedAny = signal(false);
   readonly savingDefault = signal(false);
 
@@ -102,12 +106,6 @@ export class AdicionarReceitaModalComponent {
     addIcons({ close });
   }
 
-  onValorInput(ev: CustomEvent): void {
-    const reais = parseCentsInput(String((ev.detail as { value?: string })?.value ?? ''));
-    this.valorDisplay.set(reais === 0 ? '' : formatCurrencyValue(reais));
-    this.form.controls.value.setValue(reais);
-  }
-
   saveDefaultCashPercentage(): void {
     const percentage = this.form.controls.cashPercentage.value;
     this.savingDefault.set(true);
@@ -121,10 +119,10 @@ export class AdicionarReceitaModalComponent {
         });
         await toast.present();
       },
-      error: async () => {
+      error: async (err: unknown) => {
         this.savingDefault.set(false);
         const toast = await this.toastCtrl.create({
-          message: 'Erro ao salvar o padrão.',
+          message: httpErrorMessage(err, 'Erro ao salvar o padrão.'),
           duration: 2500,
           color: 'danger',
         });
@@ -158,54 +156,37 @@ export class AdicionarReceitaModalComponent {
           // o usuario fechar o modal, que aqui fica aberto de proposito pra permitir salvar
           // varias receitas em sequencia.
           this.homeRefresh.request();
-          this.attachmentPicker.commit(receita.id).subscribe({
-            next: async () => {
-              this.saving.set(false);
-              const toast = await this.toastCtrl.create({
-                message: 'Receita salva.',
-                duration: 2000,
-                color: 'success',
-              });
-              await toast.present();
-              this.form.reset({
-                value: null,
-                cashPercentage: this.defaultCashPercentage(),
-                description: '',
-                date: todayIso(),
-              });
-              this.valorDisplay.set('');
-              this.attachmentPicker.reset();
-            },
-            error: async (err) => {
-              this.saving.set(false);
-              console.error('Erro ao enviar anexos da receita', err);
-              const toast = await this.toastCtrl.create({
-                message: `Receita salva, mas houve erro ao enviar os anexos: ${extractHttpErrorMessage(err)}`,
-                duration: 4000,
-                color: 'warning',
-              });
-              await toast.present();
-              this.form.reset({
-                value: null,
-                cashPercentage: this.defaultCashPercentage(),
-                description: '',
-                date: todayIso(),
-              });
-              this.valorDisplay.set('');
-              this.attachmentPicker.reset();
-            },
+          void commitAttachments({
+            commit: this.attachmentPicker.commit(receita.id),
+            toastCtrl: this.toastCtrl,
+            successMessage: 'Receita salva.',
+            savedLabel: 'Receita salva',
+          }).then(() => {
+            this.saving.set(false);
+            this.resetForm();
           });
         },
-        error: async () => {
+        error: async (err: unknown) => {
           this.saving.set(false);
           const toast = await this.toastCtrl.create({
-            message: 'Erro ao salvar a receita.',
+            message: httpErrorMessage(err, 'Erro ao salvar a receita.'),
             duration: 2500,
             color: 'danger',
           });
           await toast.present();
         },
       });
+  }
+
+  /** Depois de salvar: formulário limpo, % de caixa de volta ao padrão do usuário. */
+  private resetForm(): void {
+    this.form.reset({
+      value: null,
+      cashPercentage: this.defaultCashPercentage(),
+      description: '',
+      date: todayIso(),
+    });
+    this.attachmentPicker.reset();
   }
 
   dismiss(): void {

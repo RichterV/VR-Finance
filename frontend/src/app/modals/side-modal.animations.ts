@@ -3,6 +3,11 @@ import type { AnimationBuilder } from '@ionic/angular';
 
 export const SIDE_MODAL_CSS_CLASS = 'side-modal';
 
+/** Movimento reduzido nas configurações de acessibilidade do sistema: o modal abre sem deslizar. */
+function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+}
+
 export const slideInFromRight: AnimationBuilder = (baseEl: HTMLElement) => {
   const root = baseEl.shadowRoot ?? baseEl;
   const backdropEl = root.querySelector('ion-backdrop');
@@ -20,7 +25,7 @@ export const slideInFromRight: AnimationBuilder = (baseEl: HTMLElement) => {
   return createAnimation()
     .addElement(baseEl)
     .easing('cubic-bezier(0.32, 0.72, 0, 1)')
-    .duration(280)
+    .duration(prefersReducedMotion() ? 0 : 280)
     .addAnimation([backdrop, wrapper]);
 };
 
@@ -41,7 +46,7 @@ export const slideOutToRight: AnimationBuilder = (baseEl: HTMLElement) => {
   return createAnimation()
     .addElement(baseEl)
     .easing('cubic-bezier(0.32, 0.72, 0, 1)')
-    .duration(200)
+    .duration(prefersReducedMotion() ? 0 : 200)
     .addAnimation([backdrop, wrapper]);
 };
 

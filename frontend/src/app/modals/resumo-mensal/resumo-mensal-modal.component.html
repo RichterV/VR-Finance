@@ -2,10 +2,10 @@
   <ion-toolbar>
     <ion-title>Resumo do mês</ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="toggleOcultos()" [title]="ocultos() ? 'Mostrar valores' : 'Ocultar valores'">
+      <ion-button [attr.aria-label]="ocultos() ? 'Mostrar valores' : 'Ocultar valores'" (click)="toggleOcultos()" [title]="ocultos() ? 'Mostrar valores' : 'Ocultar valores'">
         <ion-icon slot="icon-only" [name]="ocultos() ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
       </ion-button>
-      <ion-button (click)="dismiss()">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
         <ion-icon slot="icon-only" name="close"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -87,7 +87,7 @@
           @for (c of p().subiram; track c.item_id) {
             <div class="cat-row">
               <div class="cat-main">
-                <span class="prio-dot" [class.essencial]="c.priority === 'essencial'"></span>
+                <app-prio-dot [priority]="c.priority"></app-prio-dot>
                 <span class="cat-name">{{ c.item_name }}</span>
                 <span class="cat-value">{{ money(c.valor) }}</span>
               </div>
@@ -109,7 +109,7 @@
           @for (c of p().cairam; track c.item_id) {
             <div class="cat-row">
               <div class="cat-main">
-                <span class="prio-dot" [class.essencial]="c.priority === 'essencial'"></span>
+                <app-prio-dot [priority]="c.priority"></app-prio-dot>
                 <span class="cat-name">{{ c.item_name }}</span>
                 <span class="cat-value">{{ money(c.valor) }}</span>
               </div>
@@ -128,8 +128,8 @@
       <p class="legend">
         <span><i class="sw sw-valor"></i>Este mês</span>
         <span><i class="sw sw-media"></i>Média</span>
-        <span><span class="prio-dot essencial"></span>Essencial</span>
-        <span><span class="prio-dot"></span>Não essencial</span>
+        <span><span class="prio-dot essencial" aria-hidden="true"></span>Essencial</span>
+        <span><span class="prio-dot" aria-hidden="true"></span>Não essencial</span>
       </p>
     }
 
@@ -139,7 +139,7 @@
         <div class="chips">
           @for (g of p().pontuais; track g.item_id) {
             <span class="chip">
-              <span class="prio-dot" [class.essencial]="g.priority === 'essencial'"></span>
+              <app-prio-dot [priority]="g.priority"></app-prio-dot>
               {{ g.item_name }} <b>{{ money(g.valor) }}</b>
             </span>
           }

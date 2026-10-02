@@ -3,9 +3,8 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import localePt from '@angular/common/locales/pt';
 import { LOCALE_ID, inject, provideAppInitializer } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
-import { RouteReuseStrategy, provideRouter, withComponentInputBinding, withPreloading, PreloadAllModules } from '@angular/router';
+import { NoPreloading, RouteReuseStrategy, provideRouter, withComponentInputBinding, withPreloading } from '@angular/router';
 import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular';
-import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
 import { routes } from './app/app.routes';
 import { AppComponent } from './app/app.component';
@@ -20,9 +19,10 @@ bootstrapApplication(AppComponent, {
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     { provide: LOCALE_ID, useValue: 'pt-BR' },
     provideIonicAngular(),
-    provideRouter(routes, withPreloading(PreloadAllModules), withComponentInputBinding()),
+    // Sem pré-carregar todas as páginas logo depois de abrir o app (economiza dados no 4G): cada uma
+    // baixa quando é aberta.
+    provideRouter(routes, withPreloading(NoPreloading), withComponentInputBinding()),
     provideHttpClient(withInterceptors([authInterceptor, apiBaseInterceptor])),
-    provideCharts(withDefaultRegisterables()),
     provideAppInitializer(initServerSelection),
     provideAppInitializer(() => inject(AppLockService).init()),
   ],

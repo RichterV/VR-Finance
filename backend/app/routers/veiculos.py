@@ -2,12 +2,11 @@ from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import extract
 from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.deps import get_current_user, get_db, require_module
-from app.utils import add_months, today_local
+from app.utils import add_months, period_filters, today_local
 
 router = APIRouter(
     prefix="/veiculos",
@@ -121,10 +120,7 @@ def resumo_veiculos(
             models.VehicleService.user_id == current_user.id,
             models.VehicleService.vehicle_id == vehicle.id,
         )
-        if ano is not None:
-            services_query = services_query.filter(extract("year", models.VehicleService.date) == ano)
-        if mes is not None:
-            services_query = services_query.filter(extract("month", models.VehicleService.date) == mes)
+        services_query = services_query.filter(*period_filters(models.VehicleService.date, ano, mes))
         services_filtrados = services_query.all()
 
         total_gasto = sum(s.value for s in services_filtrados)

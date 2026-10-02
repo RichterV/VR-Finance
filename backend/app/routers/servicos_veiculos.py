@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.deps import get_current_user, get_db, require_module
 from app.routers.attachments import delete_attachments_for_key
-from app.utils import today_local
+from app.utils import like_contains, today_local
 
 router = APIRouter(
     prefix="/servicos-veiculos",
@@ -123,9 +123,12 @@ def list_services(
     if vehicle_id is not None:
         query = query.filter(models.VehicleService.vehicle_id == vehicle_id)
     if busca:
-        termo = f"%{busca.strip()}%"
+        termo = like_contains(busca)
         query = query.filter(
-            or_(models.VehicleService.description.ilike(termo), models.VehicleService.notes.ilike(termo))
+            or_(
+                models.VehicleService.description.ilike(termo, escape="\\"),
+                models.VehicleService.notes.ilike(termo, escape="\\"),
+            )
         )
     total = query.count()
     items = (

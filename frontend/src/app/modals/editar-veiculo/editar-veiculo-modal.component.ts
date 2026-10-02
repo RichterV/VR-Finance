@@ -18,6 +18,7 @@ import { addIcons } from 'ionicons';
 import { close } from 'ionicons/icons';
 
 import { Vehicle, VeiculosService } from '../../services/veiculos.service';
+import { httpErrorMessage } from '../../shared/http-error';
 
 @Component({
   selector: 'app-editar-veiculo-modal',
@@ -78,9 +79,9 @@ export class EditarVeiculoModalComponent implements OnInit {
         await toast.present();
         this.modalCtrl.dismiss(updated, 'saved');
       },
-      error: async () => {
+      error: async (err: unknown) => {
         this.saving.set(false);
-        const toast = await this.toastCtrl.create({ message: 'Erro ao atualizar o veículo.', duration: 2500, color: 'danger' });
+        const toast = await this.toastCtrl.create({ message: httpErrorMessage(err, 'Erro ao atualizar o veículo.'), duration: 2500, color: 'danger' });
         await toast.present();
       },
     });

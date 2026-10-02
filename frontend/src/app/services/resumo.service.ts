@@ -108,6 +108,45 @@ export interface ResumoInflacao {
   headline_yoy_pct: number | null;
 }
 
+export interface Previsao {
+  ano: number;
+  mes: number;
+  dia: number;
+  /** Menos de 3 meses com gasto avulso: a projeção é pouco confiável. */
+  historico_suficiente: boolean;
+  receita: number;
+  /** Sem receita lançada no mês: estimada pela mediana dos últimos 6 meses. */
+  receita_estimada: boolean;
+  comprometido: number;
+  variavel_ate_hoje: number;
+  variavel_restante: number;
+  caixa_pretendido: number;
+  saldo_previsto: number;
+  saldo_min: number;
+  saldo_max: number;
+}
+
+export interface PontoIndicador {
+  ano: number;
+  mes: number;
+  valor: number | null;
+}
+
+export interface CustoFixoItem {
+  descricao: string;
+  item_name: string;
+  valor: number;
+}
+
+export interface Indicadores {
+  ano: number;
+  mes: number;
+  poupanca: { atual_3m_pct: number | null; serie: PontoIndicador[] };
+  comprometimento: { pct: number | null; total: number; receita_media: number; meses: PontoIndicador[] };
+  custo_fixo: { pct: number | null; total: number; itens: CustoFixoItem[] };
+  essencial: { atual_pct: number | null; inclinacao_pp_mes: number | null; serie: PontoIndicador[] };
+}
+
 @Injectable({ providedIn: 'root' })
 export class ResumoService {
   private readonly baseUrl = `${environment.apiUrl}/resumo`;
@@ -139,5 +178,14 @@ export class ResumoService {
     return this.http.get<ResumoInflacao>(`${this.baseUrl}/inflacao`, {
       params: { meses, ...this.corteParams(corte) },
     });
+  }
+
+  /** Projeção do saldo no fim do mês atual. */
+  previsao(): Observable<Previsao> {
+    return this.http.get<Previsao>(`${this.baseUrl}/previsao`);
+  }
+
+  indicadores(corte?: Corte): Observable<Indicadores> {
+    return this.http.get<Indicadores>(`${this.baseUrl}/indicadores`, { params: this.corteParams(corte) });
   }
 }

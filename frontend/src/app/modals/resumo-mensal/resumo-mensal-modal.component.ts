@@ -19,6 +19,7 @@ import {
 
 import { MESES_COMPLETOS } from '../../shared/months';
 import { IndicadorMensal, Notificacao, NotificacoesService, VariacaoCategoria } from '../../services/notificacoes.service';
+import { PrioDotComponent } from '../../shared/prio-dot.component';
 
 interface Kpi {
   key: string;
@@ -33,7 +34,7 @@ interface Kpi {
   selector: 'app-resumo-mensal-modal',
   templateUrl: './resumo-mensal-modal.component.html',
   styleUrls: ['./resumo-mensal-modal.component.scss'],
-  imports: [IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent],
+  imports: [PrioDotComponent, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent],
 })
 export class ResumoMensalModalComponent implements OnInit {
   @Input({ required: true }) notificacao!: Notificacao;

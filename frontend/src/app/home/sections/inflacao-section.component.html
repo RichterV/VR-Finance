@@ -1,0 +1,60 @@
+@switch (resumo.state()) {
+  @case ('loading') {
+    <app-section-skeleton [cards]="1" [charts]="1"></app-section-skeleton>
+  }
+  @case ('error') {
+    <app-error-state title="Não foi possível carregar a análise inflacionária" (retry)="carregar()"></app-error-state>
+  }
+  @default {
+    @if (resumo.data(); as ri) {
+      @if (ri.possui_cesta) {
+        <p class="inflacao-cesta">Cesta: {{ ri.cesta.join(', ') }}</p>
+
+        <ion-segment [value]="janela()" (ionChange)="janela.set($any($event.detail.value))" class="inflacao-segment">
+          <ion-segment-button value="mensal">
+            <ion-label>Mês a mês</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="anual">
+            <ion-label>Ano a ano</ion-label>
+          </ion-segment-button>
+        </ion-segment>
+        <p class="inflacao-caption">
+          @if (janela() === 'mensal') {
+            Cada ponto do gráfico compara o gasto da cesta daquele mês com o mês imediatamente anterior.
+          } @else {
+            Cada ponto do gráfico compara o gasto da cesta daquele mês com o mesmo mês, um ano antes.
+          }
+        </p>
+
+        <div class="stats-grid">
+          <div class="stat-card stat-card--highlight" [class.negativo]="(headline() ?? 0) > 0">
+            <span class="stat-label">{{ janela() === 'mensal' ? 'Inflação no último mês' : 'Inflação no último mês (vs. mesmo mês do ano anterior)' }}</span>
+            <span class="stat-value">
+              @if (headline() === null) {
+                Sem dado suficiente
+              } @else if (valoresOcultos()) {
+                ••%
+              } @else {
+                {{ headlineTexto(headline()!) }}
+              }
+            </span>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3>Inflação vs. Caixa real / Gastos ({{ janela() === 'mensal' ? 'mês a mês' : 'ano a ano' }})</h3>
+          </div>
+          <div class="chart-wrap">
+            <canvas baseChart role="img" [attr.aria-label]="chartLabel()" [type]="'line'" [data]="chartData()" [options]="chartOptions()"></canvas>
+          </div>
+        </div>
+      } @else {
+        <p class="empty-state">
+          Marque pelo menos uma categoria essencial como parte da cesta de inflação na tela de
+          <button type="button" class="link-inline" (click)="abrirCategorias()">Categorias</button> pra habilitar esta seção.
+        </p>
+      }
+    }
+  }
+}

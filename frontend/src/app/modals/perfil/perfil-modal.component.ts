@@ -22,6 +22,7 @@ import { close, logOutOutline } from 'ionicons/icons';
 
 import { AppLockService, LOCK_TIMEOUT_OPTIONS } from '../../core/app-lock.service';
 import { AuthService } from '../../core/auth.service';
+import { httpErrorMessage } from '../../shared/http-error';
 import { CATEGORY_SELECT_POPOVER_OPTIONS } from '../../shared/select-popover';
 
 function passwordsMatchValidator(newControlName: string, confirmControlName: string) {
@@ -157,7 +158,7 @@ export class PerfilModalComponent implements OnInit {
       },
       error: (err) => {
         this.profileSaving.set(false);
-        this.profileError.set(err?.status === 400 ? 'Esse nome de usuário já está em uso.' : 'Erro ao salvar os dados.');
+        this.profileError.set(err?.status === 400 ? 'Esse nome de usuário já está em uso.' : httpErrorMessage(err, 'Erro ao salvar os dados.'));
       },
     });
   }
@@ -182,9 +183,9 @@ export class PerfilModalComponent implements OnInit {
         const toast = await this.toastCtrl.create({ message: 'Senha atualizada.', duration: 2000, color: 'success' });
         await toast.present();
       },
-      error: async () => {
+      error: async (err: unknown) => {
         this.passwordSaving.set(false);
-        this.passwordError.set('Senha atual incorreta.');
+        this.passwordError.set(httpErrorMessage(err, 'Senha atual incorreta.'));
       },
     });
   }

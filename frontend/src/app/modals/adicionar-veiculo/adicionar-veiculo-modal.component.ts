@@ -18,6 +18,7 @@ import { addIcons } from 'ionicons';
 import { close } from 'ionicons/icons';
 
 import { VeiculosService } from '../../services/veiculos.service';
+import { httpErrorMessage } from '../../shared/http-error';
 
 @Component({
   selector: 'app-adicionar-veiculo-modal',
@@ -74,9 +75,9 @@ export class AdicionarVeiculoModalComponent {
         await toast.present();
         this.form.reset({ name: '', year: null });
       },
-      error: async () => {
+      error: async (err: unknown) => {
         this.saving.set(false);
-        const toast = await this.toastCtrl.create({ message: 'Erro ao salvar o veículo.', duration: 2500, color: 'danger' });
+        const toast = await this.toastCtrl.create({ message: httpErrorMessage(err, 'Erro ao salvar o veículo.'), duration: 2500, color: 'danger' });
         await toast.present();
       },
     });

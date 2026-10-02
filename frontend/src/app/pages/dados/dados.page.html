@@ -96,19 +96,19 @@
                     <td class="description">{{ gasto.description || '-' }}</td>
                     <td class="actions-col">
                       @if (gastoAttachmentKeys().has(rowKeyGasto(gasto))) {
-                        <button class="icon-btn" title="Baixar anexos" (click)="abrirAnexosGasto($event, gasto)">
+                        <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexosGasto($event, gasto)">
                           <ion-icon name="attach-outline"></ion-icon>
                         </button>
                       }
                       @if (isAntecipavel(gasto)) {
-                        <button class="icon-btn highlight" title="Antecipar pra este mês" (click)="anteciparGasto(gasto)">
+                        <button aria-label="Antecipar pra este mês" class="icon-btn highlight" title="Antecipar pra este mês" (click)="anteciparGasto(gasto)">
                           <ion-icon name="today-outline"></ion-icon>
                         </button>
                       }
-                      <button class="icon-btn" (click)="editarGasto(gasto)">
+                      <button aria-label="Editar" class="icon-btn" (click)="editarGasto(gasto)">
                         <ion-icon name="create"></ion-icon>
                       </button>
-                      <button class="icon-btn danger" (click)="excluirGasto(gasto)">
+                      <button aria-label="Excluir" class="icon-btn danger" (click)="excluirGasto(gasto)">
                         <ion-icon name="trash"></ion-icon>
                       </button>
                     </td>
@@ -126,7 +126,7 @@
           @for (gasto of sortedGastos(); track gasto.id) {
             <article class="entry-card">
               <div class="entry-main">
-                <span class="prio-dot" [class.essencial]="gasto.priority === 'essencial'"></span>
+                <app-prio-dot [priority]="gasto.priority"></app-prio-dot>
                 <strong class="entry-title">{{ gasto.item_name }}</strong>
                 <span class="entry-value">{{ gasto.value | currency: 'BRL' }}</span>
               </div>
@@ -140,19 +140,19 @@
                 </span>
                 <span class="entry-actions">
                   @if (gastoAttachmentKeys().has(rowKeyGasto(gasto))) {
-                    <button class="icon-btn" title="Baixar anexos" (click)="abrirAnexosGasto($event, gasto)">
+                    <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexosGasto($event, gasto)">
                       <ion-icon name="attach-outline"></ion-icon>
                     </button>
                   }
                   @if (isAntecipavel(gasto)) {
-                    <button class="icon-btn highlight" title="Antecipar pra este mês" (click)="anteciparGasto(gasto)">
+                    <button aria-label="Antecipar pra este mês" class="icon-btn highlight" title="Antecipar pra este mês" (click)="anteciparGasto(gasto)">
                       <ion-icon name="today-outline"></ion-icon>
                     </button>
                   }
-                  <button class="icon-btn" title="Editar" (click)="editarGasto(gasto)">
+                  <button aria-label="Editar" class="icon-btn" title="Editar" (click)="editarGasto(gasto)">
                     <ion-icon name="create"></ion-icon>
                   </button>
-                  <button class="icon-btn danger" title="Excluir" (click)="excluirGasto(gasto)">
+                  <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirGasto(gasto)">
                     <ion-icon name="trash"></ion-icon>
                   </button>
                 </span>
@@ -207,14 +207,14 @@
                     <td class="description">{{ receita.description || '-' }}</td>
                     <td class="actions-col">
                       @if (receitaAttachmentKeys().has(rowKeyReceita(receita))) {
-                        <button class="icon-btn" title="Baixar anexos" (click)="abrirAnexosReceita($event, receita)">
+                        <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexosReceita($event, receita)">
                           <ion-icon name="attach-outline"></ion-icon>
                         </button>
                       }
-                      <button class="icon-btn" (click)="editarReceita(receita)">
+                      <button aria-label="Editar" class="icon-btn" (click)="editarReceita(receita)">
                         <ion-icon name="create"></ion-icon>
                       </button>
-                      <button class="icon-btn danger" (click)="excluirReceita(receita)">
+                      <button aria-label="Excluir" class="icon-btn danger" (click)="excluirReceita(receita)">
                         <ion-icon name="trash"></ion-icon>
                       </button>
                     </td>
@@ -242,14 +242,14 @@
                 </span>
                 <span class="entry-actions">
                   @if (receitaAttachmentKeys().has(rowKeyReceita(receita))) {
-                    <button class="icon-btn" title="Baixar anexos" (click)="abrirAnexosReceita($event, receita)">
+                    <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexosReceita($event, receita)">
                       <ion-icon name="attach-outline"></ion-icon>
                     </button>
                   }
-                  <button class="icon-btn" title="Editar" (click)="editarReceita(receita)">
+                  <button aria-label="Editar" class="icon-btn" title="Editar" (click)="editarReceita(receita)">
                     <ion-icon name="create"></ion-icon>
                   </button>
-                  <button class="icon-btn danger" title="Excluir" (click)="excluirReceita(receita)">
+                  <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirReceita(receita)">
                     <ion-icon name="trash"></ion-icon>
                   </button>
                 </span>

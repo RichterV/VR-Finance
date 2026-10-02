@@ -12,13 +12,13 @@ import json
 from datetime import date
 from typing import Optional
 
-from sqlalchemy import extract, func
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app import models, schemas
-from app.routers.resumo import _basket_month_total, _month_totals
-from app.utils import add_months, today_local
+from app.routers.resumo import _basket_month_total, monthly_totals
+from app.utils import add_months, month_range, today_local
 
 TIPO_RESUMO_MENSAL = "resumo_mensal"
 
@@ -41,9 +41,15 @@ def _variacao_pct(atual: float, base: Optional[float]) -> Optional[float]:
     return (atual - base) / abs(base) * 100 if base else None
 
 
-def _gastos_avulsos_por_categoria(db: Session, user_id: int, ano: int, mes: int) -> dict[int, tuple[str, str, float]]:
+def _gastos_avulsos_por_categoria(
+    db: Session, user_id: int, inicio: date, fim: date
+) -> dict[tuple[int, int], dict[int, tuple[str, str, float]]]:
+    """(ano, mês) -> {item_id: (nome, prioridade, total)} de gastos avulsos -- uma consulta pra
+    janela toda (mês do resumo + meses base)."""
+    ym = func.strftime("%Y-%m", models.Gasto.date)
     rows = (
         db.query(
+            ym.label("ym"),
             models.Gasto.item_id,
             models.DropdownOption.name,
             models.DropdownOption.priority,
@@ -53,13 +59,17 @@ def _gastos_avulsos_por_categoria(db: Session, user_id: int, ano: int, mes: int)
         .filter(
             models.Gasto.user_id == user_id,
             models.Gasto.is_installment.is_(False),
-            extract("year", models.Gasto.date) == ano,
-            extract("month", models.Gasto.date) == mes,
+            models.Gasto.date >= inicio,
+            models.Gasto.date < fim,
         )
-        .group_by(models.Gasto.item_id, models.DropdownOption.name, models.DropdownOption.priority)
+        .group_by(ym, models.Gasto.item_id, models.DropdownOption.name, models.DropdownOption.priority)
         .all()
     )
-    return {row.item_id: (row.name, row.priority, row.total or 0.0) for row in rows}
+    result: dict[tuple[int, int], dict[int, tuple[str, str, float]]] = {}
+    for row in rows:
+        key = (int(row.ym[:4]), int(row.ym[5:7]))
+        result.setdefault(key, {})[row.item_id] = (row.name, row.priority, round(row.total or 0.0, 2))
+    return result
 
 
 def _indicador(valor: float, base_valores: list[float]) -> schemas.IndicadorMensal:
@@ -68,8 +78,9 @@ def _indicador(valor: float, base_valores: list[float]) -> schemas.IndicadorMens
 
 
 def _categorias(db: Session, user_id: int, ano: int, mes: int, bases: list[date]):
-    atual = _gastos_avulsos_por_categoria(db, user_id, ano, mes)
-    base_por_mes = [_gastos_avulsos_por_categoria(db, user_id, b.year, b.month) for b in bases]
+    por_mes = _gastos_avulsos_por_categoria(db, user_id, min(bases), month_range(ano, mes)[1])
+    atual = por_mes.get((ano, mes), {})
+    base_por_mes = [por_mes.get((b.year, b.month), {}) for b in bases]
 
     info: dict[int, tuple[str, str]] = {}
     for mapa in [atual, *base_por_mes]:
@@ -104,13 +115,15 @@ def _categorias(db: Session, user_id: int, ano: int, mes: int, bases: list[date]
 
 
 def _parcelamentos(db: Session, user_id: int, ano: int, mes: int):
+    inicio, fim = month_range(ano, mes)
     parcelas = (
         db.query(models.Gasto)
+        .options(joinedload(models.Gasto.item))
         .filter(
             models.Gasto.user_id == user_id,
             models.Gasto.is_installment.is_(True),
-            extract("year", models.Gasto.date) == ano,
-            extract("month", models.Gasto.date) == mes,
+            models.Gasto.date >= inicio,
+            models.Gasto.date < fim,
         )
         .order_by(models.Gasto.value.desc())
         .all()
@@ -158,12 +171,14 @@ def _inflacao(db: Session, user: models.User, ano: int, mes: int) -> Optional[sc
 
 def build_monthly_digest(db: Session, user: models.User, ano: int, mes: int) -> Optional[schemas.ResumoMensalPayload]:
     """Resumo do mês `mes/ano`, ou None se o usuário não lançou nada nesse mês."""
-    totais = _month_totals(db, user.id, ano, mes)
+    inicio_base = add_months(date(ano, mes, 1), -MESES_BASE)
+    totais_janela = monthly_totals(db, user.id, inicio_base, month_range(ano, mes)[1])
+    totais = totais_janela[(ano, mes)]
     if not totais["quantidade_gastos"] and not totais["quantidade_receitas"]:
         return None
 
     bases = [add_months(date(ano, mes, 1), -i) for i in range(1, MESES_BASE + 1)]
-    totais_base = [_month_totals(db, user.id, b.year, b.month) for b in bases]
+    totais_base = [totais_janela[(b.year, b.month)] for b in bases]
     # Média dos totais só sobre meses base com algum lançamento -- um usuário novo (sem histórico)
     # fica sem comparação, em vez de "gastos subiram 300%" contra meses vazios.
     base_com_dados = [t for t in totais_base if t["quantidade_gastos"] or t["quantidade_receitas"]]

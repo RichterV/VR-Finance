@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import {
   AlertController,
   IonButton,
@@ -24,6 +24,7 @@ import { add, close, create, trash } from 'ionicons/icons';
 import { AuthService } from '../../core/auth.service';
 import { HomeRefreshService } from '../../core/home-refresh.service';
 import { DropdownOption, DropdownOptionsService, Priority } from '../../services/dropdown-options.service';
+import { UndoDeleteService } from '../../shared/undo-delete.service';
 
 @Component({
   selector: 'app-itens-modal',
@@ -47,7 +48,8 @@ import { DropdownOption, DropdownOptionsService, Priority } from '../../services
     IonToggle,
   ],
 })
-export class ItensModalComponent implements OnInit {
+export class ItensModalComponent implements OnInit, OnDestroy {
+  private readonly undoDelete = inject(UndoDeleteService);
   readonly priority = signal<Priority>('essencial');
   readonly items = signal<DropdownOption[]>([]);
   /** Toggle "Cesta de inflação" só existe com o módulo Análise inflacionária habilitado. */
@@ -74,6 +76,11 @@ export class ItensModalComponent implements OnInit {
 
   reload(): void {
     this.service.list(this.priority()).subscribe((items) => this.items.set(items));
+  }
+
+  /** Fechar o modal (botão, gesto ou fundo) confirma na hora uma exclusão ainda no "Desfazer". */
+  ngOnDestroy(): void {
+    this.undoDelete.flushAll();
   }
 
   dismiss(): void {
@@ -136,21 +143,13 @@ export class ItensModalComponent implements OnInit {
       });
   }
 
-  async deleteItem(item: DropdownOption): Promise<void> {
-    const alert = await this.alertCtrl.create({
-      header: 'Excluir categoria',
-      message: `Remover "${item.name}"? Gastos já lançados com essa categoria continuam válidos.`,
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Excluir',
-          role: 'destructive',
-          handler: () => {
-            this.service.remove(item.id).subscribe(() => this.reload());
-          },
-        },
-      ],
+  deleteItem(item: DropdownOption): void {
+    this.undoDelete.schedule({
+      message: `Categoria "${item.name}" excluída. Gastos já lançados com ela continuam válidos.`,
+      hide: () => this.items.update((lista) => lista.filter((i) => i.id !== item.id)),
+      restore: () => this.reload(),
+      commit: () => this.service.remove(item.id),
+      errorMessage: 'Erro ao excluir a categoria.',
     });
-    await alert.present();
   }
 }

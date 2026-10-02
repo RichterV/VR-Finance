@@ -55,11 +55,24 @@ export interface Gasto {
   created_at: string;
 }
 
+export interface AnomaliaGasto {
+  anomalo: boolean;
+  /** Mediana dos lançamentos avulsos da categoria nos últimos 12 meses (null = histórico curto). */
+  mediana: number | null;
+  multiplo: number | null;
+  amostras: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class GastosService {
   private readonly baseUrl = `${environment.apiUrl}/gastos`;
 
   constructor(private readonly http: HttpClient) {}
+
+  /** O valor é muito acima do normal da categoria? Chamado antes de salvar um gasto avulso. */
+  anomalia(itemId: number, value: number): Observable<AnomaliaGasto> {
+    return this.http.get<AnomaliaGasto>(`${this.baseUrl}/anomalia`, { params: { item_id: itemId, value } });
+  }
 
   create(payload: GastoCreatePayload): Observable<Gasto[]> {
     return this.http.post<Gasto[]>(this.baseUrl, payload);

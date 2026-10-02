@@ -10,6 +10,7 @@ import { MESES_COMPLETOS } from '../../shared/months';
 import { SortOption, SortState, sortItems, toggleSortState } from '../../shared/sortable';
 import { SortSelectComponent } from '../../shared/sort-select.component';
 import { SortThComponent } from '../../shared/sort-th.component';
+import { PrioDotComponent } from '../../shared/prio-dot.component';
 
 const LIMITE_ITENS = 200;
 
@@ -17,7 +18,7 @@ const LIMITE_ITENS = 200;
   selector: 'app-detalhes-mes-modal',
   templateUrl: './detalhes-mes-modal.component.html',
   styleUrls: ['./detalhes-mes-modal.component.scss'],
-  imports: [CurrencyPipe, DatePipe, IonHeader, IonToolbar, IonButtons, IonButton, IonIcon, IonTitle, IonContent, SortThComponent, SortSelectComponent],
+  imports: [PrioDotComponent, CurrencyPipe, DatePipe, IonHeader, IonToolbar, IonButtons, IonButton, IonIcon, IonTitle, IonContent, SortThComponent, SortSelectComponent],
 })
 export class DetalhesMesModalComponent implements OnInit {
   @Input({ required: true }) ano!: number;

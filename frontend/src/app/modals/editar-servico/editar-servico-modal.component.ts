@@ -25,13 +25,14 @@ import { ServiceType, ServicoVeiculo, ServicosVeiculosService } from '../../serv
 import { Vehicle, VeiculosService } from '../../services/veiculos.service';
 import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
 import { extractHttpErrorMessage } from '../../shared/attachment-types';
-import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
+import { CurrencyInputDirective } from '../../shared/currency-input.directive';
 
 @Component({
   selector: 'app-editar-servico-modal',
   templateUrl: './editar-servico-modal.component.html',
   styleUrls: ['./editar-servico-modal.component.scss'],
   imports: [
+    CurrencyInputDirective,
     ReactiveFormsModule,
     IonHeader,
     IonToolbar,
@@ -61,7 +62,6 @@ export class EditarServicoModalComponent implements OnInit {
   readonly vehicles = signal<Vehicle[]>([]);
   readonly saving = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly valorDisplay = signal('');
 
   readonly serviceTypes = Object.entries(SERVICE_TYPE_LABELS) as [ServiceType, string][];
 
@@ -94,13 +94,6 @@ export class EditarServicoModalComponent implements OnInit {
       serviceType: this.servico.service_type,
       mileage: this.servico.mileage,
     });
-    this.valorDisplay.set(formatCurrencyValue(this.servico.value));
-  }
-
-  onValorInput(ev: CustomEvent): void {
-    const reais = parseCentsInput(String((ev.detail as { value?: string })?.value ?? ''));
-    this.valorDisplay.set(reais === 0 ? '' : formatCurrencyValue(reais));
-    this.form.controls.value.setValue(reais);
   }
 
   async submit(): Promise<void> {

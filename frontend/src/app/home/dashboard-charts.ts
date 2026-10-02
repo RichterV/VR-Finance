@@ -1,3 +1,4 @@
+import '../shared/chart-setup';
 import { ChartConfiguration } from 'chart.js';
 
 import { CaixaMes, EvolucaoMes, InflacaoPonto } from '../services/resumo.service';

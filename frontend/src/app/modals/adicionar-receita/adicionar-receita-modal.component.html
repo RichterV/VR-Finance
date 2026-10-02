@@ -2,7 +2,7 @@
   <ion-toolbar>
     <ion-title>Adicionar receita</ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="dismiss()">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
         <ion-icon slot="icon-only" name="close"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -12,12 +12,10 @@
 <ion-content [fullscreen]="true" class="ion-padding">
   <form [formGroup]="form" (ngSubmit)="submit()">
     <ion-item class="value-primary">
-      <ion-input
+      <ion-input appAutofocus
         labelPlacement="stacked"
         type="text"
-        inputmode="decimal"
-        [value]="valorDisplay()"
-        (ionInput)="onValorInput($event)"
+        [appCurrencyInput]="form.controls.value"
         placeholder="0,00"
       >
         <div slot="label">Valor</div>

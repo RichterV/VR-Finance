@@ -22,14 +22,17 @@ import {
   homeOutline,
   logOutOutline,
   peopleOutline,
+  personOutline,
   pin,
   pinOutline,
+  pricetagsOutline,
   shieldCheckmarkOutline,
   trendingUpOutline,
 } from 'ionicons/icons';
 
 import { AuthService } from '../core/auth.service';
 import { HomeRefreshService } from '../core/home-refresh.service';
+import { ModalLauncherService } from '../core/modal-launcher.service';
 import { OPTIONAL_MODULES } from '../core/modules';
 import { BackupWarningBannerComponent } from '../shared/backup-warning-banner.component';
 
@@ -54,6 +57,7 @@ const HOME_ITEM: NavItem = {
   route: '/home',
   children: [
     { label: 'Resumo mensal', route: '/home', fragment: 'resumo-mensal' },
+    { label: 'Indicadores', route: '/home', fragment: 'indicadores' },
     { label: 'Resumo anual', route: '/home', fragment: 'resumo-anual' },
     { label: 'Relatório geral', route: '/home', fragment: 'relatorio-geral' },
     { label: 'Análise inflacionária', route: '/home', fragment: INFLACAO_FRAGMENT },
@@ -110,12 +114,15 @@ export class MainLayoutComponent {
     private readonly menuCtrl: MenuController,
     private readonly router: Router,
     private readonly homeRefresh: HomeRefreshService,
+    private readonly modals: ModalLauncherService,
   ) {
     addIcons({
       homeOutline,
       carSportOutline,
       logOutOutline,
       peopleOutline,
+      personOutline,
+      pricetagsOutline,
       pin,
       pinOutline,
       trendingUpOutline,
@@ -156,6 +163,17 @@ export class MainLayoutComponent {
 
   closeMenu(): void {
     this.menuCtrl.close();
+  }
+
+  /** Fecha o menu antes de abrir o modal (senão o menu fica por cima no celular). */
+  async abrirCategorias(): Promise<void> {
+    await this.menuCtrl.close();
+    await this.modals.categorias();
+  }
+
+  async abrirPerfil(): Promise<void> {
+    await this.menuCtrl.close();
+    await this.modals.perfil();
   }
 
   logout(): void {

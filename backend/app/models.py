@@ -26,6 +26,8 @@ class User(Base):
     # Última requisição autenticada (UTC, regravada no máximo 1x por minuto -- deps.ACTIVITY_WRITE_INTERVAL)
     # ou último login. Uso via "Mudar pra conta teste" não conta. Exibido no painel de admin.
     last_activity_at = Column(DateTime, nullable=True)
+    # Incrementado a cada troca/reset de senha -- invalida todo token emitido antes (claim "tv").
+    token_version = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     module_rows = relationship("UserModule", cascade="all, delete-orphan")
@@ -85,6 +87,8 @@ class Gasto(Base):
     date = Column(Date, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    __table_args__ = (Index("ix_gastos_user_date", "user_id", "date"),)
+
     item = relationship("DropdownOption")
 
     @property
@@ -103,6 +107,8 @@ class Receita(Base):
     description = Column(String, nullable=True)
     date = Column(Date, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (Index("ix_receitas_user_date", "user_id", "date"),)
 
 
 class Vehicle(Base):
@@ -129,6 +135,8 @@ class VehicleService(Base):
     mileage = Column(Integer, nullable=True)
     date = Column(Date, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (Index("ix_vehicle_services_user_date", "user_id", "date"),)
 
     vehicle = relationship("Vehicle")
 

@@ -23,13 +23,16 @@ import { close } from 'ionicons/icons';
 
 import { Receita, ReceitasService } from '../../services/receitas.service';
 import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
-import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
+
+import { httpErrorMessage } from '../../shared/http-error';
+import { CurrencyInputDirective } from '../../shared/currency-input.directive';
 
 @Component({
   selector: 'app-editar-receita-modal',
   templateUrl: './editar-receita-modal.component.html',
   styleUrls: ['./editar-receita-modal.component.scss'],
   imports: [
+    CurrencyInputDirective,
     ReactiveFormsModule,
     CurrencyPipe,
     IonHeader,
@@ -58,7 +61,6 @@ export class EditarReceitaModalComponent implements OnInit {
 
   readonly saving = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly valorDisplay = signal('');
 
   readonly form = this.fb.nonNullable.group({
     value: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]),
@@ -88,13 +90,6 @@ export class EditarReceitaModalComponent implements OnInit {
       cashPercentage: this.receita.cash_percentage,
       description: this.receita.description ?? '',
     });
-    this.valorDisplay.set(formatCurrencyValue(this.receita.value));
-  }
-
-  onValorInput(ev: CustomEvent): void {
-    const reais = parseCentsInput(String((ev.detail as { value?: string })?.value ?? ''));
-    this.valorDisplay.set(reais === 0 ? '' : formatCurrencyValue(reais));
-    this.form.controls.value.setValue(reais);
   }
 
   async submit(): Promise<void> {
@@ -117,9 +112,9 @@ export class EditarReceitaModalComponent implements OnInit {
           await toast.present();
           this.modalCtrl.dismiss(updated, 'saved');
         },
-        error: async () => {
+        error: async (err: unknown) => {
           this.saving.set(false);
-          const toast = await this.toastCtrl.create({ message: 'Erro ao atualizar a receita.', duration: 2500, color: 'danger' });
+          const toast = await this.toastCtrl.create({ message: httpErrorMessage(err, 'Erro ao atualizar a receita.'), duration: 2500, color: 'danger' });
           await toast.present();
         },
       });

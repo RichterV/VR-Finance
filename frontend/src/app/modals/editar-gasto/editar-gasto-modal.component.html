@@ -2,7 +2,7 @@
   <ion-toolbar>
     <ion-title>Editar gasto</ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="dismiss()">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
         <ion-icon slot="icon-only" name="close"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -38,9 +38,7 @@
       <ion-input
         labelPlacement="stacked"
         type="text"
-        inputmode="decimal"
-        [value]="valorDisplay()"
-        (ionInput)="onValorInput($event)"
+        [appCurrencyInput]="form.controls.value"
         placeholder="0,00"
       >
         <div slot="label">Valor</div>
@@ -72,8 +70,8 @@
       </ion-text>
     }
 
-    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving() || attachmentBusy">
-      {{ saving() ? 'Salvando...' : attachmentBusy ? 'Aguarde o anexo...' : 'Salvar alterações' }}
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving() || checking() || attachmentBusy">
+      {{ saving() ? 'Salvando...' : checking() ? 'Verificando...' : attachmentBusy ? 'Aguarde o anexo...' : 'Salvar alterações' }}
     </ion-button>
   </form>
 </ion-content>

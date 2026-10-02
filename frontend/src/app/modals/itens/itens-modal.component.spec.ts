@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { AlertController, ModalController, provideIonicAngular } from '@ionic/angular';
+import { AlertController, ModalController, ToastController, provideIonicAngular } from '@ionic/angular';
 import { of } from 'rxjs';
 
 import { AuthService } from '../../core/auth.service';
 import { HomeRefreshService } from '../../core/home-refresh.service';
 import { DropdownOption, DropdownOptionsService } from '../../services/dropdown-options.service';
 import { ItensModalComponent } from './itens-modal.component';
+import { UNDO_WINDOW_MS } from '../../shared/undo-delete.service';
 
 function option(overrides: Partial<DropdownOption>): DropdownOption {
   return {
@@ -35,6 +36,7 @@ describe('ItensModalComponent', () => {
         { provide: DropdownOptionsService, useValue: { list: listSpy, create: createSpy, update: updateSpy, remove: removeSpy } },
         { provide: AlertController, useValue: { create: alertCreateSpy } },
         { provide: ModalController, useValue: { dismiss: vi.fn() } },
+        { provide: ToastController, useValue: { create: vi.fn(() => Promise.resolve({ present: vi.fn(), dismiss: vi.fn() })) } },
         { provide: AuthService, useValue: { hasModule: (key: string) => key === 'analise_inflacionaria' && inflacaoHabilitada } },
       ],
     });
@@ -114,20 +116,22 @@ describe('ItensModalComponent', () => {
     expect(requestSpy).toHaveBeenCalled();
   });
 
-  it('deleteItem() asks for confirmation before removing', async () => {
-    const fixture = createComponent();
-    const item = option({ id: 9, name: 'Casa' });
+  it('deleteItem() hides the category right away and only deletes after the undo window', () => {
+    vi.useFakeTimers();
+    try {
+      const fixture = createComponent();
+      const item = option({ id: 9, name: 'Casa' });
+      fixture.componentInstance.items.set([item, option({ id: 10, name: 'Mercado' })]);
 
-    await fixture.componentInstance.deleteItem(item);
+      fixture.componentInstance.deleteItem(item);
 
-    expect(alertCreateSpy).toHaveBeenCalled();
-    expect(lastAlertConfig.message).toContain('Casa');
-    expect(removeSpy).not.toHaveBeenCalled();
-
-    const confirmButton = lastAlertConfig.buttons.find((b: { role?: string }) => b.role === 'destructive');
-    confirmButton.handler();
-
-    expect(removeSpy).toHaveBeenCalledWith(9);
+      expect(fixture.componentInstance.items().map((i) => i.id)).toEqual([10]);
+      expect(removeSpy).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(UNDO_WINDOW_MS);
+      expect(removeSpy).toHaveBeenCalledWith(9);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('shows the "Cesta de inflação" toggle when the Análise inflacionária module is enabled', () => {

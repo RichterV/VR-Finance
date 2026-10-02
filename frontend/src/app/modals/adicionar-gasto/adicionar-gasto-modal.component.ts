@@ -18,6 +18,7 @@ import {
   IonTitle,
   IonToggle,
   IonToolbar,
+  AlertController,
   ModalController,
   ToastController,
 } from '@ionic/angular';
@@ -28,17 +29,23 @@ import { HomeRefreshService } from '../../core/home-refresh.service';
 import { DropdownOption, DropdownOptionsService, Priority } from '../../services/dropdown-options.service';
 import { GastosService } from '../../services/gastos.service';
 import { AttachmentPickerComponent } from '../../shared/attachment-picker.component';
-import { extractHttpErrorMessage } from '../../shared/attachment-types';
-import { formatCurrencyValue, parseCentsInput } from '../../shared/currency-mask';
+
 import { LaunchDateFieldComponent } from '../../shared/launch-date-field.component';
 import { todayIso } from '../../shared/launch-date';
 import { CATEGORY_SELECT_POPOVER_OPTIONS } from '../../shared/select-popover';
+import { httpErrorMessage } from '../../shared/http-error';
+import { CurrencyInputDirective } from '../../shared/currency-input.directive';
+import { AutofocusDirective } from '../../shared/autofocus.directive';
+import { commitAttachments } from '../../shared/save-with-attachments';
+import { confirmIfAnomalous } from '../../shared/anomaly-check';
 
 @Component({
   selector: 'app-adicionar-gasto-modal',
   templateUrl: './adicionar-gasto-modal.component.html',
   styleUrls: ['./adicionar-gasto-modal.component.scss'],
   imports: [
+    AutofocusDirective,
+    CurrencyInputDirective,
     ReactiveFormsModule,
     IonHeader,
     IonToolbar,
@@ -72,8 +79,9 @@ export class AdicionarGastoModalComponent implements OnInit {
 
   readonly items = signal<DropdownOption[]>([]);
   readonly saving = signal(false);
+  /** Conferindo se o valor é fora do comum pra categoria (antes de salvar). */
+  readonly checking = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly valorDisplay = signal('');
   private readonly savedAny = signal(false);
 
   readonly form = this.fb.nonNullable.group({
@@ -91,6 +99,7 @@ export class AdicionarGastoModalComponent implements OnInit {
     private readonly dropdownService: DropdownOptionsService,
     private readonly gastosService: GastosService,
     private readonly toastCtrl: ToastController,
+    private readonly alertCtrl: AlertController,
     private readonly modalCtrl: ModalController,
     private readonly homeRefresh: HomeRefreshService,
   ) {
@@ -110,14 +119,8 @@ export class AdicionarGastoModalComponent implements OnInit {
     this.dropdownService.list(priority).subscribe((items) => this.items.set(items));
   }
 
-  onValorInput(ev: CustomEvent): void {
-    const reais = parseCentsInput(String((ev.detail as { value?: string })?.value ?? ''));
-    this.valorDisplay.set(reais === 0 ? '' : formatCurrencyValue(reais));
-    this.form.controls.value.setValue(reais);
-  }
-
   async submit(): Promise<void> {
-    if (this.attachmentBusy) return;
+    if (this.attachmentBusy || this.checking() || this.saving()) return;
     this.errorMessage.set(null);
     const { priority, itemId, value, description, isInstallment, installmentCount, date } = this.form.getRawValue();
 
@@ -129,6 +132,14 @@ export class AdicionarGastoModalComponent implements OnInit {
     if (isInstallment && (!installmentCount || installmentCount < 2)) {
       this.errorMessage.set('Informe o número de parcelas (mínimo 2).');
       return;
+    }
+
+    if (!isInstallment) {
+      const itemName = this.items().find((i) => i.id === itemId)?.name ?? 'essa categoria';
+      this.checking.set(true);
+      const confirmado = await confirmIfAnomalous(this.gastosService, this.alertCtrl, { itemId: itemId, value, itemName });
+      this.checking.set(false);
+      if (!confirmado) return;
     }
 
     this.saving.set(true);
@@ -150,34 +161,20 @@ export class AdicionarGastoModalComponent implements OnInit {
           // varios gastos em sequencia.
           this.homeRefresh.request();
           const entityId = rows[0].installment_group_id ?? rows[0].id;
-          this.attachmentPicker.commit(entityId).subscribe({
-            next: async () => {
-              this.saving.set(false);
-              const toast = await this.toastCtrl.create({
-                message: isInstallment ? `Gasto parcelado em ${rows.length}x salvo.` : 'Gasto salvo.',
-                duration: 2000,
-                color: 'success',
-              });
-              await toast.present();
-              this.resetForm();
-            },
-            error: async (err) => {
-              this.saving.set(false);
-              console.error('Erro ao enviar anexos do gasto', err);
-              const toast = await this.toastCtrl.create({
-                message: `Gasto salvo, mas houve erro ao enviar os anexos: ${extractHttpErrorMessage(err)}`,
-                duration: 4000,
-                color: 'warning',
-              });
-              await toast.present();
-              this.resetForm();
-            },
+          void commitAttachments({
+            commit: this.attachmentPicker.commit(entityId),
+            toastCtrl: this.toastCtrl,
+            successMessage: isInstallment ? `Gasto parcelado em ${rows.length}x salvo.` : 'Gasto salvo.',
+            savedLabel: 'Gasto salvo',
+          }).then(() => {
+            this.saving.set(false);
+            this.resetForm();
           });
         },
-        error: async () => {
+        error: async (err: unknown) => {
           this.saving.set(false);
           const toast = await this.toastCtrl.create({
-            message: 'Erro ao salvar o gasto.',
+            message: httpErrorMessage(err, 'Erro ao salvar o gasto.'),
             duration: 2500,
             color: 'danger',
           });
@@ -201,7 +198,6 @@ export class AdicionarGastoModalComponent implements OnInit {
       installmentCount: null,
       date: todayIso(),
     });
-    this.valorDisplay.set('');
     this.attachmentPicker.reset();
   }
 }

@@ -3,11 +3,11 @@
     <ion-title>Notificações</ion-title>
     <ion-buttons slot="end">
       @if (notificacoes.naoLidas() > 0) {
-        <ion-button (click)="markAllRead()" title="Marcar todas como lidas">
+        <ion-button aria-label="Marcar todas como lidas" (click)="markAllRead()" title="Marcar todas como lidas">
           <ion-icon slot="icon-only" name="checkmark-done-outline"></ion-icon>
         </ion-button>
       }
-      <ion-button (click)="dismiss()">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
         <ion-icon slot="icon-only" name="close"></ion-icon>
       </ion-button>
     </ion-buttons>

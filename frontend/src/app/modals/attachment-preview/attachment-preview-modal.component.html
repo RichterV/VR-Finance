@@ -3,14 +3,14 @@
     <ion-title>{{ file.original_filename }}</ion-title>
     <ion-buttons slot="end">
       @if (canZoom) {
-        <ion-button [disabled]="zoom() <= 1" (click)="zoomOut()">
+        <ion-button aria-label="Diminuir zoom" [disabled]="zoom() <= 1" (click)="zoomOut()">
           <ion-icon slot="icon-only" name="remove-circle-outline"></ion-icon>
         </ion-button>
-        <ion-button [disabled]="zoom() >= 4" (click)="zoomIn()">
+        <ion-button aria-label="Aumentar zoom" [disabled]="zoom() >= 4" (click)="zoomIn()">
           <ion-icon slot="icon-only" name="add-circle-outline"></ion-icon>
         </ion-button>
       }
-      <ion-button [disabled]="!hasBlob || downloading()" (click)="download()">
+      <ion-button aria-label="Baixar" [disabled]="!hasBlob || downloading()" (click)="download()">
         <ion-icon slot="icon-only" name="download-outline"></ion-icon>
       </ion-button>
       @if (canShare) {
@@ -18,7 +18,7 @@
           <ion-icon slot="icon-only" name="share-social-outline"></ion-icon>
         </ion-button>
       }
-      <ion-button (click)="dismiss()">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
         <ion-icon slot="icon-only" name="close"></ion-icon>
       </ion-button>
     </ion-buttons>

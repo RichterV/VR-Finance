@@ -124,11 +124,11 @@
                     </div>
                   </td>
                   <td class="actions-col">
-                    <button class="icon-btn" title="Editar" (click)="abrirUsuario(u)">
+                    <button aria-label="Editar" class="icon-btn" title="Editar" (click)="abrirUsuario(u)">
                       <ion-icon name="create"></ion-icon>
                     </button>
                     @if (u.role !== 'master') {
-                      <button class="icon-btn danger" title="Excluir" (click)="excluirUsuario(u)">
+                      <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirUsuario(u)">
                         <ion-icon name="trash"></ion-icon>
                       </button>
                     }

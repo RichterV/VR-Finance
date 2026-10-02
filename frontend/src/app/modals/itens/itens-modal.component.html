@@ -2,7 +2,7 @@
   <ion-toolbar>
     <ion-title>Categorias</ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="dismiss()">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
         <ion-icon slot="icon-only" name="close"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -38,10 +38,10 @@
           }
         </ion-label>
         <div class="actions" slot="end">
-          <button type="button" class="icon-btn" title="Editar categoria" (click)="editItem(item)">
+          <button aria-label="Editar categoria" type="button" class="icon-btn" title="Editar categoria" (click)="editItem(item)">
             <ion-icon name="create"></ion-icon>
           </button>
-          <button type="button" class="icon-btn danger" title="Excluir categoria" (click)="deleteItem(item)">
+          <button aria-label="Excluir categoria" type="button" class="icon-btn danger" title="Excluir categoria" (click)="deleteItem(item)">
             <ion-icon name="trash"></ion-icon>
           </button>
         </div>

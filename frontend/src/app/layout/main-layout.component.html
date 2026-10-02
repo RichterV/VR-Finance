@@ -102,6 +102,18 @@
           }
         </ion-list>
 
+        <!-- No celular, Categorias e Perfil saem do header da Home e ficam aqui (abrem modal, não são rota). -->
+        <ion-list class="mobile-only action-list">
+          <ion-item lines="none" detail="false" button (click)="abrirCategorias()">
+            <ion-icon name="pricetags-outline" slot="start" aria-hidden="true"></ion-icon>
+            <ion-label>Categorias</ion-label>
+          </ion-item>
+          <ion-item lines="none" detail="false" button (click)="abrirPerfil()">
+            <ion-icon name="person-outline" slot="start" aria-hidden="true"></ion-icon>
+            <ion-label>Perfil</ion-label>
+          </ion-item>
+        </ion-list>
+
         @if (auth.currentUser(); as user) {
           <div class="user-box">
             <p class="username">{{ user.username }}</p>

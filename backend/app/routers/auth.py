@@ -7,25 +7,32 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.deps import get_current_user, get_current_user_allow_password_change, get_db, require_master
+from app.login_guard import login_guard
 from app.routers.attachments import delete_all_attachments_for_user
-from app.security import create_access_token, hash_password, verify_password
+from app.security import create_access_token, hash_password, verify_password, verify_password_dummy
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=schemas.Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    login_guard.check(form_data.username)
     user = db.query(models.User).filter(models.User.username == form_data.username).first()
+    if user is None:
+        # Mesmo custo de um bcrypt de verdade: sem isso a resposta rápida revelaria que o usuário não existe.
+        verify_password_dummy(form_data.password)
     if user is None or not verify_password(form_data.password, user.password_hash):
+        login_guard.register_failure(form_data.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuário ou senha inválidos",
         )
+    login_guard.register_success(form_data.username)
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     user.last_login_at = now
     user.last_activity_at = now
     db.commit()
-    token = create_access_token(subject=user.username)
+    token = create_access_token(user)
     return schemas.Token(access_token=token)
 
 
@@ -39,7 +46,7 @@ def switch_to_teste(_master: models.User = Depends(require_master), db: Session 
     teste_user = db.query(models.User).filter(models.User.username == "teste").first()
     if teste_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário 'teste' não encontrado")
-    token = create_access_token(subject=teste_user.username, impersonated=True)
+    token = create_access_token(teste_user, impersonated=True)
     return schemas.Token(access_token=token)
 
 
@@ -70,9 +77,7 @@ def update_me(
     return schemas.ProfileUpdateOut(
         # Mantém a marca de impersonação, senão editar o perfil da conta teste pelo switch
         # passaria a contar como atividade dela.
-        access_token=create_access_token(
-            subject=current_user.username, impersonated=getattr(request.state, "impersonated", False)
-        ),
+        access_token=create_access_token(current_user, impersonated=getattr(request.state, "impersonated", False)),
         user=schemas.UserOut.model_validate(current_user),
     )
 
@@ -89,8 +94,9 @@ def update_default_cash_percentage(
     return current_user
 
 
-@router.put("/me/password")
+@router.put("/me/password", response_model=schemas.PasswordChangeOut)
 def change_password(
+    request: Request,
     payload: schemas.PasswordChange,
     current_user: models.User = Depends(get_current_user_allow_password_change),
     db: Session = Depends(get_db),
@@ -101,8 +107,13 @@ def change_password(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A nova senha precisa ser diferente da atual")
     current_user.password_hash = hash_password(payload.new_password)
     current_user.must_change_password = False
+    current_user.token_version = (current_user.token_version or 0) + 1
     db.commit()
-    return {"detail": "Senha atualizada"}
+    db.refresh(current_user)
+    return schemas.PasswordChangeOut(
+        detail="Senha atualizada",
+        access_token=create_access_token(current_user, impersonated=getattr(request.state, "impersonated", False)),
+    )
 
 
 @router.post("/users", response_model=schemas.UserOut, status_code=status.HTTP_201_CREATED)
@@ -161,6 +172,8 @@ def update_user(
         # Reset feito pelo master: o master conhece a senha nova, então o dono troca no próximo
         # login. Não vale pro próprio master resetando a si mesmo (ele já escolheu a senha).
         user.must_change_password = user.id != master.id
+        # Derruba as sessões abertas com a senha antiga.
+        user.token_version = (user.token_version or 0) + 1
     if payload.modules is not None and user.role != "master":
         user.set_modules(payload.modules)
     db.commit()

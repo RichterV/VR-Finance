@@ -1,0 +1,282 @@
+@use "./mixins" as ds;
+
+// Peças visuais do dashboard da Home (cards de métrica, gráficos, barras de percentual, cabeçalho de
+// seção). Ficam no global, escopadas em .dashboard, porque são usadas pelas várias seções da Home
+// (home/sections/*), cada uma um componente com o próprio .scss isolado.
+.dashboard {
+  .dashboard-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .section-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    h2 .section-subtitle {
+      font-weight: 400;
+      color: var(--app-text-secondary);
+      font-size: 0.9rem;
+    }
+  }
+
+  .cutoff-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--app-text-secondary);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .link-inline {
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+    color: var(--ion-color-primary);
+    cursor: pointer;
+  }
+
+  .empty-state {
+    color: var(--app-text-secondary);
+
+    a {
+      color: var(--ion-color-primary);
+      font-weight: 600;
+    }
+  }
+
+  .inflacao-cesta {
+    color: var(--app-text-secondary);
+    font-size: 0.85rem;
+    margin: 0 0 14px;
+  }
+
+  .inflacao-segment {
+    max-width: 320px;
+    margin: 0 0 8px;
+  }
+
+  .inflacao-caption {
+    color: var(--app-text-secondary);
+    font-size: 0.8rem;
+    margin: 0 0 18px;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+  }
+
+  .stat-card {
+    @include ds.app-card;
+    padding: 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .stat-card--highlight {
+    background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
+    border: none;
+    box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.35);
+
+    // Texto escuro sobre o gradiente verde (não branco): --ion-color-primary-contrast já foi
+    // escolhido pra dar contraste alto nos dois tons do gradiente (shade e base).
+    .stat-label {
+      color: rgba(var(--ion-color-primary-contrast-rgb), 0.75);
+    }
+
+    .stat-value {
+      color: var(--ion-color-primary-contrast);
+    }
+
+    &.negativo {
+      background: linear-gradient(135deg, var(--ion-color-danger), var(--ion-color-danger-shade));
+      box-shadow: 0 4px 16px rgba(var(--ion-color-danger-rgb), 0.35);
+
+      // O vermelho já é escuro o bastante pra texto branco (--ion-color-danger-contrast).
+      .stat-label {
+        color: rgba(var(--ion-color-danger-contrast-rgb), 0.85);
+      }
+
+      .stat-value {
+        color: var(--ion-color-danger-contrast);
+      }
+    }
+  }
+
+  .stat-label {
+    font-size: 0.82rem;
+    color: var(--app-text-secondary);
+  }
+
+  .stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--app-text-primary);
+  }
+
+  .stat-percent {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--app-text-secondary);
+  }
+
+  .stat-card--highlight .stat-percent {
+    color: rgba(var(--ion-color-primary-contrast-rgb), 0.65);
+  }
+
+  .stat-card--highlight.negativo .stat-percent {
+    color: rgba(var(--ion-color-danger-contrast-rgb), 0.75);
+  }
+
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .chart-card {
+    @include ds.app-card;
+    padding: 24px;
+  }
+
+  .chart-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 12px;
+
+    h3 {
+      font-size: 1rem;
+    }
+  }
+
+  .chart-wrap {
+    position: relative;
+    height: 260px;
+  }
+
+  .chart-card--wide .chart-wrap {
+    height: 320px;
+  }
+
+  .percentuais-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .percentuais-col {
+    @include ds.app-card;
+    padding: 22px 24px;
+
+    h3 {
+      margin: 0 0 12px;
+      font-size: 0.95rem;
+      color: var(--app-text-secondary);
+    }
+  }
+
+  .percentual-row {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr) 50px;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    font-size: 0.85rem;
+    color: var(--app-text-primary);
+
+    @media (max-width: 480px) {
+      grid-template-columns: 80px minmax(0, 1fr) 44px;
+      gap: 8px;
+    }
+  }
+
+  .percentual-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .percentual-bar {
+    position: relative;
+    display: block;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+  }
+
+  .percentual-fill {
+    display: block;
+    height: 100%;
+    background: var(--ion-color-primary);
+    border-radius: 3px;
+  }
+
+  .percentual-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--app-surface, #1e293b);
+    border: 1px solid var(--app-surface-border);
+    color: var(--app-text-primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    padding: 4px 10px;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 5;
+  }
+
+  .percentual-bar:hover .percentual-tooltip,
+  .percentual-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .percentual-value {
+    text-align: right;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--app-text-secondary);
+  }
+
+  @media (max-width: 480px) {
+    .stat-card,
+    .chart-card,
+    .percentuais-col {
+      padding: 16px 18px;
+    }
+
+    .stat-value {
+      font-size: 1.2rem;
+    }
+
+    .chart-wrap {
+      height: 220px;
+    }
+  }
+}

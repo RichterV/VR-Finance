@@ -3,6 +3,7 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, status
+from sqlalchemy import extract
 
 # O servidor roda em UTC; "hoje" do app é sempre o dia no Brasil (senão, depois das 21h, o
 # backend já está no dia seguinte e rejeita a data de hoje enviada pelo frontend).
@@ -43,3 +44,34 @@ def resolve_launch_date(requested: date | None) -> date:
             detail="A data deve estar entre hoje e o fim do mês seguinte",
         )
     return requested
+
+
+def month_range(ano: int, mes: int) -> tuple[date, date]:
+    """(primeiro dia do mês, primeiro dia do mês seguinte) -- filtro por faixa usa o índice
+    (user_id, date), ao contrário de extract("month")."""
+    inicio = date(ano, mes, 1)
+    return inicio, add_months(inicio, 1)
+
+
+def year_range(ano: int) -> tuple[date, date]:
+    return date(ano, 1, 1), date(ano + 1, 1, 1)
+
+
+def period_filters(column, ano: int | None, mes: int | None) -> list:
+    """Condições de filtro por ano e/ou mês sobre uma coluna de data. Ano (com ou sem mês) vira
+    faixa de datas; só o mês ("esse mês em qualquer ano") não tem faixa e continua com extract."""
+    if ano is not None and mes is not None:
+        inicio, fim = month_range(ano, mes)
+        return [column >= inicio, column < fim]
+    if ano is not None:
+        inicio, fim = year_range(ano)
+        return [column >= inicio, column < fim]
+    if mes is not None:
+        return [extract("month", column) == mes]
+    return []
+
+
+def like_contains(term: str) -> str:
+    """Padrão de ILIKE "contém", com os curingas do usuário escapados -- usar com escape="\\"."""
+    escaped = term.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"

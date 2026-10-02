@@ -10,6 +10,7 @@
  */
 
 @use "./theme/mixins" as ds;
+@use "./theme/dashboard";
 
 /* Core CSS required for Ionic components to work properly */
 @import "@ionic/angular/css/core.css";
@@ -583,7 +584,7 @@ app-sort-select {
   flex-shrink: 0;
   padding: 1px 8px;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--app-text-secondary);
   border: 1px solid var(--app-surface-border);
@@ -713,5 +714,67 @@ ion-popover.launch-date-popover {
     --background-rgb: 30, 41, 59;
     --title-color: var(--app-text-secondary);
     color: var(--ion-text-color);
+  }
+}
+
+/**
+ * Visibilidade por largura: .desktop-only some no celular (< 768px) e .mobile-only só aparece nele
+ * (botão flutuante e itens Categorias/Perfil do menu lateral).
+ */
+@media (max-width: 767px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+/** Toast de "Desfazer" (shared/undo-delete.service.ts): cartão escuro do tema, botão verde. */
+ion-toast.undo-toast {
+  --background: var(--app-surface);
+  --color: var(--app-text-primary);
+  --button-color: var(--ion-color-primary);
+  --border-color: var(--app-surface-border);
+  --border-style: solid;
+  --border-width: 1px;
+  --border-radius: 12px;
+  --box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-weight: 500;
+
+  &::part(button) {
+    color: var(--ion-color-primary);
+    font-weight: 700;
+  }
+}
+
+/**
+ * Movimento reduzido (configuração de acessibilidade do sistema): animações e transições viram
+ * instantâneas -- inclui o pulso da digital, a entrada dos cards e os slides (o slide dos side-modals
+ * é tratado em modals/side-modal.animations.ts, que não passa por CSS).
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/** "Como calculamos" da projeção do fim do mês (home/sections/mensal-section). */
+ion-popover.forecast-popover {
+  --background: var(--app-surface);
+  --box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --width: min(340px, calc(100vw - 32px));
+
+  &::part(content) {
+    border: 1px solid var(--app-surface-border);
+    border-radius: 14px;
   }
 }

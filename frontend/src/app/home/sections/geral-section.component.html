@@ -1,0 +1,43 @@
+@switch (resumo.state()) {
+  @case ('loading') {
+    <app-section-skeleton [charts]="2"></app-section-skeleton>
+  }
+  @case ('error') {
+    <app-error-state title="Não foi possível carregar o relatório geral" (retry)="carregar()"></app-error-state>
+  }
+  @default {
+    @if (resumo.data(); as rg) {
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3>Totais gerais</h3>
+          </div>
+          <div class="chart-wrap">
+            <canvas baseChart role="img" [attr.aria-label]="labels().totais" [type]="'bar'" [data]="totaisGeraisChartData()" [options]="totaisOptions()"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3>Gastos, receita e caixa por ano</h3>
+          </div>
+          <div class="chart-wrap">
+            <canvas baseChart role="img" [attr.aria-label]="labels().porAno" [type]="'bar'" [data]="porAnoChartData()" [options]="geralOptions()"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card chart-card--wide">
+        <div class="chart-card-header">
+          <h3>Gastos, receita e caixa por mês (tendência entre os anos)</h3>
+        </div>
+        <div class="chart-wrap">
+          <canvas baseChart role="img" [attr.aria-label]="labels().porMes" [type]="'bar'" [data]="porMesChartData()" [options]="geralOptions()"></canvas>
+        </div>
+      </div>
+
+      @if (!rg.anos.length) {
+        <p class="empty-state">Nenhum lançamento encontrado ainda.</p>
+      }
+    }
+  }
+}

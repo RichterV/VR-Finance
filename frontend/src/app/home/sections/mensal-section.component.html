@@ -1,0 +1,130 @@
+@switch (resumo.state()) {
+  @case ('loading') {
+    <app-section-skeleton [cards]="6"></app-section-skeleton>
+  }
+  @case ('error') {
+    <app-error-state title="Não foi possível carregar o resumo mensal" (retry)="carregar()"></app-error-state>
+  }
+  @default {
+    @if (resumo.data(); as rm) {
+      <div class="stats-grid">
+        <div class="stat-card stat-card--highlight" [class.negativo]="rm.disponivel_para_gastar < 0">
+          <span class="stat-label">Disponível pra gastar</span>
+          <span class="stat-value">{{ currency(rm.disponivel_para_gastar) }}</span>
+        </div>
+
+        @if (ehMesAtual() && previsao.data(); as pv) {
+          <div class="stat-card forecast-card" [class.negativo]="pv.saldo_previsto < 0">
+            <span class="stat-label">Projeção do fim do mês</span>
+            <span class="stat-value forecast-value">{{ currency(pv.saldo_previsto) }}</span>
+            @if (pv.saldo_min !== pv.saldo_max) {
+              <span class="forecast-range">entre {{ currency(pv.saldo_min) }} e {{ currency(pv.saldo_max) }}</span>
+            }
+            @if (!pv.historico_suficiente) {
+              <span class="forecast-note">
+                <ion-icon name="information-circle-outline" aria-hidden="true"></ion-icon>
+                Poucos meses de histórico: projeção aproximada.
+              </span>
+            }
+            <button type="button" class="forecast-toggle" id="forecast-calc-trigger">
+              Como calculamos
+              <ion-icon name="chevron-down-outline" aria-hidden="true"></ion-icon>
+            </button>
+            <!-- Popover em vez de expandir o card: expandir esticava a linha inteira de cards. -->
+            <ion-popover trigger="forecast-calc-trigger" triggerAction="click" side="bottom" alignment="start" cssClass="forecast-popover">
+              <ng-template>
+                <div class="forecast-pop">
+                  <dl class="forecast-breakdown">
+                    <div>
+                      <dt>Receita{{ pv.receita_estimada ? ' (estimada)' : '' }}</dt>
+                      <dd>{{ currency(pv.receita) }}</dd>
+                    </div>
+                    <div>
+                      <dt>− Já lançado no mês</dt>
+                      <dd>{{ currency(pv.comprometido) }}</dd>
+                    </div>
+                    <div>
+                      <dt>− Variável que ainda deve sair</dt>
+                      <dd>{{ currency(pv.variavel_restante) }}</dd>
+                    </div>
+                    <div>
+                      <dt>− Caixa pretendido</dt>
+                      <dd>{{ currency(pv.caixa_pretendido) }}</dd>
+                    </div>
+                    <div class="total">
+                      <dt>= Sobra prevista</dt>
+                      <dd>{{ currency(pv.saldo_previsto) }}</dd>
+                    </div>
+                  </dl>
+                  <p class="forecast-help">
+                    O gasto variável que falta segue o seu ritmo dos últimos 12 meses até o dia {{ pv.dia }}.
+                    @if (pv.receita_estimada) {
+                      Sem receita lançada no mês, ela é estimada pela mediana dos últimos 6 meses.
+                    }
+                  </p>
+                </div>
+              </ng-template>
+            </ion-popover>
+          </div>
+        }
+
+        <div class="stat-card">
+          <span class="stat-label">Gastos do mês</span>
+          <span class="stat-value">{{ currency(rm.total_gastos) }}</span>
+          @if (!valoresOcultos()) {
+            <app-sparkline [values]="series().gastos" [color]="colors.gastos"></app-sparkline>
+          }
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Essenciais</span>
+          <span class="stat-value"
+            >{{ currency(rm.total_essenciais) }}
+            <span class="stat-percent">{{ percentParen(rm.total_essenciais, rm.total_gastos) }}</span></span
+          >
+          @if (!valoresOcultos()) {
+            <app-sparkline [values]="series().essencial" [color]="colors.essencial"></app-sparkline>
+          }
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Não essenciais</span>
+          <span class="stat-value"
+            >{{ currency(rm.total_nao_essenciais) }}
+            <span class="stat-percent">{{ percentParen(rm.total_nao_essenciais, rm.total_gastos) }}</span></span
+          >
+          @if (!valoresOcultos()) {
+            <app-sparkline [values]="series().naoEssencial" [color]="colors.naoEssencial"></app-sparkline>
+          }
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Qtd. de gastos</span>
+          <span class="stat-value">{{ count(rm.quantidade_gastos) }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Qtd. de receitas</span>
+          <span class="stat-value">{{ count(rm.quantidade_receitas) }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Média por gasto</span>
+          <span class="stat-value">{{ currency(rm.media_gastos_lancamento) }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Média por receita</span>
+          <span class="stat-value">{{ currency(rm.media_receitas_lancamento) }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Caixa pretendido</span>
+          <span class="stat-value">{{ currency(rm.total_caixa_pretendido) }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Caixa real</span>
+          <span class="stat-value">{{ currency(rm.total_caixa_real) }}</span>
+          @if (!valoresOcultos()) {
+            <app-sparkline [values]="series().caixa" [color]="colors.caixa"></app-sparkline>
+          }
+        </div>
+      </div>
+
+      <app-percentuais-itens [itens]="rm.percentuais_itens" [valoresOcultos]="valoresOcultos()"></app-percentuais-itens>
+    }
+  }
+}

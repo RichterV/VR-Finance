@@ -1,17 +1,22 @@
 import csv
 import io
+import os
+import tempfile
 import zipfile
 from collections import defaultdict
 from datetime import date
 from pathlib import Path
 from typing import Any, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
+from sqlalchemy.orm import Session, joinedload
+from starlette.background import BackgroundTask
 
 from app import models
 from app.config import settings
 from app.deps import get_current_user, get_db, require_module
+from app.routers.attachments import safe_filename
 from app.utils import today_local
 
 router = APIRouter(
@@ -19,6 +24,10 @@ router = APIRouter(
     tags=["export"],
     dependencies=[Depends(require_module("exportar_dados"))],
 )
+
+# Conteúdo do zip: nome dentro do zip -> bytes (CSV gerado) ou Path (anexo, lido do disco só na hora
+# de gravar o zip, em vez de carregar todos os arquivos na memória de uma vez).
+ZipEntries = dict[str, "bytes | Path"]
 
 Modulo = Literal["gastos", "receitas", "veiculos", "categorias"]
 
@@ -70,11 +79,14 @@ def _attachments_by_key(db: Session, user_id: int, entity_type: str) -> dict[str
 
 
 def _export_filename(entity_type: str, attachment: models.Attachment) -> str:
-    return f"{entity_type}_{attachment.entity_id}_{attachment.id}_{attachment.original_filename}"
+    # safe_filename: anexos gravados antes da sanitização no upload podem ter "../" no nome, o que
+    # viraria uma entrada perigosa ao extrair o zip.
+    nome = safe_filename(attachment.original_filename, attachment.stored_filename)
+    return f"{entity_type}_{attachment.entity_id}_{attachment.id}_{nome}"
 
 
 def _anexos_cell_and_files(
-    attachments: list[models.Attachment], entity_type: str, files: dict[str, bytes]
+    attachments: list[models.Attachment], entity_type: str, files: ZipEntries
 ) -> str:
     """Monta a celula "anexos" (nomes separados por virgula) e adiciona os arquivos lidos do
     disco em `files` (mutado in-place). Anexo cujo arquivo sumiu do disco (raro -- ex: limpeza
@@ -85,27 +97,37 @@ def _anexos_cell_and_files(
         if not disk_path.is_file():
             continue
         nome_exportado = _export_filename(entity_type, attachment)
-        files[f"anexos/{nome_exportado}"] = disk_path.read_bytes()
+        files[f"anexos/{nome_exportado}"] = disk_path
         nomes.append(nome_exportado)
     return ",".join(nomes)
 
 
-def _build_zip(files: dict[str, bytes]) -> bytes:
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        for name, content in files.items():
-            zf.writestr(name, content)
-    return buf.getvalue()
+def _build_zip(files: ZipEntries) -> str:
+    """Grava o zip num arquivo temporário (apagado depois do envio) e devolve o caminho -- os anexos
+    entram direto do disco, em blocos, sem passar inteiros pela memória."""
+    fd, tmp_path = tempfile.mkstemp(prefix="vrfinance-export-", suffix=".zip")
+    try:
+        with os.fdopen(fd, "wb") as tmp, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zf:
+            for name, content in files.items():
+                if isinstance(content, Path):
+                    zf.write(content, name)
+                else:
+                    zf.writestr(name, content)
+    except Exception:
+        os.unlink(tmp_path)
+        raise
+    return tmp_path
 
 
-def _export_gastos(db: Session, user: models.User) -> dict[str, bytes]:
+def _export_gastos(db: Session, user: models.User) -> ZipEntries:
     rows = (
         db.query(models.Gasto)
+        .options(joinedload(models.Gasto.item))
         .filter(models.Gasto.user_id == user.id)
         .order_by(models.Gasto.date.asc(), models.Gasto.id.asc())
         .all()
     )
-    files: dict[str, bytes] = {}
+    files: ZipEntries = {}
     anexos_por_chave = _attachments_by_key(db, user.id, "gasto")
 
     csv_rows = []
@@ -147,14 +169,14 @@ def _export_gastos(db: Session, user: models.User) -> dict[str, bytes]:
     return files
 
 
-def _export_receitas(db: Session, user: models.User) -> dict[str, bytes]:
+def _export_receitas(db: Session, user: models.User) -> ZipEntries:
     rows = (
         db.query(models.Receita)
         .filter(models.Receita.user_id == user.id)
         .order_by(models.Receita.date.asc(), models.Receita.id.asc())
         .all()
     )
-    files: dict[str, bytes] = {}
+    files: ZipEntries = {}
     anexos_por_chave = _attachments_by_key(db, user.id, "receita")
 
     csv_rows = []
@@ -178,7 +200,7 @@ def _export_receitas(db: Session, user: models.User) -> dict[str, bytes]:
     return files
 
 
-def _export_veiculos(db: Session, user: models.User) -> dict[str, bytes]:
+def _export_veiculos(db: Session, user: models.User) -> ZipEntries:
     veiculos = (
         db.query(models.Vehicle)
         .filter(models.Vehicle.user_id == user.id)
@@ -192,7 +214,7 @@ def _export_veiculos(db: Session, user: models.User) -> dict[str, bytes]:
         .all()
     )
 
-    files: dict[str, bytes] = {}
+    files: ZipEntries = {}
 
     veiculos_rows = [
         {
@@ -231,7 +253,7 @@ def _export_veiculos(db: Session, user: models.User) -> dict[str, bytes]:
     return files
 
 
-def _export_categorias(db: Session, user: models.User) -> dict[str, bytes]:
+def _export_categorias(db: Session, user: models.User) -> ZipEntries:
     # Ativas e inativas de proposito -- e' uma copia de backup, esconder as soft-deleted perderia
     # o historico de categorias ja usadas em gastos antigos.
     rows = (
@@ -281,10 +303,11 @@ def export_modulo(
     if required is not None and required not in current_user.modules:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Módulo não habilitado para este usuário")
     files = _BUILDERS[modulo](db, current_user)
-    zip_bytes = _build_zip(files)
+    zip_path = _build_zip(files)
     filename = f"export_{modulo}_{today_local().isoformat()}.zip"
-    return Response(
-        content=zip_bytes,
+    return FileResponse(
+        zip_path,
         media_type="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        filename=filename,
+        background=BackgroundTask(os.unlink, zip_path),
     )

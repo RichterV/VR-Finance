@@ -1,3 +1,4 @@
+import '../../shared/chart-setup';
 import { ChartConfiguration } from 'chart.js';
 
 import { CHART_GRID_COLOR, CHART_TEXT_COLOR } from '../../home/dashboard-charts';

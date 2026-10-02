@@ -39,10 +39,10 @@ import { DownloadFileService } from './download-file.service';
               <p>{{ formatFileSize(file.size_bytes) }}</p>
             </ion-label>
             <ion-buttons slot="end">
-              <ion-button [disabled]="downloadingId() === file.id" (click)="preview(file)">
+              <ion-button aria-label="Visualizar" [disabled]="downloadingId() === file.id" (click)="preview(file)">
                 <ion-icon slot="icon-only" name="eye-outline"></ion-icon>
               </ion-button>
-              <ion-button [disabled]="downloadingId() === file.id" (click)="download(file)">
+              <ion-button aria-label="Baixar" [disabled]="downloadingId() === file.id" (click)="download(file)">
                 <ion-icon slot="icon-only" name="download-outline"></ion-icon>
               </ion-button>
               @if (canShare) {
@@ -72,7 +72,7 @@ import { DownloadFileService } from './download-file.service';
       }
 
       .file-type span {
-        font-size: 0.65rem;
+        font-size: 0.7rem;
         font-weight: 600;
         letter-spacing: 0.04em;
         color: var(--app-text-secondary);

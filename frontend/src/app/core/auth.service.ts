@@ -86,14 +86,19 @@ export class AuthService {
       .pipe(tap((user) => this.currentUserSignal.set(user)));
   }
 
-  changePassword(currentPassword: string, newPassword: string): Observable<{ detail: string }> {
+  /**
+   * A troca revoga todos os tokens anteriores (os outros aparelhos caem) -- o backend devolve um token
+   * novo pra este aparelho continuar logado.
+   */
+  changePassword(currentPassword: string, newPassword: string): Observable<{ detail: string; access_token: string }> {
     return this.http
-      .put<{ detail: string }>(`${environment.apiUrl}/auth/me/password`, {
+      .put<{ detail: string; access_token: string }>(`${environment.apiUrl}/auth/me/password`, {
         current_password: currentPassword,
         new_password: newPassword,
       })
       .pipe(
-        tap(() => {
+        tap((res) => {
+          localStorage.setItem(TOKEN_KEY, res.access_token);
           const user = this.currentUserSignal();
           if (!user) return;
           void updateSavedPassword(user.username, newPassword);

@@ -48,6 +48,9 @@ def test_changing_password_clears_the_flag(client, master_headers):
         headers=headers,
     )
     assert response.status_code == 200
+    # A troca revoga o token antigo e devolve um novo.
+    assert client.get("/auth/me", headers=headers).status_code == 401
+    headers = {"Authorization": f"Bearer {response.json()['access_token']}"}
 
     assert client.get("/auth/me", headers=headers).json()["must_change_password"] is False
     assert client.get("/gastos", headers=headers).status_code == 200

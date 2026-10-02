@@ -1,5 +1,5 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import {
   AlertController,
   IonBackButton,
@@ -34,6 +34,9 @@ import { MESES_COMPLETOS } from '../../shared/months';
 import { DEFAULT_SORT_KEY, SortOption, SortState, sortItems, toggleSortState, UNSORTED } from '../../shared/sortable';
 import { SortSelectComponent } from '../../shared/sort-select.component';
 import { SortThComponent } from '../../shared/sort-th.component';
+import { UndoDeleteService } from '../../shared/undo-delete.service';
+import { HomeRefreshService } from '../../core/home-refresh.service';
+import { PrioDotComponent } from '../../shared/prio-dot.component';
 
 function formatBRL(value: number): string {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -46,6 +49,7 @@ const PAGE_SIZE = 25;
   templateUrl: './dados.page.html',
   styleUrls: ['./dados.page.scss'],
   imports: [
+    PrioDotComponent,
     CurrencyPipe,
     DatePipe,
     IonHeader,
@@ -68,6 +72,8 @@ const PAGE_SIZE = 25;
   ],
 })
 export class DadosPage {
+  private readonly undoDelete = inject(UndoDeleteService);
+  private readonly homeRefresh = inject(HomeRefreshService);
   readonly meses = MESES_COMPLETOS;
   readonly anos: number[];
 
@@ -132,6 +138,11 @@ export class DadosPage {
    * reaparece, não só na primeira criação da instância. Sem isso, trocar de conta mostrava os dados
    * da conta anterior até um F5 manual.
    */
+  /** Exclusões com "Desfazer" ainda pendentes são confirmadas ao sair da página. */
+  ionViewWillLeave(): void {
+    this.undoDelete.flushAll();
+  }
+
   ionViewWillEnter(): void {
     this.reload();
   }
@@ -328,26 +339,18 @@ export class DadosPage {
     await alert.present();
   }
 
-  async excluirGasto(gasto: Gasto): Promise<void> {
-    const alert = await this.alertCtrl.create({
-      header: 'Excluir gasto',
-      message: `Remover o gasto "${gasto.item_name}" de ${formatBRL(gasto.value)}? Essa ação não pode ser desfeita.`,
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Excluir',
-          role: 'destructive',
-          handler: () => {
-            this.gastosService.remove(gasto.id).subscribe(async () => {
-              this.reload();
-              const toast = await this.toastCtrl.create({ message: 'Gasto excluído.', duration: 2000, color: 'success' });
-              await toast.present();
-            });
-          },
-        },
-      ],
+  excluirGasto(gasto: Gasto): void {
+    this.undoDelete.schedule({
+      message: `Gasto "${gasto.item_name}" de ${formatBRL(gasto.value)} excluído.`,
+      hide: () => {
+        this.gastos.update((lista) => lista.filter((g) => g.id !== gasto.id));
+        this.totalGastos.update((n) => n - 1);
+      },
+      restore: () => this.reload(),
+      commit: () => this.gastosService.remove(gasto.id),
+      onCommitted: () => this.homeRefresh.request(),
+      errorMessage: 'Erro ao excluir o gasto.',
     });
-    await alert.present();
   }
 
   async editarReceita(receita: Receita): Promise<void> {
@@ -363,26 +366,18 @@ export class DadosPage {
     this.reload();
   }
 
-  async excluirReceita(receita: Receita): Promise<void> {
-    const alert = await this.alertCtrl.create({
-      header: 'Excluir receita',
-      message: `Remover a receita de ${formatBRL(receita.value)}? Essa ação não pode ser desfeita.`,
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Excluir',
-          role: 'destructive',
-          handler: () => {
-            this.receitasService.remove(receita.id).subscribe(async () => {
-              this.reload();
-              const toast = await this.toastCtrl.create({ message: 'Receita excluída.', duration: 2000, color: 'success' });
-              await toast.present();
-            });
-          },
-        },
-      ],
+  excluirReceita(receita: Receita): void {
+    this.undoDelete.schedule({
+      message: `Receita de ${formatBRL(receita.value)} excluída.`,
+      hide: () => {
+        this.receitas.update((lista) => lista.filter((r) => r.id !== receita.id));
+        this.totalReceitas.update((n) => n - 1);
+      },
+      restore: () => this.reload(),
+      commit: () => this.receitasService.remove(receita.id),
+      onCommitted: () => this.homeRefresh.request(),
+      errorMessage: 'Erro ao excluir a receita.',
     });
-    await alert.present();
   }
 
   toggleGastosSort(column: string): void {

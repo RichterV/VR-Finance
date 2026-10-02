@@ -8,6 +8,7 @@ from app.config import settings
 from app.database import Base, engine
 from app.modules import OPTIONAL_MODULES
 from app.routers import (
+    analytics,
     attachments,
     auth,
     backup_status,
@@ -74,6 +75,10 @@ def _migrate_schema() -> None:
             conn.execute(text("UPDATE users SET last_activity_at = last_login_at"))
             conn.commit()
 
+        if "token_version" not in user_cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0"))
+            conn.commit()
+
         if not _had_user_modules:
             # Tabela recém-criada: usuários que já existiam antes do controle de módulos ficam com
             # todos os módulos habilitados (não perdem nada que já usavam). Usuários criados depois
@@ -86,6 +91,15 @@ def _migrate_schema() -> None:
                         {"u": user_id, "k": key},
                     )
             conn.commit()
+
+        # Índices (user_id, date) -- create_all só cria índice junto com uma tabela nova, então bancos
+        # que já existiam precisam disso. IF NOT EXISTS deixa idempotente.
+        # Só tabelas que existem neste banco (o espelho público não tem operacoes_bolsa/devedores).
+        existing_tables = set(inspect(conn).get_table_names())
+        for table in ("gastos", "receitas", "operacoes_bolsa", "devedores", "vehicle_services"):
+            if table in existing_tables:
+                conn.execute(text(f"CREATE INDEX IF NOT EXISTS ix_{table}_user_date ON {table} (user_id, date)"))
+        conn.commit()
 
         # Versões de dados via PRAGMA user_version (0 = nenhuma aplicada), pra migrações que só
         # podem rodar uma vez -- ao contrário de ADD COLUMN, não dá pra detectar pelo schema.
@@ -103,11 +117,38 @@ def _migrate_schema() -> None:
             conn.execute(text("PRAGMA user_version = 1"))
             conn.commit()
 
+        if user_version < 2:
+            # 2: valores em R$ passaram a ser arredondados a centavos na entrada (schemas.Money); os já
+            # gravados (ex: cash_value 411.10848) são arredondados uma vez aqui.
+            money_columns = {
+                "gastos": ("value",),
+                "receitas": ("value", "cash_value"),
+                "devedores": ("value",),
+                "vehicle_services": ("value",),
+                "operacoes_bolsa": ("value_brl", "value_usd"),
+            }
+            for table, columns in money_columns.items():
+                if table not in existing_tables:
+                    continue
+                for column in columns:
+                    conn.execute(text(f"UPDATE {table} SET {column} = ROUND({column}, 2) WHERE {column} IS NOT NULL"))
+            conn.execute(text("PRAGMA user_version = 2"))
+            conn.commit()
+
 
 _migrate_schema()
 Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="VR Finance API")
+
+
+@app.middleware("http")
+async def _security_headers(request, call_next):
+    response = await call_next(request)
+    # Navegador nunca "adivinha" outro tipo além do Content-Type informado (ex: anexo servido como HTML).
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -127,6 +168,7 @@ app.include_router(attachments.router)
 app.include_router(backup_status.router)
 app.include_router(export.router)
 app.include_router(notificacoes.router)
+app.include_router(analytics.router)
 
 
 @app.get("/health")
