@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app import models, schemas
 from app.deps import get_current_user, get_db
+from app.recorrencias import create_from_launch
 from app.routers.attachments import delete_attachments_for_key
 from app.utils import add_months, like_contains, period_filters, resolve_launch_date, today_local
 
@@ -79,6 +80,8 @@ def create_gasto(
 
     if payload.is_installment and not payload.installment_count:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Informe o número de parcelas")
+    if payload.is_installment and payload.recorrente:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Um gasto parcelado não pode ser recorrente")
 
     start_date = resolve_launch_date(payload.date)
     rows: list[models.Gasto] = []
@@ -114,6 +117,8 @@ def create_gasto(
         )
 
     db.add_all(rows)
+    if payload.recorrente:
+        create_from_launch(db, rows[0], payload.recorrencia_dia)
     db.commit()
     for row in rows:
         db.refresh(row)

@@ -39,10 +39,10 @@ describe('IndicadoresSectionComponent', () => {
     expect(el.textContent).not.toContain('1.500,00');
   });
 
-  it('lists the detected fixed costs on demand', () => {
-    const { el, fixture } = setup();
-    (el.querySelector('.kpi-toggle') as HTMLButtonElement).click();
-    fixture.detectChanges();
-    expect(el.textContent).toContain('Internet');
+  it('opens the detected fixed costs in a popover instead of expanding the card', () => {
+    const { el } = setup();
+    const toggle = el.querySelector('.kpi-toggle') as HTMLButtonElement;
+    expect(toggle.textContent).toContain('Ver 1 conta');
+    expect(el.querySelector('ion-popover')?.getAttribute('trigger')).toBe(toggle.id);
   });
 });

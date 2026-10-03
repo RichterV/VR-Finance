@@ -43,26 +43,34 @@
           <span class="stat-value">{{ pct(ind.custo_fixo.pct) }}</span>
           <span class="kpi-context">{{ currency(ind.custo_fixo.total) }}/mês em contas que se repetem, sobre a receita</span>
           @if (ind.custo_fixo.itens.length) {
-            <button
-              type="button"
-              class="kpi-toggle"
-              [attr.aria-expanded]="mostrarFixos()"
-              (click)="mostrarFixos.set(!mostrarFixos())"
-            >
-              {{ mostrarFixos() ? 'Ocultar' : 'Ver' }} {{ ind.custo_fixo.itens.length }}
-              {{ ind.custo_fixo.itens.length === 1 ? 'conta' : 'contas' }}
-              <ion-icon [name]="mostrarFixos() ? 'chevron-up-outline' : 'chevron-down-outline'" aria-hidden="true"></ion-icon>
+            <button type="button" class="kpi-toggle" id="fixos-trigger">
+              Ver {{ ind.custo_fixo.itens.length }} {{ ind.custo_fixo.itens.length === 1 ? 'conta' : 'contas' }}
+              <ion-icon name="chevron-down-outline" aria-hidden="true"></ion-icon>
             </button>
-            @if (mostrarFixos()) {
-              <ul class="fixos-list">
-                @for (item of ind.custo_fixo.itens; track item.descricao) {
-                  <li>
-                    <span class="fixo-nome">{{ item.descricao }} <small>{{ item.item_name }}</small></span>
-                    <span class="fixo-valor">{{ currency(item.valor) }}</span>
-                  </li>
-                }
-              </ul>
-            }
+            <!-- Balão em vez de expandir o card: na web, expandir esticava a linha inteira de cards. -->
+            <ion-popover trigger="fixos-trigger" triggerAction="click" side="bottom" alignment="start" cssClass="forecast-popover">
+              <ng-template>
+                <div class="fixos-pop">
+                  <span class="fixos-pop-title">Contas que se repetem</span>
+                  <ul class="fixos-list">
+                    @for (item of ind.custo_fixo.itens; track item.descricao) {
+                      <li>
+                        <span class="fixo-nome">{{ item.descricao }} <small>{{ item.item_name }}</small></span>
+                        <span class="fixo-valor">{{ currency(item.valor) }}</span>
+                      </li>
+                    }
+                    <li class="total">
+                      <span class="fixo-nome">Total por mês</span>
+                      <span class="fixo-valor">{{ currency(ind.custo_fixo.total) }}</span>
+                    </li>
+                  </ul>
+                  <p class="fixos-help">
+                    Mesma descrição, uma vez por mês, em 3 dos últimos 4 meses, com valor estável. Compras
+                    parceladas ficam de fora, mesmo lançadas como avulsas.
+                  </p>
+                </div>
+              </ng-template>
+            </ion-popover>
           }
         </div>
 

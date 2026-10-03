@@ -1,7 +1,7 @@
-import { Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
-import { IonIcon } from '@ionic/angular';
+import { Component, DestroyRef, computed, effect, inject, input, output, untracked } from '@angular/core';
+import { IonIcon, IonPopover } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { chevronDownOutline, chevronUpOutline, trendingDownOutline, trendingUpOutline } from 'ionicons/icons';
+import { chevronDownOutline, trendingDownOutline, trendingUpOutline } from 'ionicons/icons';
 
 import { ErrorStateComponent } from '../../shared/error-state.component';
 import { MESES_ABREV } from '../../shared/months';
@@ -19,7 +19,7 @@ const PCT = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFr
   selector: 'app-indicadores-section',
   templateUrl: './indicadores-section.component.html',
   styleUrls: ['./indicadores-section.component.scss'],
-  imports: [IonIcon, SectionSkeletonComponent, ErrorStateComponent, SparklineComponent],
+  imports: [IonIcon, IonPopover, SectionSkeletonComponent, ErrorStateComponent, SparklineComponent],
 })
 export class IndicadoresSectionComponent {
   readonly corte = input<Corte | undefined>(undefined);
@@ -30,7 +30,6 @@ export class IndicadoresSectionComponent {
   private readonly resumoService = inject(ResumoService);
   readonly indicadores = new SectionLoader<Indicadores>(inject(DestroyRef), () => this.settled.emit());
 
-  readonly mostrarFixos = signal(false);
   readonly colors = { poupanca: COLOR_CAIXA_REAL, essencial: COLOR_ESSENCIAL };
 
   readonly poupancaSerie = computed(() => this.indicadores.data()?.poupanca.serie.map((p) => p.valor) ?? []);
@@ -43,7 +42,7 @@ export class IndicadoresSectionComponent {
   });
 
   constructor() {
-    addIcons({ chevronDownOutline, chevronUpOutline, trendingUpOutline, trendingDownOutline });
+    addIcons({ chevronDownOutline, trendingUpOutline, trendingDownOutline });
     effect(() => {
       const corte = this.corte();
       this.reload();

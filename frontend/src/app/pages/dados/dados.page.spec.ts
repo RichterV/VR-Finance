@@ -20,6 +20,7 @@ function gasto(overrides: Partial<Gasto>): Gasto {
     installment_count: null,
     installment_number: null,
     installment_group_id: null,
+    recorrencia_id: null,
     date: '2026-01-01',
     created_at: '2026-01-01',
     ...overrides,

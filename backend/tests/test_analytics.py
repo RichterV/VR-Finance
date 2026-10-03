@@ -3,6 +3,7 @@ from datetime import date
 import pytest
 
 from app import analytics, models
+from app.utils import add_months
 from tests.conftest import _create_user, _login_headers
 
 HOJE = date(2026, 9, 15)
@@ -217,6 +218,48 @@ def test_custo_fixo_detecta_recorrencia(client, auth_headers, db_session, user):
 
     assert [i["descricao"] for i in f["itens"]] == ["Internet"]
     assert f["total"] == 120
+
+
+def test_custo_fixo_ignora_series_com_fim(client, auth_headers, db_session, user):
+    casa = _item(db_session, user, "Casa", "essencial")
+    for mes in (6, 7, 8, 9):
+        _receita(db_session, user, 1000, date(2026, mes, 1))
+        _gasto(db_session, user, casa, 99, date(2026, mes, 5), description="Aluguel")
+    for i in range(12):  # 12x lançado como avulso: vai até 2027
+        _gasto(db_session, user, casa, 62.49, add_months(date(2026, 4, 21), i), description="HD externo")
+    for mes in (5, 6, 7, 8):  # parou em agosto
+        _gasto(db_session, user, casa, 24.98, date(2026, mes, 3), description="Camiseta")
+
+    f = _indicadores(client, auth_headers)["custo_fixo"]
+
+    assert [i["descricao"] for i in f["itens"]] == ["Aluguel"]
+
+
+def test_custo_fixo_mes_em_andamento_espera_o_dia_de_costume(client, auth_headers, db_session, user, monkeypatch):
+    casa = _item(db_session, user, "Casa", "essencial")
+    for mes in (6, 7, 8):
+        _receita(db_session, user, 1000, date(2026, mes, 1))
+        _gasto(db_session, user, casa, 80, date(2026, mes, 20), description="Condomínio")
+
+    monkeypatch.setattr(analytics, "today_local", lambda: date(2026, 9, 10))
+    assert [i["descricao"] for i in _indicadores(client, auth_headers)["custo_fixo"]["itens"]] == ["Condomínio"]
+
+    monkeypatch.setattr(analytics, "today_local", lambda: date(2026, 9, 25))
+    assert _indicadores(client, auth_headers)["custo_fixo"]["itens"] == []
+
+
+def test_custo_fixo_ligado_a_recorrencia_sempre_conta(client, auth_headers, db_session, user):
+    casa = _item(db_session, user, "Casa", "essencial")
+    rec = models.Recorrencia(user_id=user.id, tipo="gasto", priority="essencial", item_id=casa.id, value=50,
+                             dia=5, proximo_mes=date(2027, 2, 1))
+    db_session.add(rec)
+    db_session.commit()
+    for i in range(8):  # lançado até 2027 (ex: pago adiantado), mas é recorrência
+        _gasto(db_session, user, casa, 50, add_months(date(2026, 6, 5), i), description="Academia", recorrencia_id=rec.id)
+
+    f = _indicadores(client, auth_headers)["custo_fixo"]
+
+    assert [i["descricao"] for i in f["itens"]] == ["Academia"]
 
 
 def test_essencial_tendencia(client, auth_headers, db_session, user):

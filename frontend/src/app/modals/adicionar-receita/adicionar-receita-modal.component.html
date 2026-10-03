@@ -54,6 +54,12 @@
 
     <app-launch-date-field formControlName="date"></app-launch-date-field>
 
+    <app-recurrence-field
+      [enabled]="form.controls.recorrente"
+      [day]="form.controls.recorrenciaDia"
+      [launchDate]="form.value.date ?? ''"
+    ></app-recurrence-field>
+
     <ion-item>
       <ion-textarea
         label="Descrição"

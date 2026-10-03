@@ -136,6 +136,7 @@ def _reset_user_data(db, user: models.User) -> None:
     db.query(models.Vehicle).filter(models.Vehicle.user_id == user.id).delete()
     db.query(models.Gasto).filter(models.Gasto.user_id == user.id).delete()
     db.query(models.Receita).filter(models.Receita.user_id == user.id).delete()
+    db.query(models.Recorrencia).filter(models.Recorrencia.user_id == user.id).delete()
     db.query(models.DropdownOption).filter(models.DropdownOption.user_id == user.id).delete()
     # Resumos mensais antigos refletiam a base anterior -- o próximo é gerado de novo sob demanda.
     db.query(models.Notificacao).filter(models.Notificacao.user_id == user.id).delete()
@@ -272,6 +273,42 @@ def _seed_receitas(db, user, months: list[date], today: date, rng: random.Random
     return receitas
 
 
+def _seed_recorrencias(db, user, gastos, receitas, today: date) -> int:
+    """Fixos do mês atual viram recorrências (o lançamento deste mês é o 1º; a próxima sai no mês que
+    vem). Streaming fica pausada, pra testar a retomada."""
+    atual = date(today.year, today.month, 1)
+    proximo = add_months(atual, 1)
+    alvos = [  # (descrição do lançamento deste mês, dia, pausada)
+        ("Aluguel", 5, False),
+        ("Fibra 500MB", 10, False),
+        ("Netflix + Spotify", 15, True),
+    ]
+    criadas = 0
+    for descricao, dia, pausada in alvos:
+        gasto = next((g for g in gastos if g.description == descricao and g.date >= atual and not g.is_installment), None)
+        if gasto is None:
+            continue
+        rec = models.Recorrencia(
+            user_id=user.id, tipo="gasto", priority=gasto.priority, item_id=gasto.item_id, value=gasto.value,
+            description=gasto.description, dia=dia, proximo_mes=proximo, pausada=pausada,
+        )
+        db.add(rec)
+        db.flush()
+        gasto.recorrencia_id = rec.id
+        criadas += 1
+    salario = next((r for r in receitas if r.description == "Salário" and r.date >= atual), None)
+    if salario is not None:
+        rec = models.Recorrencia(
+            user_id=user.id, tipo="receita", value=salario.value, cash_percentage=salario.cash_percentage,
+            description="Salário", dia=5, proximo_mes=proximo,
+        )
+        db.add(rec)
+        db.flush()
+        salario.recorrencia_id = rec.id
+        criadas += 1
+    return criadas
+
+
 def _seed_veiculos(db, user, months: list[date], today: date, rng: random.Random) -> list[models.VehicleService]:
     services: list[models.VehicleService] = []
     carro = models.Vehicle(user_id=user.id, name="Onix LT 1.0", year=2019)
@@ -369,6 +406,7 @@ def main() -> None:
         receitas = _seed_receitas(db, user, months, today, rng)
         services = _seed_veiculos(db, user, months, today, rng)
         db.flush()
+        recorrencias = _seed_recorrencias(db, user, gastos, receitas, today)
 
         # Alguns comprovantes de verdade (PDF mínimo) pra testar ícone de anexo/download/preview
         anexos = 0
@@ -390,7 +428,8 @@ def main() -> None:
         db.commit()
         print(
             f"Base mocada criada ({months[0]:%m/%Y} a {months[-1]:%m/%Y}): {len(items)} categorias, "
-            f"{len(gastos)} gastos, {len(receitas)} receitas, {len(services)} serviços de veículo"
+            f"{len(gastos)} gastos, {len(receitas)} receitas, {recorrencias} recorrências, "
+            f"{len(services)} serviços de veículo"
             f"{extra_resumo}, {anexos} anexos."
         )
         print(f"Login: usuario='{TEST_USERNAME}' senha='{TEST_PASSWORD}'")

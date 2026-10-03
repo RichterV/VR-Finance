@@ -248,6 +248,10 @@ def build_indicadores(db: Session, user: models.User, ano: Optional[int], mes: O
 
     # 3. Custo fixo: gasto avulso com a mesma descrição, uma vez por mês, em 3 dos últimos 4 meses, com
     # valor estável (até 15% da mediana). Soma das medianas ÷ receita média de 3 meses.
+    # Séries com fim definido ficam de fora -- são compras parceladas lançadas como avulsas (ex: a
+    # planilha importada não marcava parcelas): lançamentos depois do mês seguinte ao de referência
+    # (o app não deixa lançar tão adiantado; só parcela chega lá) ou série que já parou. Série ligada
+    # a uma recorrência sempre conta.
     inicio_fixo = add_months(referencia, -(CUSTO_FIXO_MESES - 1))
     avulsos = (
         db.query(models.Gasto)
@@ -267,10 +271,33 @@ def build_indicadores(db: Session, user: models.User, ano: Optional[int], mes: O
         chave = _normalize_description(g.description)
         if chave:
             ocorrencias[chave][(g.date.year, g.date.month)].append(g)
+    com_fim_futuro = {
+        _normalize_description(descricao)
+        for (descricao,) in db.query(models.Gasto.description)
+        .filter(
+            models.Gasto.user_id == user.id,
+            models.Gasto.is_installment.is_(False),
+            models.Gasto.description.isnot(None),
+            models.Gasto.date >= add_months(fim_ref, 1),
+        )
+        .distinct()
+    }
+    hoje = today_local()
+    mes_ref = (referencia.year, referencia.month)
     itens_fixos = []
-    for por_mes in ocorrencias.values():
+    for chave, por_mes in ocorrencias.items():
         if len(por_mes) < CUSTO_FIXO_MIN_PRESENCA or any(len(lista) > 1 for lista in por_mes.values()):
             continue
+        if not any(lista[0].recorrencia_id for lista in por_mes.values()):
+            if chave in com_fim_futuro:
+                continue
+            if max(por_mes) < mes_ref:
+                # Sem lançamento no mês de referência: parou. No mês em andamento, só depois que o
+                # dia de costume passou (a conta pode só não ter sido lançada ainda).
+                ultimo = por_mes[max(por_mes)][0]
+                em_andamento = mes_ref == (hoje.year, hoje.month)
+                if not em_andamento or hoje.day > ultimo.date.day:
+                    continue
         valores = [lista[0].value for lista in por_mes.values()]
         mediana = statistics.median(valores)
         if mediana <= 0 or any(abs(v - mediana) > CUSTO_FIXO_VARIACAO_MAX * mediana for v in valores):

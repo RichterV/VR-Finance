@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.database import SessionLocal
+from app.recorrencias import ensure_recurrences
 from app.security import decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -72,12 +73,17 @@ def get_current_user_allow_password_change(
     return user
 
 
-def get_current_user(user: models.User = Depends(get_current_user_allow_password_change)) -> models.User:
+def get_current_user(
+    user: models.User = Depends(get_current_user_allow_password_change),
+    db: Session = Depends(get_db),
+) -> models.User:
     if user.must_change_password:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Troca de senha obrigatória antes de continuar",
         )
+    # Virada do mês: lançamentos recorrentes que faltam são criados antes de qualquer leitura.
+    ensure_recurrences(db, user.id)
     return user
 
 

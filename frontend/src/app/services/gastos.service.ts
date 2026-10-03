@@ -14,6 +14,10 @@ export interface GastoCreatePayload {
   installment_count?: number;
   /** AAAA-MM-DD; omitido = hoje. Parcelado: data da parcela 1. */
   date?: string;
+  /** Repete todo mês a partir do mês seguinte (não combina com parcelado). */
+  recorrente?: boolean;
+  /** 1-31; omitido = dia da data do lançamento. */
+  recorrencia_dia?: number;
 }
 
 export interface GastoUpdatePayload {
@@ -51,6 +55,8 @@ export interface Gasto {
   installment_count: number | null;
   installment_number: number | null;
   installment_group_id: string | null;
+  /** Lançamento ligado a uma recorrência (gerado por ela ou o que a criou). */
+  recorrencia_id: number | null;
   date: string;
   created_at: string;
 }

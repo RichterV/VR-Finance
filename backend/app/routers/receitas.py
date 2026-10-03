@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.deps import get_current_user, get_db
+from app.recorrencias import create_from_launch
 from app.routers.attachments import delete_attachments_for_key
 from app.utils import like_contains, period_filters, resolve_launch_date
 
@@ -62,6 +63,8 @@ def create_receita(
         date=resolve_launch_date(payload.date),
     )
     db.add(receita)
+    if payload.recorrente:
+        create_from_launch(db, receita, payload.recorrencia_dia)
     db.commit()
     db.refresh(receita)
     return receita

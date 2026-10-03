@@ -1,0 +1,153 @@
+<section class="data-section">
+  <h2>Recorrências <span class="count">({{ items().length }})</span></h2>
+
+  @if (loading()) {
+    <app-loading-state message="Carregando recorrências..."></app-loading-state>
+  } @else if (error()) {
+    <div class="entry-empty">
+      Não foi possível carregar as recorrências.
+      <button class="retry-btn" (click)="reload()">Tentar novamente</button>
+    </div>
+  } @else if (!items().length) {
+    <div class="entry-empty rec-empty">
+      <ion-icon name="repeat-outline" aria-hidden="true"></ion-icon>
+      <p>Nenhuma recorrência ainda.</p>
+      <p class="rec-empty-hint">
+        Ao adicionar um gasto ou uma receita, ligue <strong>Repetir todo mês</strong>: ele é lançado de novo na
+        virada de cada mês, no dia escolhido.
+      </p>
+    </div>
+  } @else {
+    @if (totais().ativas) {
+      <div class="rec-totals">
+        <span>Por mês, nas ativas:</span>
+        <span class="rec-total danger">{{ totais().gastos | currency: 'BRL' }} em gastos</span>
+        <span class="rec-total income">{{ totais().receitas | currency: 'BRL' }} em receitas</span>
+      </div>
+    }
+
+    <div class="table-card has-cards">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Lançamento</th>
+              <th class="num">Valor</th>
+              <th>Dia</th>
+              <th>Próximo</th>
+              <th>Situação</th>
+              <th class="actions-col">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (rec of items(); track rec.id) {
+              <tr [class.inactive]="rec.status !== 'ativa'">
+                <td>
+                  <span class="entry-chip tipo-chip" [class.receita]="rec.tipo === 'receita'">
+                    {{ rec.tipo === 'gasto' ? 'Gasto' : 'Receita' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="rec-title">
+                    @if (rec.priority) {
+                      <app-prio-dot [priority]="rec.priority"></app-prio-dot>
+                    }
+                    <span>{{ titulo(rec) }}</span>
+                    @if (rec.item_active === false) {
+                      <span class="rec-flag">categoria excluída</span>
+                    }
+                  </div>
+                  @if (detalhe(rec); as d) {
+                    <div class="rec-sub">{{ d }}</div>
+                  }
+                </td>
+                <td class="num" [class.income]="rec.tipo === 'receita'">{{ rec.value | currency: 'BRL' }}</td>
+                <td>Dia {{ rec.dia }}</td>
+                <td>
+                  {{ rec.proxima_data ? (rec.proxima_data | date: 'dd/MM/yyyy') : '-' }}
+                  @if (fimLabel(rec); as fim) {
+                    <div class="rec-sub">até {{ fim }}</div>
+                  }
+                </td>
+                <td><span class="status-chip" [class]="'status-' + rec.status">{{ statusLabel[rec.status] }}</span></td>
+                <td class="actions-col">
+                  <button aria-label="Editar" title="Editar" class="icon-btn" [disabled]="busyId() === rec.id" (click)="editar(rec)">
+                    <ion-icon name="create"></ion-icon>
+                  </button>
+                  @if (rec.status !== 'encerrada') {
+                    <button
+                      class="icon-btn"
+                      [attr.aria-label]="rec.status === 'ativa' ? 'Pausar' : 'Retomar'"
+                      [title]="rec.status === 'ativa' ? 'Pausar' : 'Retomar'"
+                      [disabled]="busyId() === rec.id"
+                      (click)="alternarPausa(rec)"
+                    >
+                      <ion-icon [name]="rec.status === 'ativa' ? 'pause-outline' : 'play-outline'"></ion-icon>
+                    </button>
+                  }
+                  <button aria-label="Excluir" title="Excluir" class="icon-btn danger" [disabled]="busyId() === rec.id" (click)="excluir(rec)">
+                    <ion-icon name="trash"></ion-icon>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="entry-list">
+      @for (rec of items(); track rec.id) {
+        <article class="entry-card" [class.inactive]="rec.status !== 'ativa'">
+          <div class="entry-main">
+            @if (rec.priority) {
+              <app-prio-dot [priority]="rec.priority"></app-prio-dot>
+            }
+            <strong class="entry-title">{{ titulo(rec) }}</strong>
+            <span class="entry-value" [class.income]="rec.tipo === 'receita'">{{ rec.value | currency: 'BRL' }}</span>
+          </div>
+          <div class="entry-meta">
+            <span class="entry-meta-text">
+              <span class="status-chip" [class]="'status-' + rec.status">{{ statusLabel[rec.status] }}</span>
+              Dia {{ rec.dia }}
+              @if (rec.proxima_data) {
+                · próximo {{ rec.proxima_data | date: 'dd/MM' }}
+              }
+              @if (fimLabel(rec); as fim) {
+                · até {{ fim }}
+              }
+            </span>
+            <span class="entry-actions">
+              <button aria-label="Editar" title="Editar" class="icon-btn" [disabled]="busyId() === rec.id" (click)="editar(rec)">
+                <ion-icon name="create"></ion-icon>
+              </button>
+              @if (rec.status !== 'encerrada') {
+                <button
+                  class="icon-btn"
+                  [attr.aria-label]="rec.status === 'ativa' ? 'Pausar' : 'Retomar'"
+                  [title]="rec.status === 'ativa' ? 'Pausar' : 'Retomar'"
+                  [disabled]="busyId() === rec.id"
+                  (click)="alternarPausa(rec)"
+                >
+                  <ion-icon [name]="rec.status === 'ativa' ? 'pause-outline' : 'play-outline'"></ion-icon>
+                </button>
+              }
+              <button aria-label="Excluir" title="Excluir" class="icon-btn danger" [disabled]="busyId() === rec.id" (click)="excluir(rec)">
+                <ion-icon name="trash"></ion-icon>
+              </button>
+            </span>
+          </div>
+          @if (detalhe(rec) || rec.item_active === false) {
+            <p class="entry-desc">
+              {{ detalhe(rec) }}
+              @if (rec.item_active === false) {
+                <span class="rec-flag">categoria excluída</span>
+              }
+            </p>
+          }
+        </article>
+      }
+    </div>
+  }
+</section>

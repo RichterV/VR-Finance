@@ -20,7 +20,7 @@ import {
   ToastController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { attachOutline, create, todayOutline, trash } from 'ionicons/icons';
+import { attachOutline, create, repeatOutline, todayOutline, trash } from 'ionicons/icons';
 import { firstValueFrom, forkJoin } from 'rxjs';
 
 import { isDesktopViewport, slideInFromRight, slideOutToRight, SIDE_MODAL_CSS_CLASS } from '../../modals/side-modal.animations';
@@ -37,12 +37,15 @@ import { SortThComponent } from '../../shared/sort-th.component';
 import { UndoDeleteService } from '../../shared/undo-delete.service';
 import { HomeRefreshService } from '../../core/home-refresh.service';
 import { PrioDotComponent } from '../../shared/prio-dot.component';
+import { RecorrenciasListComponent } from './recorrencias-list.component';
 
 function formatBRL(value: number): string {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 const PAGE_SIZE = 25;
+
+type DadosAba = 'gastos' | 'receitas' | 'recorrencias';
 
 @Component({
   selector: 'app-dados',
@@ -69,6 +72,7 @@ const PAGE_SIZE = 25;
     SortSelectComponent,
     LoadingStateComponent,
     ResetPeriodButtonComponent,
+    RecorrenciasListComponent,
   ],
 })
 export class DadosPage {
@@ -77,7 +81,7 @@ export class DadosPage {
   readonly meses = MESES_COMPLETOS;
   readonly anos: number[];
 
-  readonly aba = signal<'gastos' | 'receitas'>('gastos');
+  readonly aba = signal<DadosAba>('gastos');
   readonly mes = signal<number | null>(null);
   readonly ano = signal<number | null>(null);
   readonly buscaGastos = signal<string>('');
@@ -127,7 +131,7 @@ export class DadosPage {
     private readonly modalCtrl: ModalController,
     private readonly popoverCtrl: PopoverController,
   ) {
-    addIcons({ create, trash, todayOutline, attachOutline });
+    addIcons({ create, trash, todayOutline, attachOutline, repeatOutline });
     const currentYear = new Date().getFullYear();
     this.anos = Array.from({ length: 6 }, (_, i) => currentYear - i);
   }
@@ -147,7 +151,7 @@ export class DadosPage {
     this.reload();
   }
 
-  onAbaChange(value: 'gastos' | 'receitas'): void {
+  onAbaChange(value: DadosAba): void {
     this.aba.set(value);
   }
 
@@ -185,7 +189,7 @@ export class DadosPage {
     return { ano: this.ano() ?? undefined, mes: this.mes() ?? undefined, busca: this.buscaReceitas() || undefined };
   }
 
-  private reload(): void {
+  reload(): void {
     forkJoin([
       this.gastosService.list({ ...this.gastosListParams(), limit: PAGE_SIZE, offset: 0 }),
       this.receitasService.list({ ...this.receitasListParams(), limit: PAGE_SIZE, offset: 0 }),

@@ -15,6 +15,7 @@ from app import models
 from app.database import Base
 from app.deps import get_db
 from app.login_guard import login_guard
+from app.recorrencias import reset_check_cache
 from app.main import app
 from app.modules import OPTIONAL_MODULES
 from app.security import hash_password
@@ -48,6 +49,7 @@ def client(db_session):
 
     app.dependency_overrides[get_db] = _get_db_override
     login_guard.reset()
+    reset_check_cache()
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()

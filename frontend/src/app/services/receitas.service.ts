@@ -13,6 +13,10 @@ export interface ReceitaUpdatePayload {
 export interface ReceitaCreatePayload extends ReceitaUpdatePayload {
   /** AAAA-MM-DD; omitido = hoje. */
   date?: string;
+  /** Repete todo mês a partir do mês seguinte. */
+  recorrente?: boolean;
+  /** 1-31; omitido = dia da data do lançamento. */
+  recorrencia_dia?: number;
 }
 
 export interface ReceitaListParams {
@@ -34,6 +38,7 @@ export interface Receita {
   cash_percentage: number;
   cash_value: number;
   description: string | null;
+  recorrencia_id: number | null;
   date: string;
   created_at: string;
 }

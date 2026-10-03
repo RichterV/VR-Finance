@@ -148,6 +148,9 @@ class GastoCreate(BaseModel):
     installment_count: Optional[int] = Field(default=None, ge=2, le=120)
     # Omitido = hoje. Parcelado: data da parcela 1.
     date: Optional[DateField] = None
+    # Recorrente: este lançamento é o 1º; a regra gera os próximos a partir do mês seguinte.
+    recorrente: bool = False
+    recorrencia_dia: Optional[int] = Field(default=None, ge=1, le=31)
 
 
 class GastoUpdate(BaseModel):
@@ -172,6 +175,7 @@ class GastoOut(BaseModel):
     installment_count: Optional[int]
     installment_number: Optional[int]
     installment_group_id: Optional[str]
+    recorrencia_id: Optional[int] = None
     date: date
     created_at: datetime
 
@@ -192,6 +196,8 @@ class ReceitaCreate(BaseModel):
     description: Optional[str] = None
     # Omitido = hoje.
     date: Optional[DateField] = None
+    recorrente: bool = False
+    recorrencia_dia: Optional[int] = Field(default=None, ge=1, le=31)
 
 
 class ReceitaUpdate(BaseModel):
@@ -206,6 +212,7 @@ class ReceitaOut(BaseModel):
     cash_percentage: float
     cash_value: float
     description: Optional[str]
+    recorrencia_id: Optional[int] = None
     date: date
     created_at: datetime
 
@@ -216,6 +223,47 @@ class ReceitaOut(BaseModel):
 class ReceitaPage(BaseModel):
     items: list[ReceitaOut]
     total: int
+
+
+# --- Recorrências ---
+
+RecorrenciaTipo = Literal["gasto", "receita"]
+RecorrenciaStatus = Literal["ativa", "pausada", "encerrada"]
+
+
+class RecorrenciaUpdate(BaseModel):
+    """Vale dos próximos lançamentos em diante; os já gerados não mudam. Campos de gasto (priority,
+    item_id) são ignorados numa receita, e cash_percentage num gasto."""
+
+    priority: Optional[Priority] = None
+    item_id: Optional[int] = None
+    value: Money = Field(gt=0)
+    cash_percentage: Optional[float] = Field(default=None, ge=0, le=100)
+    description: Optional[str] = None
+    dia: int = Field(ge=1, le=31)
+    # Último mês que gera (inclusive) -- qualquer dia do mês serve; null = sem fim.
+    fim_mes: Optional[DateField] = None
+
+
+class RecorrenciaOut(BaseModel):
+    id: int
+    tipo: RecorrenciaTipo
+    priority: Optional[Priority]
+    item_id: Optional[int]
+    item_name: Optional[str]
+    item_active: Optional[bool]
+    value: float
+    cash_percentage: Optional[float]
+    description: Optional[str]
+    dia: int
+    pausada: bool
+    fim_mes: Optional[date]
+    status: RecorrenciaStatus
+    # Data do próximo lançamento que será gerado (null se pausada/encerrada).
+    proxima_data: Optional[date]
+    # Lançamento deste mês já gerado e ainda com data futura -- oferecido pra apagar junto ao excluir.
+    lancamento_pendente_data: Optional[date] = None
+    created_at: datetime
 
 
 # --- Veículos ---

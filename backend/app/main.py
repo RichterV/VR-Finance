@@ -17,6 +17,7 @@ from app.routers import (
     gastos,
     notificacoes,
     receitas,
+    recorrencias,
     resumo,
     servicos_veiculos,
     veiculos,
@@ -91,6 +92,13 @@ def _migrate_schema() -> None:
                         {"u": user_id, "k": key},
                     )
             conn.commit()
+
+        for table in ("gastos", "receitas"):
+            cols = {row[1] for row in conn.execute(text(f"PRAGMA table_info({table})"))}
+            if "recorrencia_id" not in cols:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN recorrencia_id INTEGER REFERENCES recorrencias(id)"))
+                conn.execute(text(f"CREATE INDEX IF NOT EXISTS ix_{table}_recorrencia_id ON {table} (recorrencia_id)"))
+                conn.commit()
 
         # Índices (user_id, date) -- create_all só cria índice junto com uma tabela nova, então bancos
         # que já existiam precisam disso. IF NOT EXISTS deixa idempotente.
@@ -169,6 +177,7 @@ app.include_router(backup_status.router)
 app.include_router(export.router)
 app.include_router(notificacoes.router)
 app.include_router(analytics.router)
+app.include_router(recorrencias.router)
 
 
 @app.get("/health")

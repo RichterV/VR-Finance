@@ -66,6 +66,12 @@
       <p class="installment-hint">A 1ª parcela cai na data escolhida acima.</p>
     }
 
+    <app-recurrence-field
+      [enabled]="form.controls.recorrente"
+      [day]="form.controls.recorrenciaDia"
+      [launchDate]="form.value.date ?? ''"
+    ></app-recurrence-field>
+
     <ion-item>
       <ion-textarea
         label="Descrição"

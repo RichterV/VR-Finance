@@ -10,8 +10,31 @@ $mobile-max: 767px;
 
 .top-controls {
   ion-segment {
-    max-width: 320px;
+    max-width: 560px;
   }
+}
+
+// Mês/ano não se aplicam à aba Recorrências.
+.filters.hidden {
+  display: none;
+}
+
+// Três abas no celular: em caixa alta "Recorrências" não cabia e virava "RECORR...".
+@media (max-width: 480px) {
+  .top-controls ion-segment-button {
+    --padding-start: 4px;
+    --padding-end: 4px;
+    min-width: 0;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+}
+
+.rec-mark {
+  margin-left: 4px;
+  vertical-align: -2px;
+  font-size: 0.95em;
+  color: var(--ion-color-primary);
 }
 
 // Reset + mês + ano sempre numa linha só -- com wrap o grupo encolhia até o texto dos selects e

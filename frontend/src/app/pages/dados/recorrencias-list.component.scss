@@ -1,0 +1,126 @@
+.data-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  h2 .count {
+    font-weight: 400;
+    color: var(--app-text-secondary);
+    font-size: 0.9rem;
+  }
+}
+
+.rec-totals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  font-size: 0.85rem;
+  color: var(--app-text-secondary);
+}
+
+.rec-total {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+
+  &.danger {
+    color: var(--ion-color-danger);
+  }
+
+  &.income {
+    color: var(--ion-color-success);
+  }
+}
+
+.rec-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rec-sub {
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--app-text-secondary);
+}
+
+.rec-flag {
+  font-size: 0.75rem;
+  color: var(--ion-color-warning);
+}
+
+td.num.income,
+.entry-value.income {
+  color: var(--ion-color-success);
+}
+
+.tipo-chip {
+  color: var(--ion-color-danger);
+  border-color: rgba(var(--ion-color-danger-rgb), 0.4);
+
+  &.receita {
+    color: var(--ion-color-success);
+    border-color: rgba(var(--ion-color-success-rgb), 0.4);
+  }
+}
+
+.status-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  margin-right: 4px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &.status-ativa {
+    color: var(--ion-color-primary);
+    background: rgba(var(--ion-color-primary-rgb), 0.12);
+  }
+
+  &.status-pausada {
+    color: var(--ion-color-warning);
+    background: rgba(var(--ion-color-warning-rgb), 0.12);
+  }
+
+  &.status-encerrada {
+    color: var(--app-text-secondary);
+    background: var(--app-surface-hover);
+  }
+}
+
+tr.inactive td:not(.actions-col),
+.entry-card.inactive .entry-main {
+  opacity: 0.6;
+}
+
+.rec-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+
+  ion-icon {
+    font-size: 1.8rem;
+    color: var(--ion-color-primary);
+  }
+
+  p {
+    margin: 0;
+  }
+
+  .rec-empty-hint {
+    max-width: 440px;
+    font-size: 0.85rem;
+  }
+}
+
+.retry-btn {
+  margin-left: 8px;
+  background: none;
+  border: none;
+  color: var(--ion-color-primary);
+  font-weight: 600;
+  cursor: pointer;
+}

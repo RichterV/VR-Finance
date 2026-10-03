@@ -1,0 +1,119 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>{{ isGasto ? 'Gasto recorrente' : 'Receita recorrente' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <p class="rec-note">As mudanças valem a partir do próximo lançamento. Os que já foram criados continuam como estão.</p>
+
+    @if (isGasto) {
+      <ion-segment [value]="form.value.priority" (ionChange)="onPriorityChange($any($event.detail.value))">
+        <ion-segment-button value="essencial">
+          <ion-label>Essencial</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="nao_essencial">
+          <ion-label>Não essencial</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+
+      <ion-item>
+        <ion-select
+          label="Item"
+          placeholder="Selecione"
+          formControlName="itemId"
+          interface="popover"
+          [interfaceOptions]="categorySelectOptions"
+        >
+          @for (item of items(); track item.id) {
+            <ion-select-option [value]="item.id">{{ item.name }}</ion-select-option>
+          }
+        </ion-select>
+      </ion-item>
+    }
+
+    <ion-item class="value-primary">
+      <ion-input labelPlacement="stacked" type="text" [appCurrencyInput]="form.controls.value" placeholder="0,00">
+        <div slot="label">Valor</div>
+        <div slot="start" class="currency-prefix">R$</div>
+      </ion-input>
+    </ion-item>
+
+    @if (!isGasto) {
+      <div class="cash-card">
+        <div class="cash-card-row">
+          <span class="cash-card-label">% para caixa:</span>
+          <span class="cash-card-value">{{ form.value.cashPercentage }}%</span>
+        </div>
+        <ion-item lines="none">
+          <ion-range
+            formControlName="cashPercentage"
+            aria-label="Percentual para caixa"
+            [min]="0"
+            [max]="100"
+            [step]="1"
+            [pin]="true"
+          ></ion-range>
+        </ion-item>
+        <div class="cash-card-row cash-card-footer">
+          <span class="cash-card-label">Valor caixa:</span>
+          <span class="cash-card-value">{{ cashValue() | currency: 'BRL' }}</span>
+        </div>
+      </div>
+    }
+
+    <ion-item>
+      <ion-select label="Dia do mês" formControlName="dia" interface="popover" [interfaceOptions]="{ size: 'auto' }">
+        @for (d of days; track d) {
+          <ion-select-option [value]="d">Dia {{ d }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-item>
+    @if (form.value.dia && form.value.dia > 28) {
+      <p class="rec-hint">Em meses sem o dia {{ form.value.dia }}, cai no último dia do mês.</p>
+    }
+
+    <ion-item>
+      <ion-toggle formControlName="temFim">Tem data de término</ion-toggle>
+    </ion-item>
+    @if (form.value.temFim) {
+      <div class="field-row">
+        <ion-item class="col-grow">
+          <ion-select label="Último mês" labelPlacement="stacked" formControlName="fimMes" interface="popover" [interfaceOptions]="{ size: 'auto' }">
+            @for (m of meses; track $index) {
+              <ion-select-option [value]="$index + 1">{{ m }}</ion-select-option>
+            }
+          </ion-select>
+        </ion-item>
+        <ion-item class="col-grow">
+          <ion-select label="Ano" labelPlacement="stacked" formControlName="fimAno" interface="popover">
+            @for (a of anos; track a) {
+              <ion-select-option [value]="a">{{ a }}</ion-select-option>
+            }
+          </ion-select>
+        </ion-item>
+      </div>
+      <p class="rec-hint">O último lançamento sai nesse mês. Depois disso, a recorrência fica como encerrada.</p>
+    }
+
+    <ion-item>
+      <ion-textarea label="Descrição" labelPlacement="stacked" formControlName="description" placeholder="Opcional"></ion-textarea>
+    </ion-item>
+
+    @if (errorMessage()) {
+      <ion-text color="danger">
+        <p>{{ errorMessage() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving()">
+      {{ saving() ? 'Salvando...' : 'Salvar alterações' }}
+    </ion-button>
+  </form>
+</ion-content>

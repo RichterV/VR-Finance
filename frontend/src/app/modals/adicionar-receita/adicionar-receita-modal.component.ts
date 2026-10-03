@@ -32,6 +32,7 @@ import { httpErrorMessage } from '../../shared/http-error';
 import { CurrencyInputDirective } from '../../shared/currency-input.directive';
 import { AutofocusDirective } from '../../shared/autofocus.directive';
 import { commitAttachments } from '../../shared/save-with-attachments';
+import { RecurrenceFieldComponent } from '../../shared/recurrence-field.component';
 
 @Component({
   selector: 'app-adicionar-receita-modal',
@@ -56,6 +57,7 @@ import { commitAttachments } from '../../shared/save-with-attachments';
     IonText,
     AttachmentPickerComponent,
     LaunchDateFieldComponent,
+    RecurrenceFieldComponent,
   ],
 })
 export class AdicionarReceitaModalComponent {
@@ -82,6 +84,8 @@ export class AdicionarReceitaModalComponent {
     ]),
     description: this.fb.nonNullable.control(''),
     date: this.fb.nonNullable.control(todayIso()),
+    recorrente: this.fb.nonNullable.control(false),
+    recorrenciaDia: this.fb.control<number | null>(null),
   });
 
   private readonly formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
@@ -134,7 +138,7 @@ export class AdicionarReceitaModalComponent {
   async submit(): Promise<void> {
     if (this.attachmentBusy) return;
     this.errorMessage.set(null);
-    const { value, cashPercentage, description, date } = this.form.getRawValue();
+    const { value, cashPercentage, description, date, recorrente, recorrenciaDia } = this.form.getRawValue();
 
     if (!value) {
       this.errorMessage.set('Preencha o valor da receita.');
@@ -148,6 +152,8 @@ export class AdicionarReceitaModalComponent {
         cash_percentage: cashPercentage,
         description: description || undefined,
         date,
+        recorrente,
+        recorrencia_dia: recorrente ? (recorrenciaDia ?? undefined) : undefined,
       })
       .subscribe({
         next: (receita) => {
@@ -159,7 +165,7 @@ export class AdicionarReceitaModalComponent {
           void commitAttachments({
             commit: this.attachmentPicker.commit(receita.id),
             toastCtrl: this.toastCtrl,
-            successMessage: 'Receita salva.',
+            successMessage: recorrente ? 'Receita salva. Ela vai se repetir todo mês.' : 'Receita salva.',
             savedLabel: 'Receita salva',
           }).then(() => {
             this.saving.set(false);
@@ -185,6 +191,8 @@ export class AdicionarReceitaModalComponent {
       cashPercentage: this.defaultCashPercentage(),
       description: '',
       date: todayIso(),
+      recorrente: false,
+      recorrenciaDia: null,
     });
     this.attachmentPicker.reset();
   }

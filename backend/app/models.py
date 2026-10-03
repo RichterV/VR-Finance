@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import Boolean, Column, Date, DateTime, Float, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
@@ -84,6 +85,8 @@ class Gasto(Base):
     installment_count = Column(Integer, nullable=True)
     installment_number = Column(Integer, nullable=True)
     installment_group_id = Column(String, nullable=True, index=True)
+    # Lançamento gerado por (ou que deu origem a) uma recorrência -- null nos avulsos.
+    recorrencia_id = Column(Integer, ForeignKey("recorrencias.id"), nullable=True, index=True)
     date = Column(Date, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -105,10 +108,42 @@ class Receita(Base):
     cash_percentage = Column(Float, nullable=False)
     cash_value = Column(Float, nullable=False)
     description = Column(String, nullable=True)
+    recorrencia_id = Column(Integer, ForeignKey("recorrencias.id"), nullable=True, index=True)
     date = Column(Date, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (Index("ix_receitas_user_date", "user_id", "date"),)
+
+
+class Recorrencia(Base):
+    """Gasto ou receita que se repete todo mês. Cada mês vira um lançamento comum em gastos/receitas
+    (gerado na virada do mês por app/recorrencias.py); editar a regra só vale dos próximos em diante."""
+
+    __tablename__ = "recorrencias"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    tipo = Column(String, nullable=False)  # "gasto" | "receita"
+    priority = Column(String, nullable=True)  # só gasto
+    item_id = Column(Integer, ForeignKey("dropdown_options.id"), nullable=True)  # só gasto
+    value = Column(Float, nullable=False)
+    cash_percentage = Column(Float, nullable=True)  # só receita
+    description = Column(String, nullable=True)
+    dia = Column(Integer, nullable=False)  # 1..31; mês sem esse dia usa o último dia do mês
+    proximo_mes = Column(Date, nullable=False)  # dia 1 do próximo mês a gerar
+    fim_mes = Column(Date, nullable=True)  # dia 1 do último mês que gera (inclusive); null = sem fim
+    pausada = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    item = relationship("DropdownOption")
+
+    @property
+    def item_name(self) -> Optional[str]:
+        return self.item.name if self.item else None
+
+    @property
+    def item_active(self) -> Optional[bool]:
+        return self.item.active if self.item else None
 
 
 class Vehicle(Base):

@@ -1,4 +1,5 @@
-import { Component, OnInit, ViewChild, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   IonButton,
@@ -38,6 +39,7 @@ import { CurrencyInputDirective } from '../../shared/currency-input.directive';
 import { AutofocusDirective } from '../../shared/autofocus.directive';
 import { commitAttachments } from '../../shared/save-with-attachments';
 import { confirmIfAnomalous } from '../../shared/anomaly-check';
+import { RecurrenceFieldComponent } from '../../shared/recurrence-field.component';
 
 @Component({
   selector: 'app-adicionar-gasto-modal',
@@ -66,6 +68,7 @@ import { confirmIfAnomalous } from '../../shared/anomaly-check';
     IonText,
     AttachmentPickerComponent,
     LaunchDateFieldComponent,
+    RecurrenceFieldComponent,
   ],
 })
 export class AdicionarGastoModalComponent implements OnInit {
@@ -92,7 +95,11 @@ export class AdicionarGastoModalComponent implements OnInit {
     isInstallment: this.fb.nonNullable.control(false),
     installmentCount: this.fb.control<number | null>(null),
     date: this.fb.nonNullable.control(todayIso()),
+    recorrente: this.fb.nonNullable.control(false),
+    recorrenciaDia: this.fb.control<number | null>(null),
   });
+
+  private readonly destroyRef = inject(DestroyRef);
 
   constructor(
     private readonly fb: FormBuilder,
@@ -108,6 +115,14 @@ export class AdicionarGastoModalComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadItems('essencial');
+    // Parcelado e recorrente não combinam: ligar um desliga o outro.
+    const { isInstallment, recorrente } = this.form.controls;
+    isInstallment.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((on) => {
+      if (on && recorrente.value) recorrente.setValue(false);
+    });
+    recorrente.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((on) => {
+      if (on && isInstallment.value) isInstallment.setValue(false);
+    });
   }
 
   onPriorityChange(value: Priority): void {
@@ -122,7 +137,8 @@ export class AdicionarGastoModalComponent implements OnInit {
   async submit(): Promise<void> {
     if (this.attachmentBusy || this.checking() || this.saving()) return;
     this.errorMessage.set(null);
-    const { priority, itemId, value, description, isInstallment, installmentCount, date } = this.form.getRawValue();
+    const { priority, itemId, value, description, isInstallment, installmentCount, date, recorrente, recorrenciaDia } =
+      this.form.getRawValue();
 
     if (!itemId || !value) {
       this.errorMessage.set('Preencha o item e o valor.');
@@ -152,6 +168,8 @@ export class AdicionarGastoModalComponent implements OnInit {
         is_installment: isInstallment,
         installment_count: isInstallment ? installmentCount! : undefined,
         date,
+        recorrente: recorrente && !isInstallment,
+        recorrencia_dia: recorrente && !isInstallment ? (recorrenciaDia ?? undefined) : undefined,
       })
       .subscribe({
         next: (rows) => {
@@ -164,7 +182,11 @@ export class AdicionarGastoModalComponent implements OnInit {
           void commitAttachments({
             commit: this.attachmentPicker.commit(entityId),
             toastCtrl: this.toastCtrl,
-            successMessage: isInstallment ? `Gasto parcelado em ${rows.length}x salvo.` : 'Gasto salvo.',
+            successMessage: isInstallment
+              ? `Gasto parcelado em ${rows.length}x salvo.`
+              : recorrente
+                ? 'Gasto salvo. Ele vai se repetir todo mês.'
+                : 'Gasto salvo.',
             savedLabel: 'Gasto salvo',
           }).then(() => {
             this.saving.set(false);
@@ -197,6 +219,8 @@ export class AdicionarGastoModalComponent implements OnInit {
       isInstallment: false,
       installmentCount: null,
       date: todayIso(),
+      recorrente: false,
+      recorrenciaDia: null,
     });
     this.attachmentPicker.reset();
   }
