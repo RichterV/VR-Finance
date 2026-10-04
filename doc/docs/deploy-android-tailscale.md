@@ -1,4 +1,11 @@
-# Deploy: Android (Termux) + nginx + Tailscale
+# Deploy no Android (Termux) — histórico
+
+!!! warning "Esta página é histórica"
+    O servidor atual é um **notebook com Ubuntu Server** (desde 2026-08-29) — ver
+    [Deploy (Ubuntu Server + Tailscale)](deploy-ubuntu-tailscale.md). O celular Android/Termux descrito
+    aqui foi desativado como servidor; o conteúdo fica só como referência de troubleshooting
+    (compilação de pacotes Rust no Termux, supervisão via `runit`, etc.). Menções a `menu.bat`,
+    `deploy_to_server.bat` e PowerShell são da época em que o PC de desenvolvimento era Windows.
 
 Objetivo: rodar o backend FastAPI e o build web do frontend Ionic direto num celular Android, servidos
 por nginx, acessíveis tanto na rede local quanto de qualquer lugar via Tailscale.

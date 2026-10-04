@@ -26,7 +26,6 @@ ANOMALIA_MULTIPLO_SEM_DISPERSAO = 3.0  # valores sempre iguais (MAD = 0): alerta
 # --- Previsão do fim do mês ---
 PREVISAO_MESES_HISTORICO = 12
 PREVISAO_MIN_MESES = 3
-PREVISAO_FRACAO_MINIMA = 0.1  # abaixo disso a extrapolação pelo ritmo explode -- usa a mediana mensal
 PREVISAO_MESES_RECEITA = 6
 
 # --- Indicadores ---
@@ -113,37 +112,37 @@ def build_previsao(db: Session, user: models.User) -> schemas.PrevisaoOut:
     variavel_mes = sum(g.value for g in gastos if g.date >= mes_atual and not g.is_installment)
     variavel_ate_hoje = sum(g.value for g in gastos if mes_atual <= g.date <= today and not g.is_installment)
 
-    # Por mês do histórico: total do gasto avulso e quanto dele já tinha acontecido até o "dia de hoje".
+    # Por mês do histórico: quanto do gasto avulso aconteceu DEPOIS do "dia de hoje". O que ainda deve
+    # sair este mês é a mediana disso, em R$ -- não uma extrapolação do ritmo (gasto até hoje ÷ fração
+    # do mês): no começo do mês a fração é pequena e muito variável, e duas compras maiores nos
+    # primeiros dias projetavam o dobro do mês normal.
     avulso_total: dict[tuple[int, int], float] = defaultdict(float)
-    avulso_ate_dia: dict[tuple[int, int], float] = defaultdict(float)
+    avulso_depois: dict[tuple[int, int], float] = defaultdict(float)
     for g in gastos:
         if g.date >= mes_atual or g.is_installment:
             continue
         key = (g.date.year, g.date.month)
         avulso_total[key] += g.value
         dia_limite = min(today.day, calendar.monthrange(g.date.year, g.date.month)[1])
-        if g.date.day <= dia_limite:
-            avulso_ate_dia[key] += g.value
+        if g.date.day > dia_limite:
+            avulso_depois[key] += g.value
     meses_validos = [k for k, total in avulso_total.items() if total > 0]
-    fracoes = [avulso_ate_dia[k] / avulso_total[k] for k in meses_validos]
+    depois = [avulso_depois[k] for k in meses_validos]
     historico_suficiente = len(meses_validos) >= PREVISAO_MIN_MESES
 
-    def _restante(fracao: Optional[float]) -> float:
-        if fracao is not None and fracao >= PREVISAO_FRACAO_MINIMA and variavel_ate_hoje > 0:
-            projecao = variavel_ate_hoje / fracao
-        elif meses_validos:
-            projecao = statistics.median(avulso_total[k] for k in meses_validos)
-        else:
-            projecao = variavel_mes
-        return max(0.0, projecao - variavel_mes)
+    # Avulsos já lançados com data futura neste mês fazem parte do que "ainda vai sair" -- e já estão
+    # em comprometido, então saem do que falta estimar.
+    ja_lancado_futuro = variavel_mes - variavel_ate_hoje
 
-    if fracoes:
-        restante = _restante(statistics.median(fracoes))
-        # Fração maior (mês "adiantado") projeta menos; fração menor projeta mais.
-        restante_min = _restante(_quantile(fracoes, 0.75))
-        restante_max = _restante(_quantile(fracoes, 0.25))
+    def _restante(valor_tipico: float) -> float:
+        return max(0.0, valor_tipico - ja_lancado_futuro)
+
+    if depois:
+        restante = _restante(statistics.median(depois))
+        restante_min = _restante(_quantile(depois, 0.25))
+        restante_max = _restante(_quantile(depois, 0.75))
     else:
-        restante = restante_min = restante_max = _restante(None)
+        restante = restante_min = restante_max = 0.0
 
     receitas_mes = (
         db.query(models.Receita.value, models.Receita.cash_value)

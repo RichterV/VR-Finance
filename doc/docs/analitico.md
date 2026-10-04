@@ -1,120 +1,286 @@
 # Analítico
 
-Resumo Mensal, Resumo Anual e Relatório Geral não são páginas separadas no frontend — vivem juntos na
-Home (`/home`), como três seções de um dashboard único. Cada seção (exceto a geral) tem seu próprio
-seletor de período: a mensal, mês + ano; a anual, só ano. Default: mês/ano atuais.
+Resumo Mensal, Indicadores, Resumo Anual, Relatório Geral e Análise inflacionária não são páginas
+separadas — vivem juntos na Home (`/home`), como seções de um dashboard único, nessa ordem. Cada seção
+carrega os próprios dados e, se falhar, mostra o erro com "Tentar novamente" só nela (ver
+[Arquitetura](arquitetura.md#home-em-secoes-independentes)).
 
-Um ícone de olho no header da Home oculta/revela todos os valores financeiros da página, inclusive os
-eixos dos gráficos — por padrão os valores ficam ocultos (o olho abre "fechado"). É um recurso só de
-UI (não some nada no backend), pensado pra poder abrir o app em público sem expor números.
+## Controles compartilhados da Home
 
-## Resumo Anual (`GET /resumo/anual?ano=&meses=`)
+### Seletor de período e botão de reset
 
-Métricas do ano selecionado:
+Só a seção **Mensal** tem seletor de período (mês + ano, padrão: mês/ano atuais). A seção Anual usa o
+**ano** desse mesmo seletor — não tem seletor próprio, pra não ficar ambíguo qual "ano" afeta os
+gráficos. Geral e Inflação não têm seletor.
 
-- Receita total e total de gastos, separado em essenciais e não essenciais
-- Quantidade de gastos (cada parcela conta como 1) e quantidade de receitas
-- Média mensal de gastos e de receitas (total do ano ÷ nº de meses com dados)
-- Total de caixa pretendido (soma de `cash_value` das receitas do ano)
-- Total de caixa real (receita total do ano − gasto total do ano)
-- Percentual de cada item do dropdown sobre o total de gastos do ano, por prioridade — exibidos como
-  barras **ordenadas do maior pro menor**, escaladas pelo maior valor do próprio grupo (não por 100%
-  absoluto — dificilmente um item isolado chega perto disso, então escalar por 100% deixaria as barras
-  praticamente vazias)
-
-### Gráfico 1 — Linhas ("Evolução")
-
-Evolução mês a mês, numa janela rolante a partir do mês atual (últimos 12/24/36 meses — o parâmetro
-`meses` da API; no dashboard da Home é sempre 12, o seletor de janela só aparece no modal expandido):
-gastos essenciais, gastos não essenciais e caixa real.
-
-Estilo: linhas suavizadas (curva, não segmentos retos); "Caixa real" desenhada com traço tracejado e
-marcador em X (as outras duas usam marcador circular); uma linha de tendência (regressão linear simples,
-`frontend/src/app/shared/linear-regression.ts`) para essenciais e para não essenciais, sem entrar na
-legenda do gráfico.
-
-### Gráfico 2 — Colunas + linha ("Caixa pretendido vs. real")
-
-Usa a mesma janela rolante do Gráfico 1 — **não é mais** "meses do ano selecionado no header"; os dois
-gráficos sempre olham pra trás a partir de hoje, independente do `ano` escolhido no seletor da seção
-(essa mudança foi proposital, pra manter os dois gráficos consistentes entre si).
-
-- 3 colunas agrupadas por mês, eixo esquerdo (R$): Receita, Caixa pretendido, Caixa real — com cores/
-  tons bem distintos entre si (dourado / verde claro / verde escuro) e cantos arredondados
-- Linha no eixo secundário direito: `caixa real / gastos totais` do mês, como **razão** (0,5 / 1,0 /
-  1,5...), não porcentagem — desenhada por cima das colunas (via `order` do dataset no Chart.js), com
-  a legenda mostrando um ícone de linha, não um marcador de ponto (pra diferenciar visualmente das
-  barras na mesma legenda)
-
-Os dois gráficos têm um ícone de expandir no canto que abre um modal fullscreen com um seletor pra
-trocar a janela entre últimos 12/24/36 meses.
+À esquerda do seletor fica o botão "voltar período ao padrão" (ícone de setas circulares,
+`shared/reset-period-button.component.ts`): volta mês/ano pro mês atual e fica desabilitado quando já
+está lá. O mesmo botão existe nos filtros de mês/ano de `/dados`, `/devedores` e `/veiculos`, onde o
+padrão é "todos" (sem filtro). Ele mexe **só** no período, nunca em busca/status/outros filtros.
 
 ### Checkbox "Mostrar apenas até o mês selecionado"
 
-Disponível nas seções Mensal, Anual e Geral, com **o mesmo estado compartilhado entre as três** (é um
-único checkbox lógico, não um por seção). Desabilitada por padrão. Quando habilitada, os totais e
-percentuais dessas seções passam a considerar só os lançamentos até o fim do mês/ano selecionado no
-seletor mensal (ex: mês=março/2026 → considera até 31/03/2026, ignorando gastos futuros já lançados no
-banco). Os dois gráficos de janela rolante (Evolução e Caixa pretendido vs. real) **não são afetados**
-— continuam sempre "últimos N meses a partir de hoje", pra manter comportamento consistente entre si.
-No backend, isso é o parâmetro `ate_ano`/`ate_mes` de `/resumo/anual` e `/resumo/geral` (não existe em
-`/resumo/mensal`, que já analisa um único mês por definição).
+Um único checkbox lógico, compartilhado por Mensal, Indicadores, Anual, Geral e Inflação. **Ligado por
+padrão** — desligado, parcelas futuras já lançadas (uma compra em 6x, por exemplo) inflavam os totais
+anuais/gerais e a cesta de inflação com meses que ainda nem chegaram.
+
+Ligado, os totais e percentuais passam a considerar só lançamentos até o fim do mês/ano do seletor
+(parâmetros `ate_ano`/`ate_mes` da API). Os gráficos de janela rolante — Evolução, Caixa pretendido
+vs. real e a janela da Análise inflacionária — **também** passam a terminar nesse mês em vez de hoje
+(ex: corte em junho → o último ponto é junho). Desligado, esses gráficos voltam a mostrar os últimos N
+meses a partir de hoje. Não se aplica ao Resumo Mensal, que já analisa um único mês.
+
+### Olho de esconder valores
+
+Um ícone de olho no header oculta/revela todos os valores em R$ da Home, inclusive eixos de gráfico e
+mini-gráficos. Por padrão (a cada abertura) os valores ficam **ocultos** — pensado pra abrir o app em
+público sem expor números. Percentuais continuam visíveis. É só de UI, não afeta o backend.
 
 ## Resumo Mensal (`GET /resumo/mensal?ano=&mes=`)
 
-Mesmas métricas do resumo anual (sem receita total exposta separadamente, mas calculada por trás), mas
-calculadas só para o mês selecionado, com duas diferenças:
+Métricas do mês selecionado:
 
-- Médias são **por lançamento** (total do mês ÷ quantidade de lançamentos), não mensais
-- Inclui o valor destacado **"Disponível pra gastar"**:
+- Total de gastos, separado em essenciais e não essenciais (com o % de cada sobre o total)
+- Quantidade de gastos (cada parcela que cai no mês conta como 1) e de receitas
+- Média **por lançamento** (total do mês ÷ quantidade) — num único mês, "média mensal" não faria
+  sentido
+- Caixa pretendido (soma de `cash_value` das receitas) e caixa real (receita − gastos)
+- Percentual de cada categoria sobre o total, por prioridade — barras **ordenadas do maior pro
+  menor** e escaladas pelo maior valor do grupo (não por 100%: dificilmente uma categoria isolada
+  chega perto disso, e as barras ficariam quase vazias)
+- Mini-gráficos (sparklines) de tendência dos últimos 6 meses nos cards de gastos, essenciais, não
+  essenciais e caixa real
+
+O primeiro card é **"Disponível pra gastar"**, com destaque em gradiente verde (vermelho se negativo):
 
 ```
 Disponível pra gastar = Receita total do mês − Gasto total do mês − Caixa pretendido do mês
 ```
 
-Pode ficar negativo se o usuário gastou mais do que a receita menos a reserva pretendida. No frontend,
-esse valor é o **primeiro card** da grade de métricas mensais (mesmo tamanho dos outros cards), com
-destaque visual — fundo em gradiente indigo, ou vermelho se o valor for negativo.
+Usa o caixa **pretendido**, não o real: a ideia é mostrar quanto ainda dá pra gastar sem comer a
+reserva que se planejou guardar.
+
+### Projeção do fim do mês (`GET /resumo/previsao`)
+
+Card exibido **só quando o seletor está no mês atual**. Estima quanto vai sobrar no fim do mês:
+
+```
+Saldo previsto = Receita − Já lançado no mês − Gasto variável que ainda falta − Caixa pretendido
+```
+
+- **Já lançado no mês**: tudo que tem data no mês, inclusive parcelas e lançamentos com data futura.
+- **Variável que falta**: o quanto você costuma gastar em avulsos (não parcelados) **depois** do
+  "dia de hoje" — mediana, nos seus últimos 12 meses, do gasto avulso com data depois desse dia —
+  menos os avulsos já lançados com data futura neste mês (eles já estão em "Já lançado"). Como é medido
+  pelo histórico de cada usuário, vale pra qualquer padrão: quem gasta pesado no começo do mês, no
+  meio ou no fim. Uma versão anterior extrapolava pelo ritmo (gasto até hoje ÷ fração do mês já gasta
+  até esse dia) e, no começo do mês, duas compras maiores chegavam a projetar o dobro do mês normal.
+- **Receita**: a lançada no mês; se nada foi lançado ainda, a mediana dos últimos 6 meses (mediana,
+  não média, pra 13º e PLR não puxarem pra cima), com o caixa pelo % padrão do usuário.
+- **Faixa**: "entre X e Y" vem dos percentis 25/75 do mesmo valor (gasto depois do dia de hoje); sempre contém
+  o valor central e some quando os dois extremos coincidem.
+  Com menos de 3 meses de histórico, aparece o aviso "projeção aproximada".
+
+"Como calculamos" abre a decomposição num balão (popover) em vez de expandir o card — na web, expandir
+esticava a linha inteira de cards.
 
 ### Botão "Ver detalhes"
 
-Ao lado do seletor de mês/ano, abre um modal fullscreen, read-only, com todas as descrições dos
-lançamentos daquele mês — duas tabelas empilhadas (Gastos, Receitas), sempre ordenadas do maior valor
-pro menor. Na tabela de gastos, os **3 maiores** são destacados: a linha divisória fica vermelha e o
-valor em R$ fica em vermelho (só isso — o fundo da linha não é destacado).
+Ao lado do seletor, abre um modal read-only com as tabelas de Gastos e Receitas do mês, ordenadas do
+maior valor pro menor, com os **3 maiores gastos** destacados (linha divisória e valor em vermelho). O
+destaque é calculado à parte e continua nos mesmos lançamentos mesmo que o usuário reordene por outra
+coluna.
+
+## Indicadores (`GET /resumo/indicadores?ate_ano=&ate_mes=`)
+
+Seção entre Mensal e Anual. O mês de referência é o do corte (checkbox ligado) ou o mês atual.
+Percentuais ficam sempre visíveis, mesmo com o olho fechado.
+
+| Indicador | Como é calculado |
+|---|---|
+| **Taxa de poupança** | Caixa real ÷ receita, numa janela móvel dos últimos 3 meses (somas, não média de percentuais), com sparkline da série mensal |
+| **Comprometimento futuro** | Parcelas já lançadas nos próximos 6 meses ÷ (receita média dos últimos 6 meses × 6), com a distribuição por mês |
+| **Custo fixo** | Soma das contas que se repetem ÷ receita média de 3 meses (ver regra abaixo) |
+| **% essencial** | Gastos essenciais ÷ total, mês a mês, com tendência em pontos percentuais por mês (regressão linear) |
+
+**Regra do custo fixo** (recorrência detectada pela descrição): gasto avulso com a mesma descrição
+(ignorando maiúsculas e acentos), uma vez por mês, em pelo menos 3 dos últimos 4 meses, com valor
+estável (todos até 15% da mediana). Cada conta entra pela mediana. **Séries com fim definido ficam de
+fora** — eram compras parceladas lançadas como avulsas (o histórico importado não marcava parcelas) e
+viravam "conta fixa" por engano:
+
+- sai a série que tem lançamento depois do mês seguinte ao de referência (o app não deixa lançar tão
+  adiantado — só parcela chega lá);
+- sai a série que já parou (sem lançamento no mês de referência; no mês em andamento, só depois que o
+  dia de costume passou, porque a conta pode só não ter sido lançada ainda);
+- série ligada a uma [recorrência](#gastos-e-receitas-recorrentes) sempre conta.
+
+A lista "Ver n contas" abre num balão (popover), pelo mesmo motivo do "Como calculamos".
+
+## Resumo Anual (`GET /resumo/anual?ano=&meses=&ate_ano=&ate_mes=`)
+
+Métricas do ano do seletor (calendário jan–dez, limitado ao corte se o checkbox estiver ligado):
+
+- Receita total e total de gastos, separado em essenciais e não essenciais (com o %)
+- Quantidade de gastos (cada parcela conta como 1 — uma compra em 3x são 3 gastos) e de receitas
+- Média **mensal** de gastos e de receitas (total ÷ número de meses com dados)
+- Caixa pretendido e caixa real do ano
+- Percentuais por categoria, com as mesmas barras ordenadas/escaladas do mensal
+
+### Gráfico 1 — Linhas ("Evolução")
+
+Janela rolante de 12 meses terminando no mês atual (ou no do corte): gastos essenciais, não essenciais
+e caixa real. Linhas suavizadas; "Caixa real" tracejada com marcador em X; linhas de tendência
+(regressão linear, `shared/linear-regression.ts`) para essenciais e não essenciais, fora da legenda.
+
+### Gráfico 2 — Colunas + linha ("Caixa pretendido vs. real")
+
+Mesma janela do Gráfico 1 — não são os meses do ano selecionado; os dois gráficos sempre olham pra trás
+a partir de hoje (ou do corte), pra ficarem consistentes entre si.
+
+- 3 colunas por mês, eixo esquerdo (R$): Receita, Caixa pretendido, Caixa real (dourado / verde claro /
+  verde escuro), cantos arredondados
+- Linha no eixo secundário direito: `caixa real ÷ gastos` do mês, como **razão** (0,5 / 1,0 / 1,5),
+  não porcentagem — igual à planilha original em Excel. Desenhada por cima das colunas, em violeta
+  (cor fria e não verde, pra não se confundir com as colunas)
+
+Os dois gráficos têm um ícone de expandir que abre um modal fullscreen com seletor de janela 12/24/36
+meses (parâmetro `meses`).
 
 ## Relatório Geral (`GET /resumo/geral?ate_ano=&ate_mes=`)
 
-Seção abaixo do Resumo Anual, sem seletor de período próprio (usa o mesmo checkbox de corte descrito
-acima). Mostra **totais** (não médias) de todo o histórico, em 3 gráficos:
+Sem seletor próprio (só o checkbox de corte). Mostra **totais** (não médias) de todo o histórico:
 
-- **Gráfico da direita** — colunas agrupadas **por ano**: gastos essenciais e não essenciais, receita,
-  caixa pretendido e caixa real, um grupo de colunas por ano com dados (`anos` da API)
-- **Gráfico da esquerda** — as mesmas categorias, mas como um **total único agregando todo o
-  histórico** (não quebrado por ano) — dá a visão consolidada de tudo que já foi lançado
-- **Gráfico de baixo**, abaixo dos dois anteriores e ocupando a largura de ambos: totais por **mês do
-  calendário** (jan–dez), somando o mesmo mês em todos os anos — revela sazonalidade (ex: dezembro
-  sempre mais alto), independente de qual ano cada lançamento caiu (`por_mes` da API, agregado no
-  backend por `defaultdict` sobre `date.month`)
+- **Esquerda**: essenciais, não essenciais, receita, caixa pretendido e caixa real como um total único
+- **Direita**: as mesmas categorias quebradas por ano (um grupo de colunas por ano com dados)
+- **Embaixo**, na largura dos dois: totais por **mês do calendário** (jan–dez), somando o mesmo mês de
+  todos os anos — revela sazonalidade (ex: dezembro sempre mais alto)
 
-## Manutenção Veículos (`/veiculos`)
+## Análise inflacionária (`GET /resumo/inflacao?ate_ano=&ate_mes=`)
 
-Fora do dashboard da Home, seção própria com:
+Índice de inflação **pessoal** — não é o IPCA nem índice oficial nenhum. Mede quanto os gastos do
+próprio usuário numa "cesta" de categorias essenciais estão subindo. Como o app guarda totais por
+categoria/mês (não preço × quantidade), o índice é "spend-based": soma a cesta inteira a cada mês e
+mede a variação % dessa soma — o que pondera cada categoria pelo próprio peso, sem peso manual.
 
-- Cards de resumo por veículo: total gasto, quantidade de serviços, data do último serviço
-  (`GET /veiculos/resumo?meses=`)
-- Gráfico de evolução mensal, uma linha por veículo, últimos N meses (mesma janela dos cards)
-- Tabela de veículos cadastrados e tabela paginada de serviços (mesmo padrão "carregar mais" de 25 em
-  25 de `/dados`), com edição/exclusão em ambas
+- **Cesta**: marcada no modal Categorias, com um toggle "Cesta de inflação" em cada categoria
+  essencial. Não é versionada no tempo: reflete a seleção **atual** e o índice é recalculado sobre todo
+  o histórico — trocar a cesta muda o gráfico retroativamente, de propósito.
+- **Mês a mês / Ano a ano** (`ion-segment`), sobre uma janela rolante de 12 meses que segue o corte.
+- Card de destaque com a variação mais recente (verde/vermelho conforme o sinal).
+- Gráfico de 2 linhas: inflação da cesta (%, eixo esquerdo) e `caixa real ÷ gastos` do mês (%, eixo
+  direito) — dá pra ver se o caixa acompanha a própria inflação. Mês sem gasto na cesta-base vira um
+  buraco no gráfico, não zero (pra não inventar dado).
+- Sem nenhuma categoria na cesta: mensagem com atalho pro modal Categorias.
+
+!!! note "Módulo opcional"
+    A análise é o módulo `analise_inflacionaria`, sem tela própria. Sem ele, a seção some da Home, os
+    toggles somem de Categorias e o backend responde 403 em `/resumo/inflacao` (e no
+    `PUT /dropdown-options/{id}` que tente mudar `include_in_inflation`). A marcação continua no banco.
+
+## Alerta de anomalia ao salvar gasto (`GET /gastos/anomalia?item_id=&value=`)
+
+Em Adicionar/Editar gasto (não parcelado), antes de salvar, o app pergunta se o valor está muito acima
+do normal da categoria e pede confirmação. Usa um z-score **robusto** (mediana e MAD, que não se
+deixam puxar por um gasto atípico antigo) sobre os gastos avulsos da categoria nos últimos 12 meses:
+
+- precisa de pelo menos 6 lançamentos de referência, senão nunca alerta;
+- alerta com z > 3,5 **e** diferença de pelo menos R$ 50;
+- se os valores forem sempre iguais (MAD = 0), alerta a partir de 3× a mediana.
+
+Se a checagem falhar (rede, servidor), o gasto é salvo normalmente — o alerta ajuda, não bloqueia.
+
+## Resumo da virada do mês (`GET /notificacoes`)
+
+No dia 1, aparece no sino da Home (e num card no topo) um resumo do mês que acabou. É gerado **sob
+demanda, sem cron**: ao listar as notificações, o backend grava o resumo do mês anterior se ainda não
+existir. Regras:
+
+- Só o mês anterior, nunca meses mais antigos — quem ficou meses sem abrir o app não recebe uma
+  enxurrada. Mês sem nenhum lançamento não gera resumo.
+- **No máximo 12 resumos**: os de mês de referência fora dos últimos 12 meses são apagados.
+- O conteúdo é uma **foto** do momento da geração; lançamentos editados depois não mudam o resumo.
+
+Conteúdo:
+
+- Gastos, receita, caixa real e caixa pretendido, com variação contra a **média dos 3 meses
+  anteriores** (só meses com algum lançamento)
+- Taxa de poupança (caixa real ÷ receita), com o pretendido como meta
+- Categorias que **subiram** e que **caíram** (até 3 cada) e **gastos pontuais**
+- Parcelamentos novos e encerrados
+- Inflação da cesta (só com o módulo) e parcelas de devedor em atraso (só com o módulo)
+
+Nas categorias entram só gastos **sem parcela** (uma compra em 10x não pode aparecer como "subiu" por
+10 meses), e só variações com `|variação| ≥ 20%` **e** `|diferença| ≥ R$ 50` — abaixo disso é ruído.
+Uma categoria precisa ter gasto em 2 dos 3 meses-base pra ter média; senão, se passar de R$ 50, vira
+"pontual". O modal do resumo respeita o olho de esconder valores (só os R$ somem).
+
+## Gastos e receitas recorrentes
+
+"Repetir todo mês" + "Dia do mês" em Adicionar gasto/receita. O lançamento salvo é o primeiro; a regra
+gera os próximos a partir do mês seguinte. Efeito nos números:
+
+- Cada mês gerado é um gasto/receita comum, criado **na virada do mês** já com a data do dia escolhido
+  — por isso já conta no resumo mensal, nos indicadores e na **projeção do fim do mês** desde o dia 1,
+  como uma parcela. Na projeção ele entra em "já lançado", não em "variável que falta".
+- Dia que não existe no mês vira o último dia (31 → 30/04, 28/02).
+- Meses em que ninguém abriu o app são todos criados ao voltar.
+- Gasto recorrente não passa pelo alerta de anomalia e não pode ser parcelado.
+- No custo fixo dos Indicadores, uma série ligada a uma recorrência sempre conta.
+
+A aba **Recorrências** de `/dados` lista as regras (ativa/pausada/encerrada, próxima data) e permite
+editar (vale dos próximos em diante, inclusive um mês de término opcional), pausar/retomar (retomar não
+cria os meses parados) e excluir — para de gerar e mantém os lançamentos já criados, que viram avulsos.
 
 ## Visualizar dados (`/dados`)
 
-Não é uma tela analítica (não calcula métricas), mas é onde o usuário gerencia os lançamentos que
-alimentam os resumos acima:
+Não calcula métricas, mas é onde se gerenciam os lançamentos que alimentam tudo acima:
 
-- Duas tabelas — Gastos e Receitas — ordenadas por data decrescente (mais recente primeiro), 25 linhas
-  por vez com um botão "Carregar mais" ao pé de cada tabela (`GET /gastos` / `GET /receitas` retornam
-  `{items, total}`, não uma lista direta)
-- Filtro opcional por mês e/ou ano; sem filtro por padrão, mostra tudo
-- Cada linha tem ações de editar (modal pré-preenchido, `PUT`) e excluir (`DELETE`, com confirmação
-  via alert antes de remover)
+- Abas Gastos, Receitas e Recorrências; tabelas por data decrescente, 25 linhas por vez com "Carregar
+  mais" (`GET /gastos`/`GET /receitas` retornam `{ items, total }`)
+- Filtro opcional por mês e/ou ano (sem filtro por padrão), ordenação por coluna (client-side, sobre o
+  que já foi carregado)
+- Editar abre o modal pré-preenchido; em gasto parcelado, a edição replica no grupo inteiro. Excluir
+  some na hora com "Desfazer" por 5 s
+- Lançamento gerado por recorrência mostra um ícone de repetição ao lado da data
+
+## Manutenção Veículos (`/veiculos`)
+
+Módulo opcional, fora da Home:
+
+- **Cards por veículo**: total gasto, quantidade de serviços e último serviço
+  (`GET /veiculos/resumo?ano=&mes=`). O filtro de mês/ano no topo (vazio por padrão = histórico
+  inteiro) afeta **só** esses cards
+- **Gráfico "Evolução de gastos"**: uma linha por veículo, sempre a janela rolante dos últimos 12
+  meses, independente do filtro — mostrar uma janela fixa é justamente o propósito dele
+- Tabelas de veículos e de serviços (paginada, com busca e filtro por veículo próprios)
+- Quilometragem obrigatória e sempre crescente por veículo: um serviço não pode ter km menor que o
+  anterior nem maior que o seguinte
+
+## Ferramentas (`/ferramentas`)
+
+Duas calculadoras, 100% client-side e sem salvar nada (`pages/ferramentas/calculators.ts`, funções
+puras testadas):
+
+- **Juros compostos**: valor inicial + aporte mensal reajustado uma vez por ano, com a rentabilidade
+  anual convertida pra taxa mensal equivalente (`(1 + anual)^(1/12) − 1`). Mostra valor acumulado,
+  total investido, rendimento e a taxa mensal.
+- **À vista vs. a prazo**: decide por **valor presente líquido** — cada parcela (paga no fim do mês k)
+  é descontada pelo CDI mensal líquido de IR (o custo de oportunidade) e a soma é comparada com o
+  preço à vista: VP maior que o à vista → vale pagar à vista. A alíquota de IR segue a tabela
+  regressiva pelo prazo (22,5% / 20% / 17,5% / 15%), com opção de definir manualmente. Uma tabela mês
+  a mês colapsável simula investir o valor à vista e ir pagando as parcelas, só como informação (se o
+  saldo zerar antes do fim, a tabela para ali com um aviso; a conclusão por VPL não muda).
+
+## Exportar Dados (`/exportar-dados`, `GET /export/{modulo}`)
+
+Módulo opcional. Um cartão por módulo (Gastos, Receitas, Manutenção Veículos, Operações Bolsa,
+Devedores, Categorias — só os habilitados pro usuário), cada um baixando um `.zip` só daquele módulo:
+
+- CSV com `;`, encoding latin-1 e vírgula decimal — abre direto no Excel em português
+- Pasta `anexos/` com os comprovantes dos registros exportados; a coluna `anexos` do CSV traz o nome
+  do arquivo dentro do zip. Anexo de grupo parcelado aparece em todas as parcelas no CSV, mas entra
+  uma vez só no zip
+- Categorias exporta ativas e inativas (é cópia de backup); Veículos gera dois CSVs
+- No navegador baixa direto; no APK abre a folha de compartilhar, porque arquivos gravados pelo app em
+  `Documents` ficam invisíveis pros outros apps a partir do Android 11

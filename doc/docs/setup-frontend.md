@@ -1,72 +1,94 @@
 # Setup - Frontend
 
-Pré-requisitos: **Node.js 24** e **npm 11** (`node --version` / `npm --version` para confirmar).
+Pré-requisitos: **Node.js 24** (exigência do Angular CLI 22) e npm 11, num ambiente Linux com bash.
 
 !!! note "Isso é sobre rodar o frontend que já existe"
-    O projeto Ionic (`frontend/`) já foi criado (via `ionic start`) e está versionado dentro do
-    repositório. Numa máquina nova, **não** rode `ionic start` de novo — isso criaria um projeto do
-    zero, sobrescrevendo o que já existe. Só instale as dependências (passo 2 abaixo).
+    O projeto Ionic + Angular 22 (`frontend/`, standalone components) já está versionado. Numa máquina
+    nova, **não** rode `ionic start` de novo — isso criaria um projeto do zero, sobrescrevendo o que
+    já existe. Só instale as dependências (passo 2 abaixo).
 
-## 1. Instalar o Ionic CLI (uma vez, globalmente)
+## 1. Node via `nvm` e Ionic CLI
 
-```powershell
+O Node é instalado em espaço de usuário com o [nvm](https://github.com/nvm-sh/nvm) (sem `sudo`, sem
+depender da versão do `apt`):
+
+```bash
+nvm install 24
+nvm use 24
 npm install -g @ionic/cli
 ```
 
+O `menu.sh` já faz `source ~/.nvm/nvm.sh` no topo, então as opções dele enxergam o Node certo mesmo
+num terminal que não carregou o nvm.
+
 ## 2. Instalar as dependências do projeto
 
-```powershell
+```bash
 cd frontend
 npm install
 ```
 
+!!! warning "`node_modules` copiado de outro sistema não funciona"
+    Algumas dependências têm binários nativos por plataforma (ex: `@esbuild/win32-x64` vs.
+    `@esbuild/linux-x64`). Um `node_modules` vindo do Windows quebra no Linux — apague a pasta e rode
+    `npm install` de novo.
+
 ## 3. Rodar em modo desenvolvimento
 
-```powershell
+```bash
 ionic serve
 ```
 
 Abre em `http://localhost:8100` com hot-reload, consumindo a API em `http://localhost:8000` (URL
 configurada em `src/environments/environment.ts`).
 
-No dia a dia, o mais simples é rodar o `menu.bat` na raiz do projeto → **1. Aplicação e testes** →
-**1. Iniciar aplicação** — ele já sobe backend e frontend juntos, cada um em sua própria janela de
-terminal.
-
-!!! warning "Projeto dentro do OneDrive"
-    Pelo mesmo motivo citado em [Setup - Backend](setup-backend.md), o `ionic serve` (vite por baixo)
-    também pode parar de recarregar depois de algumas edições, se a pasta estiver sincronizada pelo
-    OneDrive. Sintoma: a página não reflete uma mudança que devia ter aparecido. Solução: fechar a
-    janela do `ionic serve` e rodar de novo.
+No dia a dia, o mais simples é `./menu.sh` na raiz → **1. Aplicação e testes** → **1. Iniciar
+aplicação** — sobe backend e frontend juntos, cada um na sua janela de terminal.
 
 ## 4. Arquivos de ambiente (`src/environments/`)
 
-Três variantes, cada uma com um `apiUrl` diferente, escolhidas via `--configuration` do Angular:
+Três variantes, escolhidas via `--configuration` do Angular. Todas têm `apiUrl` e `localApiUrl`:
 
-| arquivo | usado por | `apiUrl` |
-|---|---|---|
-| `environment.ts` | `ionic serve` (dev local) | `http://localhost:8000` |
-| `environment.prod.ts` | build web pro deploy (`ionic build --prod`) | `/api` (caminho relativo — funciona através do proxy do nginx no celular, em qualquer dispositivo que acesse o IP dele) |
-| `environment.mobile.ts` | build do app Android nativo (ver [Gerar o app Android](build-app.md)) | URL absoluta via Tailscale, usando o hostname MagicDNS (`http://<nome>.tailXXXX.ts.net:8080/api`) em vez do IP — precisa ser absoluta porque o app nativo não roda dentro de um domínio servido pelo nginx; o hostname é preferível ao IP porque continua igual mesmo se o IP do Tailscale mudar |
+| arquivo | usado por | `apiUrl` | `localApiUrl` |
+|---|---|---|---|
+| `environment.ts` | `ionic serve` (dev local) | `http://localhost:8000` | vazio |
+| `environment.prod.ts` | build web do deploy (`ionic build --prod`) | `/api` (relativo — passa pelo proxy do nginx, funciona em qualquer endereço que sirva o site) | vazio |
+| `environment.mobile.ts` | APK Android (ver [Gerar o app Android](build-app.md)) | `https://SEU-SERVIDOR.tailXXXX.ts.net/api` (HTTPS via Tailscale, hostname MagicDNS) | `http://IP-LOCAL-DO-SERVIDOR:8080/api` |
+
+O app nativo não roda dentro de um domínio servido pelo nginx, por isso precisa de URL absoluta. Ele
+**tenta a rede local primeiro**: no startup, ao voltar pro primeiro plano e quando a rede volta,
+`core/api-base.ts` testa `<localApiUrl>/health`; se responder, um interceptor troca o prefixo de toda
+requisição pro endereço local; senão, usa o Tailscale. `localApiUrl: ''` desliga a tentativa.
+Detalhes em [Deploy (Ubuntu Server + Tailscale)](deploy-ubuntu-tailscale.md#5-rede-local-primeiro).
 
 ## 5. Build de produção (para o deploy web)
 
-```powershell
+```bash
 ionic build --prod
 ```
 
-Gera os arquivos estáticos em `frontend/www/`, servidos pelo nginx no celular (ver
-[Deploy](deploy-android-tailscale.md)). Isso já está automatizado no `menu.bat` → **2. Deploy para o
+Gera os arquivos estáticos em `frontend/www/`, servidos pelo nginx do servidor (ver
+[Deploy](deploy-ubuntu-tailscale.md)). Já automatizado em `./menu.sh` → **2. Deploy para o
 servidor**.
 
 ## 6. Testes
 
-Builder do Angular 22 (`@angular/build:unit-test`), roda **Vitest** (não Karma/Jasmine):
+Builder do Angular 22 (`@angular/build:unit-test`), que roda **Vitest** (não Karma/Jasmine):
 
-```powershell
+```bash
 npm test
 ```
 
+O `npm test` roda antes o `scripts/check-a11y.mjs`, que falha se algum botão só de ícone ficar sem
+`aria-label` (também disponível sozinho em `npm run check:a11y`). Ou pelo menu: `./menu.sh` → **1** →
+**3. Iniciar testes frontend**.
+
+!!! tip "Padrões das specs"
+    Specs com `ModalController`/`RouterLink` precisam de `provideIonicAngular()`/`provideRouter([])`;
+    serviços HTTP usam `provideHttpClient()` + `provideHttpClientTesting()`. Para algo que chama
+    `Router.navigateByUrl`, mocke o `Router` direto. `vi.mock` de imports relativos não é suportado
+    pelo runner do Angular — prefira mock via DI.
+
 ## 7. Build do app Android (APK)
 
-Requer um ambiente extra (JDK, Android SDK) — ver a página dedicada [Gerar o app Android](build-app.md).
+Requer um ambiente extra (JDK 21, Android SDK) — ver [Gerar o app Android](build-app.md).

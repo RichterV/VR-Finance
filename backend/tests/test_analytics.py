@@ -165,6 +165,38 @@ def test_previsao_dia_31_em_mes_de_30_dias(client, auth_headers, db_session, use
     assert client.get("/resumo/previsao", headers=auth_headers).status_code == 200
 
 
+def test_previsao_compras_grandes_no_comeco_do_mes_nao_explodem(client, auth_headers, db_session, user, monkeypatch):
+    """Caso real: no dia 4, R$ 400 já gastos num mês que costuma ter só R$ 40 até o dia 4 -- a
+    extrapolação pelo ritmo (400 ÷ 0,1) projetava R$ 4.000 de variável no mês."""
+    monkeypatch.setattr(analytics, "today_local", lambda: date(2026, 10, 4))
+    item = _item(db_session, user)
+    for mes in range(4, 10):
+        _receita(db_session, user, 3000, date(2026, mes, 1))
+        _gasto(db_session, user, item, 40, date(2026, mes, 2))
+        _gasto(db_session, user, item, 360, date(2026, mes, 20))
+    _receita(db_session, user, 3000, date(2026, 10, 1), cash_pct=50)
+    _gasto(db_session, user, item, 400, date(2026, 10, 3))
+
+    p = client.get("/resumo/previsao", headers=auth_headers).json()
+
+    assert p["variavel_restante"] == 360  # o que costuma sair depois do dia 4
+    assert p["saldo_previsto"] == 3000 - 400 - 360 - 1500
+    assert p["saldo_min"] <= p["saldo_previsto"] <= p["saldo_max"]
+
+
+def test_previsao_desconta_avulso_ja_lancado_pra_frente(client, auth_headers, db_session, user, monkeypatch):
+    monkeypatch.setattr(analytics, "today_local", lambda: date(2026, 10, 4))
+    item = _item(db_session, user)
+    for mes in range(4, 10):
+        _gasto(db_session, user, item, 300, date(2026, mes, 20))
+    _gasto(db_session, user, item, 100, date(2026, 10, 25))  # já lançado, ainda não chegou
+
+    p = client.get("/resumo/previsao", headers=auth_headers).json()
+
+    assert p["comprometido"] == 100
+    assert p["variavel_restante"] == 200
+
+
 # --- Indicadores ---
 
 

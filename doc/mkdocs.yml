@@ -42,4 +42,5 @@ nav:
   - Setup - Backend: setup-backend.md
   - Setup - Frontend: setup-frontend.md
   - Gerar o app Android (APK): build-app.md
-  - Deploy (Android + Tailscale): deploy-android-tailscale.md
+  - Deploy (Ubuntu Server + Tailscale): deploy-ubuntu-tailscale.md
+  - Deploy no Android (Termux) — histórico: deploy-android-tailscale.md

@@ -57,7 +57,8 @@
                     </div>
                   </dl>
                   <p class="forecast-help">
-                    O gasto variável que falta segue o seu ritmo dos últimos 12 meses até o dia {{ pv.dia }}.
+                    O gasto variável que falta é o quanto você costuma gastar depois do dia {{ pv.dia }} (mediana dos
+                    últimos 12 meses), descontando o que já está lançado pra este mês.
                     @if (pv.receita_estimada) {
                       Sem receita lançada no mês, ela é estimada pela mediana dos últimos 6 meses.
                     }

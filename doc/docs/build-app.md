@@ -1,163 +1,180 @@
 # Gerar o app Android (APK)
 
-Além do web servido pelo nginx no celular (ver [Deploy](deploy-android-tailscale.md)), o projeto
-também pode gerar um **app Android nativo** via [Capacitor](https://capacitorjs.com/), empacotando o
-mesmo frontend Ionic num APK que se instala direto no celular (sideload), sem passar pela Play Store.
+Além do build web servido pelo nginx do servidor (ver [Deploy](deploy-ubuntu-tailscale.md)), o
+projeto gera um **app Android nativo** via [Capacitor](https://capacitorjs.com/) (Capacitor 8,
+`frontend/android/`, versionado), empacotando o mesmo frontend Ionic num APK de debug instalado por
+sideload, sem Play Store.
 
 ## Por que existe um build separado
 
 O app nativo não roda dentro de um domínio servido pelo nginx — não existe um `/api` relativo para
-ele apontar. Por isso existe uma terceira variante de ambiente, `environment.mobile.ts`, com uma URL
-**absoluta** via Tailscale — assim o app funciona de qualquer lugar, não só na rede local, contanto que
-o Tailscale esteja ativo no celular que roda o app e no celular servidor (ver
-[Deploy](deploy-android-tailscale.md)).
+ele apontar. Por isso existe a variante `environment.mobile.ts`, com URLs **absolutas**:
 
-Usa o **hostname MagicDNS** do celular servidor (`http://<nome>.tailXXXX.ts.net:8080/api`), não o IP
-numérico — o IP do Tailscale já é estável (não muda com queda de luz), mas o hostname é ainda mais
-resistente: continua igual mesmo no cenário raro de o celular ser removido e readicionado ao tailnet
-(o que pode gerar um IP novo, mas mantém o nome se você renomear o dispositivo igual). Exige MagicDNS
-habilitado em [login.tailscale.com/admin/dns](https://login.tailscale.com/admin/dns).
+```ts title="frontend/src/environments/environment.mobile.ts"
+export const environment = {
+  production: true,
+  apiUrl: 'https://SEU-SERVIDOR.tailXXXX.ts.net/api',      // Tailscale (HTTPS)
+  localApiUrl: 'http://IP-LOCAL-DO-SERVIDOR:8080/api',     // rede de casa, tentada primeiro
+};
+```
 
-## Rede: acessar uma API em HTTP puro (sem TLS) exige dois ajustes
+- `apiUrl` usa o **hostname MagicDNS** do servidor (exige MagicDNS e HTTPS habilitados no painel do
+  Tailscale). O certificado só vale pro hostname, nunca pro IP. Funciona de qualquer lugar, contanto
+  que o Tailscale esteja ativo no celular.
+- `localApiUrl` é testado antes (`/health`, até 1,5s no startup); respondendo, o app fala direto com o
+  nginx na LAN. Vazio desliga.
+- Para trocar o endereço do Tailscale: `./menu.sh` → **6** → **2** (reescreve só a linha `apiUrl:`) e
+  gere um APK novo — o endereço fica embutido no build.
 
-Como a API roda via Tailscale sem certificado (`http://`, não `https://`), o app nativo precisa de
-**dois** ajustes específicos — faltar qualquer um dos dois quebra silenciosamente todas as chamadas
-à API (não só o login), e o sintoma característico é um erro **instantâneo** ("Usuário ou senha
-inválidos" ou qualquer outro erro de request), sem nenhuma demora perceptível de rede — isso é o sinal
-de que a requisição foi bloqueada no próprio dispositivo, antes de sequer tentar a conexão. Testar a
-mesma credencial direto via `curl` contra a API ajuda a confirmar: se funciona por `curl` mas falha
-instantaneamente no app, é bloqueio de plataforma, não credencial/servidor.
+## Rede: HTTPS por padrão, HTTP só na rede local
 
-1. **Cleartext bloqueado por padrão (Android 9+)**: apps não conseguem fazer requisições HTTP puras
-   pra nenhum host por padrão. Resolvido com um `network_security_config.xml` liberando cleartext só
-   para o hostname do Tailscale (não globalmente):
+Desde 2026-09-26 a API é servida em **HTTPS** pelo `tailscale serve` (ver
+[Deploy](deploy-ubuntu-tailscale.md#4-https-via-tailscale)), então o app voltou ao padrão do Capacitor:
+as páginas dele são servidas em `https://localhost`, sem `server.androidScheme` no
+`capacitor.config.ts`.
 
-   ```xml title="frontend/android/app/src/main/res/xml/network_security_config.xml"
-   <network-security-config>
-       <domain-config cleartextTrafficPermitted="true">
-           <domain includeSubdomains="true">SEU-CELULAR.tailXXXX.ts.net</domain>
-       </domain-config>
-   </network-security-config>
-   ```
+Os dois contornos de HTTP puro continuam existindo, mas **só pro acesso pela rede local** (o nginx na
+LAN é `http://`, porque o certificado não vale pro IP):
 
-   Referenciado no `<application>` do `AndroidManifest.xml` via
-   `android:networkSecurityConfig="@xml/network_security_config"`. O tráfego já é criptografado pelo
-   túnel WireGuard do Tailscale mesmo sem HTTPS na camada da aplicação — não é uma regressão de
-   segurança real.
+1. **Conteúdo misto** — uma página `https://localhost` chamando uma API `http://` é bloqueada pelo
+   WebView. Liberado em `capacitor.config.ts`:
 
-2. **"Conteúdo misto" (mixed content), independente do item acima**: mesmo com cleartext liberado, o
-   login continuava falhando do mesmo jeito instantâneo. Causa: o Capacitor por padrão serve as
-   próprias páginas do app em `https://localhost` (um esquema interno dele, sem TLS real por trás) —
-   uma página "https" chamando uma API "http" é bloqueado pelo motor do WebView como mixed content,
-   e esse bloqueio **não tem nada a ver** com o `network_security_config` (que resolve só o bloqueio de
-   cleartext do Android, não o de mixed content do WebView). Resolvido fazendo o próprio app também
-   ser servido em `http`, eliminando o descompasso de esquemas:
+    ```ts title="frontend/capacitor.config.ts"
+    android: {
+      allowMixedContent: true,
+    },
+    ```
 
-   ```ts title="frontend/capacitor.config.ts"
-   const config: CapacitorConfig = {
-     // ...
-     server: {
-       androidScheme: 'http',
-     },
-   };
-   ```
+2. **Cleartext bloqueado (Android 9+)** — liberado **só pro IP local do servidor**, todo o resto
+   continua exigindo HTTPS:
+
+    ```xml title="frontend/android/app/src/main/res/xml/network_security_config.xml"
+    <network-security-config>
+        <domain-config cleartextTrafficPermitted="true">
+            <domain includeSubdomains="false">IP-LOCAL-DO-SERVIDOR</domain>
+        </domain-config>
+    </network-security-config>
+    ```
+
+    Referenciado no `<application>` do `AndroidManifest.xml` via
+    `android:networkSecurityConfig="@xml/network_security_config"`.
+
+!!! warning "Na LAN o tráfego vai sem criptografia"
+    Pela rede local, senha e JWT trafegam em HTTP puro. É uma troca consciente (velocidade em casa);
+    fora de casa o app usa o Tailscale com HTTPS.
+
+!!! tip "Sintoma de bloqueio no próprio aparelho"
+    Um erro **instantâneo** em qualquer requisição (ex: "Usuário ou senha inválidos" sem nenhuma
+    demora de rede) indica bloqueio client-side (cleartext ou conteúdo misto), não credencial errada.
+    Se a mesma credencial funciona via `curl` contra a API, é bloqueio de plataforma.
+
+## Plugins nativos
+
+Confira as versões em `frontend/package.json`:
+
+| plugin | uso |
+|---|---|
+| `@aparajita/capacitor-biometric-auth` (10.x, a única major compatível com Capacitor 8) | login por digital e bloqueio ao voltar pro app |
+| `@aparajita/capacitor-secure-storage` | guarda usuário/senha lembrados e a flag de biometria |
+| `@capacitor/filesystem` | baixar anexo direto em Documentos, sem prompt |
+| `@capacitor/share` | compartilhar anexo e a exportação de dados (folha nativa de compartilhar) |
+| `@capacitor/app` | eventos de primeiro/segundo plano (bloqueio, troca rede local/Tailscale), botão voltar |
+| `@capacitor/haptics`, `@capacitor/keyboard`, `@capacitor/status-bar` | plugins padrão do template Ionic |
+
+A foto da câmera nos anexos não usa plugin: é um `<input type="file" capture="environment">`, que o
+Capacitor trata abrindo o app de câmera. O manifest **não** declara `CAMERA` de propósito (declarar
+faria o Capacitor pedir a permissão em runtime).
+
+### Login por digital e bloqueio do app (resumo)
+
+- **Login por digital**: depois de um login manual com "Lembrar usuário e senha", o app oferece
+  ativar a digital. Nas próximas aberturas, aparece uma tela de digital que reenvia a credencial
+  salva pro `/auth/login` (gera um JWT novo).
+- **Bloqueio ao voltar pro app**: depois de X minutos em segundo plano (Perfil → Segurança:
+  imediatamente / 1 / 5 / 15 min / nunca; padrão 5 min se a digital estiver ativa), um overlay pede a
+  digital (ou PIN/padrão do Android). Abertura a frio com token salvo também bloqueia. Câmera, seletor
+  de arquivo e folha de compartilhar não disparam o bloqueio (`markExpectedExternalActivity()`).
 
 ## Pré-requisitos (uma vez por máquina nova)
 
-Diferente do build web (que só precisa de Node), o build do APK precisa de um **JDK** e do **Android
-SDK**. Passos testados nesta máquina (Windows):
+O build do APK precisa de um **JDK 21** e do **Android SDK**. Tudo instalado em espaço de usuário,
+sem `sudo` e sem Android Studio:
 
 ### 1. JDK 21
 
-O Capacitor/Android Gradle Plugin atual exige nível de linguagem Java 21 — **JDK 17 não é suficiente**
-(erro `invalid source release: 21` na task `compileDebugJavaWithJavac` se usar um JDK mais antigo).
+O Android Gradle Plugin atual exige Java 21 — **JDK 17 não é suficiente** (erro
+`invalid source release: 21` em `compileDebugJavaWithJavac`). Baixe o tarball do
+[Eclipse Temurin 21](https://adoptium.net/temurin/releases/?version=21) (Linux x64) e extraia em
+`~/jdk/`:
 
-```powershell
-winget install --id Microsoft.OpenJDK.21
+```bash
+mkdir -p ~/jdk
+tar xzf OpenJDK21U-jdk_x64_linux_hotspot_*.tar.gz -C ~/jdk
+ls ~/jdk   # ex: jdk-21.0.12.1+1
 ```
-
-Instala em `C:\Program Files\Microsoft\jdk-21.0.12.101-hotspot` (o número de versão exato pode variar
-um pouco entre atualizações do winget).
 
 ### 2. Android SDK — command-line tools
 
-Não precisa do Android Studio completo, só as ferramentas de linha de comando:
-
-1. Baixe o "Command line tools" para Windows em
+1. Baixe o "Command line tools only" para Linux em
    [developer.android.com/studio#command-line-tools-only](https://developer.android.com/studio#command-line-tools-only)
-2. Extraia de forma que a estrutura final fique `C:\Android\sdk\cmdline-tools\latest\bin\...`
-   (o zip vem com uma pasta `cmdline-tools/` na raiz — ela precisa ficar dentro de outra pasta chamada
-   `latest`, é assim que o `sdkmanager` espera encontrar as coisas)
-3. Aceite as licenças e instale os pacotes usados pelo projeto (versões definidas em
-   `frontend/android/variables.gradle` — `compileSdkVersion`/`targetSdkVersion` atualmente 36):
+2. Extraia de forma que a estrutura final fique `~/Android/sdk/cmdline-tools/latest/bin/...` (o zip
+   vem com uma pasta `cmdline-tools/` que precisa ficar dentro de outra chamada `latest`)
+3. Aceite as licenças e instale os pacotes (versões batendo com `compileSdkVersion`/`targetSdkVersion`
+   = 36 em `frontend/android/variables.gradle`):
 
-```powershell
-$env:JAVA_HOME = "C:\Program Files\Microsoft\jdk-21.0.12.101-hotspot"
-$env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
-C:\Android\sdk\cmdline-tools\latest\bin\sdkmanager.bat --sdk_root="C:\Android\sdk" --licenses
-C:\Android\sdk\cmdline-tools\latest\bin\sdkmanager.bat --sdk_root="C:\Android\sdk" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+```bash
+export JAVA_HOME=~/jdk/jdk-21.0.12.1+1
+export PATH="$JAVA_HOME/bin:$PATH"
+SDK=~/Android/sdk
+$SDK/cmdline-tools/latest/bin/sdkmanager --sdk_root=$SDK --licenses
+$SDK/cmdline-tools/latest/bin/sdkmanager --sdk_root=$SDK "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 ```
 
-O `--licenses` é interativo (pede "y" pra cada licença); num terminal normal, digite `y` e Enter pra
-cada uma até aparecer "All SDK package licenses accepted".
+### 3. Apontar o projeto pro SDK (`local.properties`)
 
-### 3. Apontar o projeto Android pro SDK (`local.properties`)
-
-```powershell
-cd frontend/android
-echo sdk.dir=C:/Android/sdk > local.properties
+```bash
+echo "sdk.dir=$HOME/Android/sdk" > frontend/android/local.properties
 ```
 
-!!! danger "Use `/`, não `\`, nesse arquivo"
-    Foi o bug mais chato de descobrir nesta configuração. `local.properties` é lido como um arquivo
-    `.properties` do Java, onde `\` é caractere de escape — `sdk.dir=C:\Android\sdk` é interpretado
-    como `sdk.dir=C:Androidsdk` (as barras somem silenciosamente), e o Gradle falha bem mais adiante
-    com um erro genérico (`java.io.IOException: A sintaxe do nome do arquivo... está incorreta` dentro
-    de `SdkLocator.validateSdkPath`), sem indicar que o problema é esse arquivo. Usar `/` evita o
-    problema inteiro.
+(caminho absoluto; o arquivo não é versionado.)
 
-### 4. `gradle.properties` — caminho do projeto com caractere não-ASCII
+### 4. Apontar o `menu.sh` pros dois
 
-Se o caminho do projeto tiver algum caractere não-ASCII (acento, ç, etc. — comum em pastas tipo "Área
-de Trabalho" de um Windows em português), o Android Gradle Plugin recusa o build por padrão. Isso já
-está corrigido em `frontend/android/gradle.properties` (versionado, não precisa repetir numa máquina
-nova):
-
-```
-android.overridePathCheck=true
-```
+No topo do `menu.sh`, `BUILD_JAVA_HOME` (`$HOME/jdk/jdk-21...`) e `BUILD_ANDROID_SDK`
+(`$HOME/Android/sdk`) — ajuste se a versão extraída do JDK for outra.
 
 ## Dia a dia: gerar o APK
 
-Com o ambiente acima já configurado uma vez, gerar um novo APK (depois de mudanças no frontend) é
-automatizado pelo `menu.bat` na raiz do projeto:
+**`./menu.sh` → 5. Criar build APP (gerar APK Android)**
 
-**`menu.bat` → 5. Criar build APP (gerar APK Android)**
+Builda o frontend com a configuração `mobile`, roda `npx cap sync android` (copia o build pro projeto
+nativo e atualiza os plugins) e `./gradlew assembleDebug`. O APK final é movido pra raiz do projeto
+como `VRFinance-<data>-<hora>.apk`.
 
-Isso builda o frontend com a configuração `mobile` (`environment.mobile.ts`), roda `npx cap sync
-android` (copia o build novo pro projeto nativo e atualiza os plugins do Capacitor) e depois
-`gradlew assembleDebug`. O APK final é movido para a raiz do projeto como
-`VRFinance-<data>-<hora>.apk`.
+Manualmente, os mesmos passos:
 
-Rodando manualmente, os mesmos passos são:
-
-```powershell
+```bash
 cd frontend
 npx ng build --configuration=mobile
 npx cap sync android
 cd android
-$env:JAVA_HOME = "C:\Program Files\Microsoft\jdk-21.0.12.101-hotspot"
-.\gradlew.bat assembleDebug
+export JAVA_HOME=~/jdk/jdk-21.0.12.1+1 ANDROID_HOME=~/Android/sdk
+./gradlew assembleDebug
 ```
 
 O APK fica em `frontend/android/app/build/outputs/apk/debug/app-debug.apk`.
 
 ## Instalar no celular
 
-É um build de **debug**, sem assinatura de release — suficiente pra instalar via sideload (não passa
-pela Play Store). Copie o `.apk` pro celular (cabo USB, Google Drive, WhatsApp Web, etc.) e abra o
-arquivo — na primeira instalação o Android vai pedir para habilitar "instalar de fontes desconhecidas"
-para o app usado para abrir o arquivo (Arquivos, Chrome, etc.).
+É um build de **debug**, sem assinatura de release — suficiente pra sideload. Copie o `.apk` pro
+celular (cabo USB, Google Drive, etc.) e abra o arquivo — na primeira instalação o Android pede para
+habilitar "instalar de fontes desconhecidas" para o app usado para abrir o arquivo.
+
+!!! note "Pode pedir login de novo"
+    Mudanças na origem do WebView (como a ida de `http://localhost` para `https://localhost` em
+    2026-09-26) ou na forma do token (revogação por `token_version`) fazem o app pedir login uma vez
+    depois de instalar o APK novo. A credencial lembrada/digital fica no Secure Storage nativo e não
+    é afetada.
 
 ## Identidade do app
 
@@ -170,16 +187,34 @@ appName: 'VR Finance',
 
 ## Ícone do app
 
-Gerado a partir do mesmo favicon usado na versão web (`frontend/src/assets/icon/favicon.svg`, o "$"
-branco sobre fundo indigo) — antes disso o app instalado usava o ícone placeholder padrão do
-Capacitor/Android, sem nenhuma relação visual com o resto do projeto. As fontes ficam em
-`frontend/resources/` (`icon.png` para o ícone legado, `icon-foreground.png`/`icon-background.png`
-para o ícone adaptativo do Android 8+), e os mipmaps em `frontend/android/app/src/main/res/mipmap-*/`
-são regenerados com:
+O mesmo "$" do favicon web (`frontend/src/assets/icon/favicon.svg`), escuro sobre **fundo verde** (a
+identidade visual trocou de indigo pra verde em 2026-09-13). As fontes ficam em `frontend/resources/`
+(`icon.png` legado, `icon-foreground.png`/`icon-background.png` pro ícone adaptativo), e os mipmaps
+em `frontend/android/app/src/main/res/mipmap-*/` são regenerados com:
 
-```powershell
+```bash
 npx @capacitor/assets generate --android
 ```
 
-Só precisa ser rodado de novo se o favicon/ícone de origem mudar — os mipmaps gerados ficam
-versionados, não fazem parte do fluxo normal de build do APK.
+Só precisa rodar de novo se o ícone de origem mudar — os mipmaps ficam versionados.
+
+## Histórico e pegadinhas
+
+Registradas porque custaram tempo — algumas valem só no Windows, onde o build era feito até
+2026-09-17.
+
+- **`local.properties` com `\` (Windows)**: o arquivo é lido como `.properties` do Java, onde `\` é
+  escape — `sdk.dir=C:\Android\sdk` vira `C:Androidsdk` silenciosamente, e o Gradle falha bem depois
+  com `java.io.IOException: A sintaxe do nome do arquivo... está incorreta` (em
+  `SdkLocator.validateSdkPath`). Use sempre `/`.
+- **Caminho do projeto com acento**: o Android Gradle Plugin recusa por padrão caminhos com
+  caracteres não-ASCII (ex: "Área de Trabalho"). Corrigido com `android.overridePathCheck=true` em
+  `frontend/android/gradle.properties` (versionado).
+- **Quando a API era HTTP puro** (até 2026-09-26): além de liberar cleartext pro hostname do Tailscale
+  no `network_security_config.xml`, era preciso `server: { androidScheme: 'http' }` no
+  `capacitor.config.ts` — sem isso o WebView (em `https://localhost`) bloqueava a API `http://` como
+  conteúdo misto, um bloqueio independente do cleartext do Android. Os dois saíram com o HTTPS; hoje
+  só sobra a liberação restrita ao IP local descrita acima.
+- **Download de anexo**: `<a download>` com `blob:` não faz nada no WebView do Capacitor (não há
+  gerenciador de downloads) — por isso o `@capacitor/filesystem`. Exportar Dados usa a folha de
+  compartilhar porque `Directory.Documents`, no Android 11+, fica invisível fora do próprio app.
