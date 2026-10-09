@@ -3,14 +3,9 @@ import { ChartConfiguration } from 'chart.js';
 
 import { CHART_GRID_COLOR, CHART_TEXT_COLOR } from '../../home/dashboard-charts';
 import { VehiclesResumo } from '../../services/veiculos.service';
-import { MESES_ABREV } from '../../shared/months';
+import { monthAxisLabels } from '../../shared/month-axis';
 
 const SERIES_COLORS = ['#60a5fa', '#fb923c', '#34d399', '#f472b6', '#a78bfa', '#fbbf24'];
-
-function formatMesLabel(mes: string): string {
-  const [ano, mesNumero] = mes.split('-').map(Number);
-  return `${MESES_ABREV[mesNumero - 1]}/${String(ano).slice(2)}`;
-}
 
 export function buildVeiculosChartData(resumo: VehiclesResumo | null): ChartConfiguration<'line'>['data'] {
   if (!resumo) {
@@ -18,7 +13,12 @@ export function buildVeiculosChartData(resumo: VehiclesResumo | null): ChartConf
   }
 
   return {
-    labels: resumo.meses.map(formatMesLabel),
+    labels: monthAxisLabels(
+      resumo.meses.map((m) => {
+        const [ano, mes] = m.split('-').map(Number);
+        return { ano, mes };
+      }),
+    ),
     datasets: resumo.series.map((serie, i) => {
       const color = SERIES_COLORS[i % SERIES_COLORS.length];
       return {

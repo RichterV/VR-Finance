@@ -259,7 +259,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   abrirDetalhesMes(): void {
-    void this.modals.detalhesMes(this.anoMensal(), this.mes());
+    void this.modals.detalhesMes(this.anoMensal(), this.mes(), this.valoresOcultos());
   }
 
   nomeMes(mes: number): string {

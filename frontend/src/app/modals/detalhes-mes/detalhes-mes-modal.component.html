@@ -1,6 +1,6 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>Detalhes de {{ tituloPeriodo }}</ion-title>
+    <ion-title>Detalhes do mês</ion-title>
     <ion-buttons slot="end">
       <ion-button aria-label="Fechar" (click)="dismiss()">
         <ion-icon slot="icon-only" name="close"></ion-icon>
@@ -10,132 +10,267 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
-  <div class="detalhes-mes">
-    <section class="data-section">
-      <div class="section-title-row">
-        <h2>
-          Gastos <span class="count">({{ gastos().length }})</span>
-          @if (gastos().length) {
-            <span class="legend-top3">
-              <span class="legend-swatch"></span>
-              3 maiores gastos
-            </span>
-          }
-        </h2>
-        <app-sort-select [options]="gastosSortOptions" [state]="gastosSort()" (stateChange)="gastosSort.set($event)"></app-sort-select>
-      </div>
-      <div class="table-card has-cards">
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th appSortTh="date" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Data</th>
-                <th appSortTh="priority" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Prioridade</th>
-                <th appSortTh="item" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Item</th>
-                <th class="num" appSortTh="value" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Valor</th>
-                <th appSortTh="installment" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Parcela</th>
-                <th appSortTh="description" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Descrição</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (gasto of sortedGastos(); track gasto.id) {
-                <tr [class.top-gasto]="top3GastoIds().has(gasto.id)">
-                  <td>{{ gasto.date | date: 'dd/MM/yyyy' }}</td>
-                  <td>{{ gasto.priority === 'essencial' ? 'Essencial' : 'Não essencial' }}</td>
-                  <td>{{ gasto.item_name }}</td>
-                  <td class="num">{{ gasto.value | currency: 'BRL' }}</td>
-                  <td>{{ gasto.is_installment ? gasto.installment_number + '/' + gasto.installment_count : '-' }}</td>
-                  <td class="description">{{ gasto.description || '-' }}</td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="6" class="empty">Nenhum gasto neste mês.</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="entry-list">
-        @for (gasto of sortedGastos(); track gasto.id) {
-          <article class="entry-card" [class.top-gasto]="top3GastoIds().has(gasto.id)">
-            <div class="entry-main">
-              <app-prio-dot [priority]="gasto.priority"></app-prio-dot>
-              <strong class="entry-title">{{ gasto.item_name }}</strong>
-              <span class="entry-value" [class.danger]="top3GastoIds().has(gasto.id)">{{ gasto.value | currency: 'BRL' }}</span>
-            </div>
-            <div class="entry-meta">
-              <span class="entry-meta-text">
-                {{ gasto.date | date: 'dd/MM/yyyy' }}
-                · {{ gasto.priority === 'essencial' ? 'Essencial' : 'Não essencial' }}
-                @if (gasto.is_installment) {
-                  · <strong>{{ gasto.installment_number }}/{{ gasto.installment_count }}</strong>
-                }
-              </span>
-            </div>
-            @if (gasto.description) {
-              <p class="entry-desc">{{ gasto.description }}</p>
-            }
-          </article>
-        } @empty {
-          <div class="entry-empty">Nenhum gasto neste mês.</div>
+  <div class="dashboard detalhes">
+    <nav class="month-nav" aria-label="Trocar de mês">
+      <button class="nav-btn" aria-label="Mês anterior" title="Mês anterior" (click)="mudarMes(-1)">
+        <ion-icon name="chevron-back-outline"></ion-icon>
+      </button>
+      <div class="month-title">
+        <h1>{{ titulo() }}</h1>
+        @if (statusTexto(); as status) {
+          <span class="status-chip" [class.atual]="detalhes()?.situacao === 'atual'">{{ status }}</span>
         }
       </div>
-    </section>
+      <button class="nav-btn" aria-label="Próximo mês" title="Próximo mês" (click)="mudarMes(1)">
+        <ion-icon name="chevron-forward-outline"></ion-icon>
+      </button>
+    </nav>
 
-    <section class="data-section">
-      <div class="section-title-row">
-        <h2>Receitas <span class="count">({{ receitas().length }})</span></h2>
-        <app-sort-select [options]="receitasSortOptions" [state]="receitasSort()" (stateChange)="receitasSort.set($event)"></app-sort-select>
-      </div>
-      <div class="table-card has-cards">
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th appSortTh="date" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Data</th>
-                <th class="num" appSortTh="value" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Valor</th>
-                <th class="num" appSortTh="cash_percentage" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">% Caixa</th>
-                <th class="num" appSortTh="cash_value" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Valor caixa</th>
-                <th appSortTh="description" [sortColumn]="receitasSort().column" [sortDirection]="receitasSort().direction" (sort)="toggleReceitasSort($event)">Descrição</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (receita of sortedReceitas(); track receita.id) {
-                <tr>
-                  <td>{{ receita.date | date: 'dd/MM/yyyy' }}</td>
-                  <td class="num">{{ receita.value | currency: 'BRL' }}</td>
-                  <td class="num">{{ receita.cash_percentage }}%</td>
-                  <td class="num">{{ receita.cash_value | currency: 'BRL' }}</td>
-                  <td class="description">{{ receita.description || '-' }}</td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="5" class="empty">Nenhuma receita neste mês.</td>
-                </tr>
+    @if (loading()) {
+      <app-section-skeleton [cards]="5" [charts]="1"></app-section-skeleton>
+    } @else if (error() || !detalhes()) {
+      <app-error-state title="Não foi possível carregar os detalhes do mês" (retry)="carregar()"></app-error-state>
+    } @else {
+      @let d = detalhes()!;
+
+      <!-- 1. Resumo -->
+      <section class="bloco">
+        <div class="stats-grid">
+          @for (card of cards(); track card.chave) {
+            <div
+              class="stat-card"
+              [class.stat-card--highlight]="card.destaque"
+              [class.negativo]="card.destaque && card.ind.valor < 0"
+            >
+              <span class="stat-label">{{ card.rotulo }}</span>
+              <span class="stat-value">{{ currency(card.ind.valor) }}</span>
+              <span class="delta" [class]="'tom-' + cardTom(card)">{{ cardDelta(card) }}</span>
+            </div>
+          }
+        </div>
+        @if (uso(); as u) {
+          <div class="uso-receita">
+            <div class="uso-bar" role="img" [attr.aria-label]="'Da receita: ' + pct(u.gastosPct) + ' em gastos, ' + pct(u.caixaPct) + ' em caixa, ' + pct(u.livrePct) + ' livre'">
+              <span class="seg seg-gastos" [style.width.%]="u.gastosPct"></span>
+              <span class="seg seg-caixa" [style.width.%]="u.caixaPct"></span>
+              <span class="seg seg-livre" [style.width.%]="u.livrePct"></span>
+            </div>
+            <div class="uso-legenda">
+              <span><i class="dot seg-gastos"></i>Gastos {{ pct(u.gastosPct) }}</span>
+              <span><i class="dot seg-caixa"></i>Caixa {{ pct(u.caixaPct) }}</span>
+              @if (u.excessoPct > 0) {
+                <span class="excesso">Passou {{ pct(u.excessoPct) }} da receita</span>
+              } @else {
+                <span><i class="dot seg-livre"></i>Livre {{ pct(u.livrePct) }}</span>
               }
-            </tbody>
-          </table>
+            </div>
+          </div>
+        }
+        <p class="nota">Comparação com a média dos {{ d.meses_base }} meses anteriores que tiveram lançamento.</p>
+      </section>
+
+      <div class="duas-colunas">
+        <!-- 2. Para onde foi o dinheiro -->
+        <section class="bloco card">
+          <h2>Para onde foi o dinheiro</h2>
+          @if (d.categorias.length) {
+            <ul class="categorias">
+              @for (c of categoriasVisiveis(); track c.item_id) {
+                <li>
+                  <button
+                    class="categoria"
+                    [class.ativa]="categoriaFiltro() === c.item_id"
+                    [attr.aria-pressed]="categoriaFiltro() === c.item_id"
+                    (click)="toggleCategoria(c.item_id)"
+                  >
+                    <span class="cat-topo">
+                      <app-prio-dot [priority]="c.priority"></app-prio-dot>
+                      <span class="cat-nome">{{ c.item_name }}</span>
+                      <span class="cat-valor">{{ currency(c.total) }}</span>
+                    </span>
+                    <span class="cat-bar"><span class="cat-fill" [style.width.%]="larguraCategoria(c.total)"></span></span>
+                    <span class="cat-meta">
+                      {{ pct(c.pct) }} · {{ c.lancamentos }} {{ c.lancamentos === 1 ? 'lançamento' : 'lançamentos' }}
+                      <span class="delta" [class]="'tom-' + tom(c.variacao_pct, 'menor-melhor')">· {{ variacao(c) }}</span>
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+            @if (categoriasEscondidas() > 0) {
+              <button class="ver-todas" (click)="toggleTodasCategorias()">
+                {{ todasCategorias() ? 'Mostrar só as maiores' : 'Ver todas (' + d.categorias.length + ')' }}
+              </button>
+            }
+            <p class="nota">Toque numa categoria pra filtrar os lançamentos.</p>
+          } @else {
+            <p class="vazio">Nenhum gasto neste mês.</p>
+          }
+        </section>
+
+        <div class="coluna">
+          <!-- 3. Composição -->
+          @if (composicao().length) {
+            <section class="bloco card">
+              <h2>Como o gasto se compõe</h2>
+              <div class="comp-bar" role="img" aria-label="Composição dos gastos do mês">
+                @for (s of composicao(); track s.chave) {
+                  <span class="seg" [class]="'seg comp-' + s.chave" [style.width.%]="s.pct"></span>
+                }
+              </div>
+              <ul class="comp-legenda">
+                @for (s of composicao(); track s.chave) {
+                  <li>
+                    <i class="dot" [class]="'dot comp-' + s.chave"></i>
+                    <span>{{ s.rotulo }}</span>
+                    <span class="num">{{ currency(s.valor) }} <small>{{ pct(s.pct) }}</small></span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+
+          <!-- 4. Ainda vai cair -->
+          @if (d.situacao !== 'passado' && d.programado > 0) {
+            <section class="bloco card">
+              <h2>{{ d.situacao === 'atual' ? 'Ainda vai cair este mês' : 'Já programado pra este mês' }}</h2>
+              <div class="cair-totais">
+                @if (d.situacao === 'atual') {
+                  <div><span class="stat-label">Até hoje</span><strong>{{ currency(d.ja_lancado) }}</strong></div>
+                }
+                <div><span class="stat-label">Programado</span><strong>{{ currency(d.programado) }}</strong></div>
+              </div>
+              <ul class="cair-lista">
+                @for (g of aVencer(); track g.id) {
+                  <li>
+                    <span class="data">{{ g.date | date: 'dd/MM' }}</span>
+                    <span class="titulo">{{ g.description || g.item_name }}</span>
+                    <span class="num">{{ currency(g.value) }}</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
         </div>
       </div>
-      <div class="entry-list">
-        @for (receita of sortedReceitas(); track receita.id) {
-          <article class="entry-card">
-            <div class="entry-main">
-              <strong class="entry-title" [class.muted]="!receita.description">{{ receita.description || 'Receita' }}</strong>
-              <span class="entry-value income">{{ receita.value | currency: 'BRL' }}</span>
+
+      <!-- 5. Lançamentos -->
+      <section class="bloco">
+        <div class="lista-topo">
+          <h2>
+            Gastos <span class="count">({{ filtrados().length }}{{ filtrando() ? ' de ' + gastos().length : '' }})</span>
+          </h2>
+          <div class="modo" role="group" aria-label="Organizar lançamentos">
+            <button [class.ativo]="modo() === 'categoria'" [attr.aria-pressed]="modo() === 'categoria'" (click)="setModo('categoria')">Por categoria</button>
+            <button [class.ativo]="modo() === 'valor'" [attr.aria-pressed]="modo() === 'valor'" (click)="setModo('valor')">Por valor</button>
+            <button [class.ativo]="modo() === 'data'" [attr.aria-pressed]="modo() === 'data'" (click)="setModo('data')">Por data</button>
+          </div>
+        </div>
+        <div class="chips">
+          @for (f of filtrosDisponiveis; track f.chave) {
+            <button class="chip" [class.ativo]="filtros().has(f.chave)" [attr.aria-pressed]="filtros().has(f.chave)" (click)="toggleFiltro(f.chave)">
+              {{ f.rotulo }}
+            </button>
+          }
+          @if (categoriaFiltro() !== null) {
+            <button class="chip ativo" (click)="toggleCategoria(categoriaFiltro()!)" [attr.aria-label]="'Remover filtro ' + nomeCategoriaFiltro()">
+              {{ nomeCategoriaFiltro() }} ×
+            </button>
+          }
+          @if (filtrando()) {
+            <button class="limpar" (click)="limparFiltros()">Limpar filtros · total {{ currency(totalFiltrado()) }}</button>
+          }
+        </div>
+
+        @if (!filtrados().length) {
+          <p class="vazio card">{{ gastos().length ? 'Nenhum gasto com esses filtros.' : 'Nenhum gasto neste mês.' }}</p>
+        } @else if (modo() === 'categoria') {
+          @for (grupo of grupos(); track grupo.itemId) {
+            <div class="grupo card">
+              <div class="grupo-topo">
+                <strong>{{ grupo.nome }}</strong>
+                <span class="grupo-info">{{ grupo.gastos.length }} · <span class="num">{{ currency(grupo.total) }}</span></span>
+              </div>
+              @for (g of grupo.gastos; track g.id) {
+                <ng-container *ngTemplateOutlet="linhaGasto; context: { $implicit: g }"></ng-container>
+              }
             </div>
-            <div class="entry-meta">
-              <span class="entry-meta-text">
-                {{ receita.date | date: 'dd/MM/yyyy' }}
-                · Caixa {{ receita.cash_percentage }}% ({{ receita.cash_value | currency: 'BRL' }})
-              </span>
-            </div>
-          </article>
-        } @empty {
-          <div class="entry-empty">Nenhuma receita neste mês.</div>
+          }
+        } @else {
+          <div class="grupo card">
+            @for (g of listaPlana(); track g.id) {
+              <ng-container *ngTemplateOutlet="linhaGasto; context: { $implicit: g }"></ng-container>
+            }
+          </div>
         }
-      </div>
-    </section>
+        @if (listaIncompleta()) {
+          <p class="nota">Mostrando os {{ gastos().length }} lançamentos mais recentes de {{ totalGastosLista() }}. Os totais acima consideram todos.</p>
+        }
+      </section>
+
+      <!-- 6. Receitas -->
+      @if (receitas().length) {
+        <section class="bloco">
+          <div class="lista-topo">
+            <h2>Receitas <span class="count">({{ receitas().length }})</span></h2>
+            <span class="num total-receitas">{{ currency(totalReceitas()) }}</span>
+          </div>
+          <div class="grupo card">
+            @for (r of receitas(); track r.id) {
+              <div class="linha">
+                <span class="data">{{ r.date | date: 'dd/MM' }}</span>
+                <span class="titulo">
+                  {{ r.description || 'Receita' }}
+                  @if (r.recorrencia_id) {
+                    <ion-icon class="marca" name="repeat-outline" role="img" aria-label="Recorrente" title="Recorrente"></ion-icon>
+                  }
+                </span>
+                <span class="meta">Caixa {{ r.cash_percentage }}% · {{ currency(r.cash_value) }}</span>
+                <span class="acoes">
+                  @if (receitasComAnexo().has('' + r.id)) {
+                    <button class="icon-btn" aria-label="Ver anexos" title="Ver anexos" (click)="abrirAnexos($event, 'receita', '' + r.id)">
+                      <ion-icon name="attach-outline"></ion-icon>
+                    </button>
+                  }
+                </span>
+                <span class="num valor receita">{{ currency(r.value) }}</span>
+              </div>
+            }
+          </div>
+        </section>
+      }
+    }
   </div>
 </ion-content>
+
+<ng-template #linhaGasto let-g>
+  <div class="linha">
+    <span class="data">{{ g.date | date: 'dd/MM' }}</span>
+    <span class="titulo">
+      <app-prio-dot [priority]="g.priority"></app-prio-dot>
+      {{ g.description || g.item_name }}
+      @if (modo() !== 'categoria' && g.description && g.description !== g.item_name) {
+        <small class="cat">{{ g.item_name }}</small>
+      }
+    </span>
+    <span class="meta">
+      @if (modo() === 'valor' && posicoes().get(g.id); as pos) {
+        <span class="selo">{{ pos }}º maior</span>
+      }
+      @if (g.is_installment) {
+        <span class="selo">{{ g.installment_number }}/{{ g.installment_count }}</span>
+      }
+      @if (g.recorrencia_id) {
+        <ion-icon class="marca" name="repeat-outline" role="img" aria-label="Recorrente" title="Recorrente"></ion-icon>
+      }
+    </span>
+    <span class="acoes">
+      @if (temAnexo(g)) {
+        <button class="icon-btn" aria-label="Ver anexos" title="Ver anexos" (click)="abrirAnexos($event, 'gasto', chaveAnexo(g))">
+          <ion-icon name="attach-outline"></ion-icon>
+        </button>
+      }
+    </span>
+    <span class="num valor">{{ currency(g.value) }}</span>
+  </div>
+</ng-template>

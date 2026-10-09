@@ -5,8 +5,8 @@ import { of, throwError } from 'rxjs';
 
 import { Attachment, AttachmentsService } from '../../services/attachments.service';
 import { DownloadFileService } from '../../shared/download-file.service';
-import { PdfPreviewService } from '../../shared/pdf-preview.service';
-import { AttachmentPreviewModalComponent } from './attachment-preview-modal.component';
+import { PdfPasswordError, PdfPreviewService } from '../../shared/pdf-preview.service';
+import { AttachmentPreviewModalComponent, resetRememberedPdfPassword } from './attachment-preview-modal.component';
 
 function attachment(overrides: Partial<Attachment> = {}): Attachment {
   return {
@@ -58,6 +58,7 @@ describe('AttachmentPreviewModalComponent', () => {
     shareSpy = vi.fn().mockResolvedValue({ shared: true });
     toastCreateSpy = vi.fn().mockResolvedValue({ present: vi.fn() });
     renderPagesSpy = vi.fn().mockResolvedValue(['data:image/png;base64,pagina1']);
+    resetRememberedPdfPassword();
   });
 
   afterEach(() => {
@@ -111,7 +112,7 @@ describe('AttachmentPreviewModalComponent', () => {
       const component = fixture.componentInstance;
       await flushMicrotasks();
 
-      expect(renderPagesSpy).toHaveBeenCalledWith(blob);
+      expect(renderPagesSpy).toHaveBeenCalledWith(blob, undefined);
       expect(component.isPdfViaCanvas).toBe(true);
       expect(component.isPdfViaIframe).toBe(false);
       expect(component.pdfPages()).toEqual(['data:image/png;base64,pagina1']);
@@ -127,6 +128,86 @@ describe('AttachmentPreviewModalComponent', () => {
 
       expect(component.pdfPages()).toEqual([]);
       expect(component.errorMessage()).not.toBeNull();
+    });
+
+    describe('password-protected PDF (ex: nota de corretagem)', () => {
+      const blob = new Blob(['conteudo'], { type: 'application/pdf' });
+      /** Abre só com "123". */
+      const renderWithPassword = (_blob: Blob, password?: string) =>
+        password === '123'
+          ? Promise.resolve(['data:image/png;base64,pagina1'])
+          : Promise.reject(new PdfPasswordError(password !== undefined));
+
+      beforeEach(() => {
+        downloadBlobSpy = vi.fn().mockReturnValue(of(blob));
+        renderPagesSpy.mockImplementation(renderWithPassword);
+      });
+
+      it('asks for the password instead of showing the generic error', async () => {
+        const fixture = createComponent(attachment());
+        const component = fixture.componentInstance;
+        await flushMicrotasks();
+        fixture.detectChanges();
+
+        expect(component.needsPassword()).toBe(true);
+        expect(component.errorMessage()).toBeNull();
+        expect(component.passwordError()).toBeNull();
+        expect(fixture.nativeElement.querySelector('.pdf-password')).not.toBeNull();
+      });
+
+      it('warns about a wrong password and keeps asking', async () => {
+        const fixture = createComponent(attachment());
+        const component = fixture.componentInstance;
+        await flushMicrotasks();
+
+        component.password = '999';
+        await component.unlock();
+
+        expect(renderPagesSpy).toHaveBeenLastCalledWith(blob, '999');
+        expect(component.needsPassword()).toBe(true);
+        expect(component.passwordError()).toBe('Senha incorreta. Tente de novo.');
+        expect(component.pdfPages()).toEqual([]);
+      });
+
+      it('renders the pages with the right password and reuses it for the next PDF', async () => {
+        const fixture = createComponent(attachment());
+        const component = fixture.componentInstance;
+        await flushMicrotasks();
+
+        component.password = '123';
+        await component.unlock();
+
+        expect(component.needsPassword()).toBe(false);
+        expect(component.pdfPages()).toEqual(['data:image/png;base64,pagina1']);
+
+        TestBed.resetTestingModule();
+        renderPagesSpy.mockClear();
+        const next = createComponent(attachment({ id: 2 })).componentInstance;
+        await flushMicrotasks();
+
+        expect(renderPagesSpy).toHaveBeenCalledWith(blob, '123');
+        expect(next.needsPassword()).toBe(false);
+        expect(next.pdfPages()).toEqual(['data:image/png;base64,pagina1']);
+      });
+
+      it('asks without an error message when the remembered password does not open this PDF', async () => {
+        renderPagesSpy.mockImplementation((_b: Blob, password?: string) =>
+          password === 'outra' ? Promise.resolve(['p']) : Promise.reject(new PdfPasswordError(password !== undefined)),
+        );
+        const first = createComponent(attachment()).componentInstance;
+        await flushMicrotasks();
+        first.password = 'outra';
+        await first.unlock();
+
+        TestBed.resetTestingModule();
+        renderPagesSpy.mockImplementation(renderWithPassword);
+        const next = createComponent(attachment({ id: 2 })).componentInstance;
+        await flushMicrotasks();
+
+        expect(renderPagesSpy).toHaveBeenLastCalledWith(blob, 'outra');
+        expect(next.needsPassword()).toBe(true);
+        expect(next.passwordError()).toBeNull();
+      });
     });
   });
 

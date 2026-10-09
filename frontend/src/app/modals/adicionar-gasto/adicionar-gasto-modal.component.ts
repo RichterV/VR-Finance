@@ -40,6 +40,7 @@ import { AutofocusDirective } from '../../shared/autofocus.directive';
 import { commitAttachments } from '../../shared/save-with-attachments';
 import { confirmIfAnomalous } from '../../shared/anomaly-check';
 import { RecurrenceFieldComponent } from '../../shared/recurrence-field.component';
+import { isEndMonthValid } from '../../shared/recurrence';
 
 @Component({
   selector: 'app-adicionar-gasto-modal',
@@ -97,6 +98,7 @@ export class AdicionarGastoModalComponent implements OnInit {
     date: this.fb.nonNullable.control(todayIso()),
     recorrente: this.fb.nonNullable.control(false),
     recorrenciaDia: this.fb.control<number | null>(null),
+    recorrenciaFim: this.fb.control<string | null>(null),
   });
 
   private readonly destroyRef = inject(DestroyRef);
@@ -137,7 +139,7 @@ export class AdicionarGastoModalComponent implements OnInit {
   async submit(): Promise<void> {
     if (this.attachmentBusy || this.checking() || this.saving()) return;
     this.errorMessage.set(null);
-    const { priority, itemId, value, description, isInstallment, installmentCount, date, recorrente, recorrenciaDia } =
+    const { priority, itemId, value, description, isInstallment, installmentCount, date, recorrente, recorrenciaDia, recorrenciaFim } =
       this.form.getRawValue();
 
     if (!itemId || !value) {
@@ -147,6 +149,12 @@ export class AdicionarGastoModalComponent implements OnInit {
 
     if (isInstallment && (!installmentCount || installmentCount < 2)) {
       this.errorMessage.set('Informe o número de parcelas (mínimo 2).');
+      return;
+    }
+
+    const repetir = recorrente && !isInstallment;
+    if (repetir && recorrenciaFim && !isEndMonthValid(date, recorrenciaFim)) {
+      this.errorMessage.set('O último mês da recorrência precisa ser depois do mês do lançamento.');
       return;
     }
 
@@ -168,8 +176,9 @@ export class AdicionarGastoModalComponent implements OnInit {
         is_installment: isInstallment,
         installment_count: isInstallment ? installmentCount! : undefined,
         date,
-        recorrente: recorrente && !isInstallment,
-        recorrencia_dia: recorrente && !isInstallment ? (recorrenciaDia ?? undefined) : undefined,
+        recorrente: repetir,
+        recorrencia_dia: repetir ? (recorrenciaDia ?? undefined) : undefined,
+        recorrencia_fim: repetir ? (recorrenciaFim ?? undefined) : undefined,
       })
       .subscribe({
         next: (rows) => {
@@ -221,6 +230,7 @@ export class AdicionarGastoModalComponent implements OnInit {
       date: todayIso(),
       recorrente: false,
       recorrenciaDia: null,
+      recorrenciaFim: null,
     });
     this.attachmentPicker.reset();
   }

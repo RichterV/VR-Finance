@@ -13,62 +13,6 @@
           <span class="stat-value">{{ currency(rm.disponivel_para_gastar) }}</span>
         </div>
 
-        @if (ehMesAtual() && previsao.data(); as pv) {
-          <div class="stat-card forecast-card" [class.negativo]="pv.saldo_previsto < 0">
-            <span class="stat-label">Projeção do fim do mês</span>
-            <span class="stat-value forecast-value">{{ currency(pv.saldo_previsto) }}</span>
-            @if (pv.saldo_min !== pv.saldo_max) {
-              <span class="forecast-range">entre {{ currency(pv.saldo_min) }} e {{ currency(pv.saldo_max) }}</span>
-            }
-            @if (!pv.historico_suficiente) {
-              <span class="forecast-note">
-                <ion-icon name="information-circle-outline" aria-hidden="true"></ion-icon>
-                Poucos meses de histórico: projeção aproximada.
-              </span>
-            }
-            <button type="button" class="forecast-toggle" id="forecast-calc-trigger">
-              Como calculamos
-              <ion-icon name="chevron-down-outline" aria-hidden="true"></ion-icon>
-            </button>
-            <!-- Popover em vez de expandir o card: expandir esticava a linha inteira de cards. -->
-            <ion-popover trigger="forecast-calc-trigger" triggerAction="click" side="bottom" alignment="start" cssClass="forecast-popover">
-              <ng-template>
-                <div class="forecast-pop">
-                  <dl class="forecast-breakdown">
-                    <div>
-                      <dt>Receita{{ pv.receita_estimada ? ' (estimada)' : '' }}</dt>
-                      <dd>{{ currency(pv.receita) }}</dd>
-                    </div>
-                    <div>
-                      <dt>− Já lançado no mês</dt>
-                      <dd>{{ currency(pv.comprometido) }}</dd>
-                    </div>
-                    <div>
-                      <dt>− Variável que ainda deve sair</dt>
-                      <dd>{{ currency(pv.variavel_restante) }}</dd>
-                    </div>
-                    <div>
-                      <dt>− Caixa pretendido</dt>
-                      <dd>{{ currency(pv.caixa_pretendido) }}</dd>
-                    </div>
-                    <div class="total">
-                      <dt>= Sobra prevista</dt>
-                      <dd>{{ currency(pv.saldo_previsto) }}</dd>
-                    </div>
-                  </dl>
-                  <p class="forecast-help">
-                    O gasto variável que falta é o quanto você costuma gastar depois do dia {{ pv.dia }} (mediana dos
-                    últimos 12 meses), descontando o que já está lançado pra este mês.
-                    @if (pv.receita_estimada) {
-                      Sem receita lançada no mês, ela é estimada pela mediana dos últimos 6 meses.
-                    }
-                  </p>
-                </div>
-              </ng-template>
-            </ion-popover>
-          </div>
-        }
-
         <div class="stat-card">
           <span class="stat-label">Gastos do mês</span>
           <span class="stat-value">{{ currency(rm.total_gastos) }}</span>

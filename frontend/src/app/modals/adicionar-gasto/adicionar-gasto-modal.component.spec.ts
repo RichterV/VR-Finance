@@ -122,4 +122,23 @@ describe('AdicionarGastoModalComponent (recorrência)', () => {
 
     expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({ recorrente: true, recorrencia_dia: 31 }));
   });
+
+  it('envia o último mês quando a recorrência tem data de término', async () => {
+    component.form.patchValue({ itemId: 1, value: 50, date: '2026-10-10' });
+    fixture.detectChanges();
+    component.form.patchValue({ recorrente: true, recorrenciaFim: '2027-03-01' });
+
+    await component.submit();
+
+    expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({ recorrente: true, recorrencia_fim: '2027-03-01' }));
+  });
+
+  it('não salva com o último mês igual ao mês do lançamento', async () => {
+    component.form.patchValue({ itemId: 1, value: 50, date: '2026-10-10', recorrente: true, recorrenciaFim: '2026-10-01' });
+
+    await component.submit();
+
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(component.errorMessage()).toContain('depois do mês do lançamento');
+  });
 });

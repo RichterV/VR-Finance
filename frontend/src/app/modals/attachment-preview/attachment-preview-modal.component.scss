@@ -6,6 +6,31 @@
   color: var(--app-text-secondary);
 }
 
+.pdf-password {
+  max-width: 360px;
+  margin: 48px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+  color: var(--app-text-secondary);
+
+  > ion-icon {
+    align-self: center;
+    font-size: 2.5rem;
+    color: var(--ion-color-primary);
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+.pdf-password-error {
+  color: var(--ion-color-danger);
+  font-size: 0.85rem;
+}
+
 .zoom-viewport {
   height: calc(100vh - 160px);
   overflow: auto;

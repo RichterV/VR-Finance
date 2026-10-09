@@ -10,20 +10,15 @@ const RESUMO_MENSAL = {
   quantidade_gastos: 5, quantidade_receitas: 1, total_caixa_pretendido: 600, total_caixa_real: 1000,
   percentuais_itens: [], media_gastos_lancamento: 200, media_receitas_lancamento: 2000, disponivel_para_gastar: 400,
 };
-const PREVISAO = {
-  ano: 2026, mes: 9, dia: 15, historico_suficiente: true, receita: 2000, receita_estimada: false, comprometido: 1000,
-  variavel_ate_hoje: 300, variavel_restante: 200, caixa_pretendido: 600, saldo_previsto: 200, saldo_min: 100, saldo_max: 300,
-};
 
 describe('MensalSectionComponent', () => {
   let fixture: ComponentFixture<MensalSectionComponent>;
-  let service: { mensal: ReturnType<typeof vi.fn>; anual: ReturnType<typeof vi.fn>; previsao: ReturnType<typeof vi.fn> };
+  let service: { mensal: ReturnType<typeof vi.fn>; anual: ReturnType<typeof vi.fn> };
 
   function setup(ano: number, mes: number, mensal = of(RESUMO_MENSAL)) {
     service = {
       mensal: vi.fn(() => mensal),
       anual: vi.fn(() => of({ evolucao_12_meses: [] })),
-      previsao: vi.fn(() => of(PREVISAO)),
     };
     TestBed.configureTestingModule({ providers: [provideIonicAngular(), { provide: ResumoService, useValue: service }] });
     fixture = TestBed.createComponent(MensalSectionComponent);
@@ -33,16 +28,10 @@ describe('MensalSectionComponent', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('shows the end-of-month projection only for the current month', () => {
+  it('does not show the end-of-month projection card', () => {
     const hoje = new Date();
     const el = setup(hoje.getFullYear(), hoje.getMonth() + 1);
-    expect(service.previsao).toHaveBeenCalled();
-    expect(el.textContent).toContain('Projeção do fim do mês');
-  });
-
-  it('does not ask for a projection for past months', () => {
-    const el = setup(2020, 1);
-    expect(service.previsao).not.toHaveBeenCalled();
+    expect(el.textContent).toContain('Disponível pra gastar');
     expect(el.textContent).not.toContain('Projeção do fim do mês');
   });
 

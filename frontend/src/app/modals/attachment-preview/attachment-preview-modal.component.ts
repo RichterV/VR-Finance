@@ -1,4 +1,5 @@
 import { ChangeDetectorRef, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Capacitor } from '@capacitor/core';
 import {
@@ -7,6 +8,8 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
+  IonInput,
+  IonItem,
   IonSpinner,
   IonTitle,
   IonToolbar,
@@ -14,17 +17,29 @@ import {
   ToastController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { addCircleOutline, close, downloadOutline, removeCircleOutline, shareSocialOutline } from 'ionicons/icons';
+import { addCircleOutline, close, downloadOutline, lockClosedOutline, removeCircleOutline, shareSocialOutline } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 
 import { Attachment, AttachmentsService } from '../../services/attachments.service';
 import { saveAttachmentBlob, shareAttachmentBlob } from '../../shared/download-attachment.helper';
 import { DownloadFileService } from '../../shared/download-file.service';
-import { PdfPreviewService } from '../../shared/pdf-preview.service';
+import { PdfPasswordError, PdfPreviewService } from '../../shared/pdf-preview.service';
 import { MIN_ZOOM, ZOOM_STEP, clampZoom, focalZoomScroll, isLikelyMouseWheel, touchDistance, touchMidpoint } from '../../shared/pinch-zoom';
 
 /** Pixels por "linha" quando a roda vem em modo linha (Firefox), pro Ctrl+roda rolar. */
 const WHEEL_LINE_PX = 40;
+
+/**
+ * Última senha que abriu um PDF (só no app nativo), tentada primeiro no próximo PDF protegido --
+ * notas de corretagem da mesma corretora costumam ter a mesma senha. Só em memória: some ao fechar
+ * o app, nunca vai pra disco nem pro servidor.
+ */
+let lastPdfPassword: string | null = null;
+
+/** Só pros testes: esquece a senha lembrada entre um caso e outro. */
+export function resetRememberedPdfPassword(): void {
+  lastPdfPassword = null;
+}
 
 /**
  * Modal fullscreen de pré-visualização de um anexo, aberto pelo botão "Visualizar" (ícone de
@@ -55,7 +70,7 @@ const WHEEL_LINE_PX = 40;
   selector: 'app-attachment-preview-modal',
   templateUrl: './attachment-preview-modal.component.html',
   styleUrls: ['./attachment-preview-modal.component.scss'],
-  imports: [IonHeader, IonToolbar, IonButtons, IonButton, IonIcon, IonTitle, IonContent, IonSpinner],
+  imports: [FormsModule, IonHeader, IonToolbar, IonButtons, IonButton, IonIcon, IonTitle, IonContent, IonSpinner, IonItem, IonInput],
 })
 export class AttachmentPreviewModalComponent implements OnInit, OnDestroy {
   @Input({ required: true }) file!: Attachment;
@@ -67,6 +82,11 @@ export class AttachmentPreviewModalComponent implements OnInit, OnDestroy {
   readonly downloading = signal(false);
   readonly zoom = signal(1);
   readonly sharing = signal(false);
+  /** PDF com senha no app nativo: mostra o campo de senha no lugar das páginas. */
+  readonly needsPassword = signal(false);
+  readonly passwordError = signal<string | null>(null);
+  readonly unlocking = signal(false);
+  password = '';
   /** Botão "Compartilhar" só no celular (APK ou navegador de toque) -- ver `canShareAttachment`. */
   readonly canShare: boolean;
 
@@ -88,7 +108,7 @@ export class AttachmentPreviewModalComponent implements OnInit, OnDestroy {
     private readonly sanitizer: DomSanitizer,
     private readonly cdr: ChangeDetectorRef,
   ) {
-    addIcons({ close, downloadOutline, addCircleOutline, removeCircleOutline, shareSocialOutline });
+    addIcons({ close, downloadOutline, addCircleOutline, removeCircleOutline, shareSocialOutline, lockClosedOutline });
     this.canShare = downloadFileService.canShareAttachment();
   }
 
@@ -123,17 +143,46 @@ export class AttachmentPreviewModalComponent implements OnInit, OnDestroy {
         this.objectUrl = URL.createObjectURL(this.blob);
         this.blobPreviewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.objectUrl));
       } else if (this.isPdfViaCanvas) {
-        const pages = await this.pdfPreviewService.renderPagesAsDataUrls(this.blob);
-        if (!pages.length) {
-          this.errorMessage.set('Não foi possível pré-visualizar este PDF.');
-        }
-        this.pdfPages.set(pages);
+        await this.renderPdf(lastPdfPassword ?? undefined);
       }
     } catch (err) {
       console.error('Erro ao carregar anexo pra pré-visualização', err);
       this.errorMessage.set('Não foi possível carregar a pré-visualização.');
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  /** Rasteriza o PDF; com senha, pede no próprio modal (a senha lembrada errada não conta como erro). */
+  private async renderPdf(password?: string): Promise<void> {
+    try {
+      const pages = await this.pdfPreviewService.renderPagesAsDataUrls(this.blob!, password);
+      if (password) lastPdfPassword = password;
+      this.needsPassword.set(false);
+      this.passwordError.set(null);
+      if (!pages.length) {
+        this.errorMessage.set('Não foi possível pré-visualizar este PDF.');
+      }
+      this.pdfPages.set(pages);
+    } catch (err) {
+      if (!(err instanceof PdfPasswordError)) throw err;
+      const typedByUser = this.needsPassword();
+      this.needsPassword.set(true);
+      this.passwordError.set(typedByUser && err.incorrect ? 'Senha incorreta. Tente de novo.' : null);
+    }
+  }
+
+  async unlock(): Promise<void> {
+    if (!this.blob || !this.password || this.unlocking()) return;
+    this.unlocking.set(true);
+    try {
+      await this.renderPdf(this.password);
+    } catch (err) {
+      console.error('Erro ao abrir PDF com senha', err);
+      this.needsPassword.set(false);
+      this.errorMessage.set('Não foi possível carregar a pré-visualização.');
+    } finally {
+      this.unlocking.set(false);
     }
   }
 

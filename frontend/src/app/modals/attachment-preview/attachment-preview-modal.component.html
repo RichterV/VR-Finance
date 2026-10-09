@@ -34,6 +34,27 @@
     <div class="preview-state">
       <p>{{ errorMessage() }}</p>
     </div>
+  } @else if (needsPassword()) {
+    <form class="pdf-password" (ngSubmit)="unlock()">
+      <ion-icon name="lock-closed-outline" aria-hidden="true"></ion-icon>
+      <p>Este PDF é protegido por senha.</p>
+      <ion-item>
+        <ion-input
+          type="password"
+          label="Senha do PDF"
+          labelPlacement="stacked"
+          name="password"
+          autocomplete="off"
+          [(ngModel)]="password"
+        ></ion-input>
+      </ion-item>
+      @if (passwordError()) {
+        <p class="pdf-password-error" role="alert">{{ passwordError() }}</p>
+      }
+      <ion-button type="submit" expand="block" [disabled]="!password || unlocking()">
+        {{ unlocking() ? 'Abrindo...' : 'Abrir' }}
+      </ion-button>
+    </form>
   } @else if (isImage) {
     <div
       #viewport

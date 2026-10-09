@@ -6,14 +6,14 @@ describe('buildVeiculosChartData', () => {
     expect(buildVeiculosChartData(null)).toEqual({ labels: [], datasets: [] });
   });
 
-  it('formats "YYYY-MM" months as "Mmm/YY" labels', () => {
+  it('labels "YYYY-MM" months with the year on the first point and on each new year', () => {
     const resumo: VehiclesResumo = {
       veiculos: [],
-      meses: ['2025-11', '2026-01'],
+      meses: ['2025-11', '2025-12', '2026-01'],
       series: [],
     };
     const data = buildVeiculosChartData(resumo);
-    expect(data.labels).toEqual(['Nov/25', 'Jan/26']);
+    expect(data.labels).toEqual([['Nov', '2025'], 'Dez', ['Jan', '2026']]);
   });
 
   it('creates one line dataset per vehicle series, named after the vehicle', () => {

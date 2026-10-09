@@ -14,9 +14,9 @@ describe('buildLineChartData', () => {
     { ano: 2026, mes: 2, essencial: 200, nao_essencial: 60, caixa: 30 },
   ];
 
-  it('labels each point with the abbreviated month', () => {
+  it('labels each point with the abbreviated month, with the year on the first one', () => {
     const data = buildLineChartData(evolucao);
-    expect(data.labels).toEqual(['Jan', 'Fev']);
+    expect(data.labels).toEqual([['Jan', '2026'], 'Fev']);
   });
 
   it('builds essenciais/não essenciais/caixa real datasets from the raw values', () => {
@@ -71,9 +71,9 @@ describe('buildInflacaoChartData', () => {
     { ano: 2026, mes: 2, total_cesta: 880, variacao_pct: 10, caixa_real_pct: 25 },
   ];
 
-  it('labels each point with the abbreviated month', () => {
+  it('labels each point with the abbreviated month, with the year on the first one', () => {
     const data = buildInflacaoChartData(pontos);
-    expect(data.labels).toEqual(['Jan', 'Fev']);
+    expect(data.labels).toEqual([['Jan', '2026'], 'Fev']);
   });
 
   it('puts inflação on the left axis and caixa real/gastos on the right axis', () => {

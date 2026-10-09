@@ -3,7 +3,7 @@ import { ChartConfiguration } from 'chart.js';
 
 import { CaixaMes, EvolucaoMes, InflacaoPonto } from '../services/resumo.service';
 import { linearTrend } from '../shared/linear-regression';
-import { MESES_ABREV } from '../shared/months';
+import { monthAxisLabels } from '../shared/month-axis';
 
 // Paleta ajustada para contraste sobre fundo Slate Dark (#0f172a).
 export const COLOR_ESSENCIAL = '#60a5fa';
@@ -30,7 +30,7 @@ export function buildLineChartData(evolucao: EvolucaoMes[]): ChartConfiguration<
   const naoEssenciais = evolucao.map((m) => m.nao_essencial);
 
   return {
-    labels: evolucao.map((m) => MESES_ABREV[m.mes - 1]),
+    labels: monthAxisLabels(evolucao),
     datasets: [
       {
         label: 'Essenciais',
@@ -156,7 +156,7 @@ export function buildComboChartData(rows: CaixaMes[]): ChartConfiguration<'bar'>
     },
   ];
   return {
-    labels: rows.map((m) => MESES_ABREV[m.mes - 1]),
+    labels: monthAxisLabels(rows),
     datasets,
   } as unknown as ChartConfiguration<'bar'>['data'];
 }
@@ -211,7 +211,7 @@ export const COMBO_CHART_OPTIONS = {
 // o que nunca fazemos aqui de proposito (mostrar a ausencia de dado é mais honesto que inventar).
 export function buildInflacaoChartData(pontos: InflacaoPonto[]): ChartConfiguration<'line'>['data'] {
   return {
-    labels: pontos.map((p) => MESES_ABREV[p.mes - 1]),
+    labels: monthAxisLabels(pontos),
     datasets: [
       {
         label: 'Inflação (%)',

@@ -33,6 +33,7 @@ import { CurrencyInputDirective } from '../../shared/currency-input.directive';
 import { AutofocusDirective } from '../../shared/autofocus.directive';
 import { commitAttachments } from '../../shared/save-with-attachments';
 import { RecurrenceFieldComponent } from '../../shared/recurrence-field.component';
+import { isEndMonthValid } from '../../shared/recurrence';
 
 @Component({
   selector: 'app-adicionar-receita-modal',
@@ -86,6 +87,7 @@ export class AdicionarReceitaModalComponent {
     date: this.fb.nonNullable.control(todayIso()),
     recorrente: this.fb.nonNullable.control(false),
     recorrenciaDia: this.fb.control<number | null>(null),
+    recorrenciaFim: this.fb.control<string | null>(null),
   });
 
   private readonly formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
@@ -138,10 +140,15 @@ export class AdicionarReceitaModalComponent {
   async submit(): Promise<void> {
     if (this.attachmentBusy) return;
     this.errorMessage.set(null);
-    const { value, cashPercentage, description, date, recorrente, recorrenciaDia } = this.form.getRawValue();
+    const { value, cashPercentage, description, date, recorrente, recorrenciaDia, recorrenciaFim } = this.form.getRawValue();
 
     if (!value) {
       this.errorMessage.set('Preencha o valor da receita.');
+      return;
+    }
+
+    if (recorrente && recorrenciaFim && !isEndMonthValid(date, recorrenciaFim)) {
+      this.errorMessage.set('O último mês da recorrência precisa ser depois do mês do lançamento.');
       return;
     }
 
@@ -154,6 +161,7 @@ export class AdicionarReceitaModalComponent {
         date,
         recorrente,
         recorrencia_dia: recorrente ? (recorrenciaDia ?? undefined) : undefined,
+        recorrencia_fim: recorrente ? (recorrenciaFim ?? undefined) : undefined,
       })
       .subscribe({
         next: (receita) => {
@@ -193,6 +201,7 @@ export class AdicionarReceitaModalComponent {
       date: todayIso(),
       recorrente: false,
       recorrenciaDia: null,
+      recorrenciaFim: null,
     });
     this.attachmentPicker.reset();
   }

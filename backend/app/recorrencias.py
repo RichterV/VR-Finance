@@ -70,11 +70,20 @@ def _build_launch(rec: models.Recorrencia, d: date) -> Union[models.Gasto, model
     )
 
 
+class FimInvalido(ValueError):
+    """Último mês da recorrência não é depois do mês do lançamento -- ela nunca geraria nada."""
+
+
 def create_from_launch(
-    db: Session, launch: Union[models.Gasto, models.Receita], dia: int | None
+    db: Session, launch: Union[models.Gasto, models.Receita], dia: int | None, fim: date | None = None
 ) -> models.Recorrencia:
     """Recorrência a partir do lançamento recém-cadastrado: ele é o 1º, a regra gera do mês seguinte
-    em diante. Dia omitido = o dia da data do lançamento. Não faz commit."""
+    em diante. Dia omitido = o dia da data do lançamento; fim = último mês que gera (inclusive, qualquer
+    dia do mês), omitido = sem fim. Não faz commit."""
+    proximo = add_months(month_start(launch.date), 1)
+    fim_mes = month_start(fim) if fim else None
+    if fim_mes is not None and fim_mes < proximo:
+        raise FimInvalido("O último mês da recorrência precisa ser depois do mês do lançamento")
     is_gasto = isinstance(launch, models.Gasto)
     rec = models.Recorrencia(
         user_id=launch.user_id,
@@ -85,7 +94,8 @@ def create_from_launch(
         cash_percentage=None if is_gasto else launch.cash_percentage,
         description=launch.description,
         dia=dia or launch.date.day,
-        proximo_mes=add_months(month_start(launch.date), 1),
+        proximo_mes=proximo,
+        fim_mes=fim_mes,
     )
     db.add(rec)
     db.flush()

@@ -295,3 +295,41 @@ def test_excluir_usuario_com_recorrencias(client, auth_headers, master_headers, 
 
     assert client.delete(f"/auth/users/{user_id}", headers=master_headers).status_code == 204
     assert db_session.query(models.Recorrencia).count() == 0
+
+
+# --- Data de término no cadastro ---
+
+
+def test_cadastro_com_data_de_termino(client, auth_headers, relogio):
+    item = _item(client, auth_headers)
+    _gasto_recorrente(client, auth_headers, item, recorrencia_fim="2026-12-20")
+
+    rec = _recorrencias(client, auth_headers)[0]
+    assert rec["fim_mes"] == "2026-12-01"
+
+    relogio.hoje = date(2027, 3, 1)
+    assert [g["date"] for g in _gastos(client, auth_headers)] == ["2026-10-15", "2026-11-15", "2026-12-15"]
+    assert _recorrencias(client, auth_headers)[0]["status"] == "encerrada"
+
+
+def test_termino_no_mes_do_lancamento_e_rejeitado(client, auth_headers, relogio):
+    item = _item(client, auth_headers)
+    response = client.post(
+        "/gastos",
+        json={"priority": "essencial", "item_id": item["id"], "value": 10, "recorrente": True,
+              "recorrencia_fim": "2026-10-31"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 400
+    assert _gastos(client, auth_headers) == []  # nada gravado
+    assert _recorrencias(client, auth_headers) == []
+
+
+def test_receita_com_data_de_termino(client, auth_headers, relogio):
+    response = client.post(
+        "/receitas",
+        json={"value": 1000, "cash_percentage": 10, "recorrente": True, "recorrencia_fim": "2026-11-01"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 201
+    assert _recorrencias(client, auth_headers)[0]["fim_mes"] == "2026-11-01"

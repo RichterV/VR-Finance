@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
+import { GlobalWorkerOptions, PasswordResponses, getDocument } from 'pdfjs-dist';
 
 const MAX_PAGE_WIDTH_PX = 1000;
 const WORKER_ASSET_PATH = '/assets/pdf.worker.min.mjs';
@@ -28,6 +28,21 @@ function resolveWorkerSrc(): Promise<string> {
 }
 
 /**
+ * PDF protegido por senha (ex: nota de corretagem). `incorrect` = a senha enviada não abriu; sem
+ * senha enviada é sempre false (só "precisa de senha").
+ */
+export class PdfPasswordError extends Error {
+  constructor(readonly incorrect: boolean) {
+    super(incorrect ? 'Senha do PDF incorreta' : 'PDF protegido por senha');
+    this.name = 'PdfPasswordError';
+  }
+}
+
+function isPdfjsPasswordError(err: unknown): err is { code: number } {
+  return typeof err === 'object' && err !== null && (err as { name?: string }).name === 'PasswordException';
+}
+
+/**
  * Renderiza cada página de um PDF como uma imagem (data URL), via pdf.js.
  *
  * Necessário porque a WebView do app Android nativo não tem visualizador de PDF embutido --
@@ -43,10 +58,13 @@ function resolveWorkerSrc(): Promise<string> {
  */
 @Injectable({ providedIn: 'root' })
 export class PdfPreviewService {
-  async renderPagesAsDataUrls(blob: Blob): Promise<string[]> {
+  /** Lança `PdfPasswordError` se o PDF tiver senha e `password` faltar ou estiver errada. */
+  async renderPagesAsDataUrls(blob: Blob, password?: string): Promise<string[]> {
     GlobalWorkerOptions.workerSrc = await resolveWorkerSrc();
+    // arrayBuffer novo a cada chamada: o pdf.js transfere o buffer pro worker (fica inutilizável),
+    // e uma nova tentativa com outra senha precisa dos bytes de novo.
     const data = await blob.arrayBuffer();
-    const loadingTask = getDocument({ data });
+    const loadingTask = getDocument({ data, password });
     const pixelRatio = window.devicePixelRatio || 1;
     const images: string[] = [];
     try {
@@ -62,6 +80,11 @@ export class PdfPreviewService {
         await page.render({ canvas, viewport }).promise;
         images.push(canvas.toDataURL('image/png'));
       }
+    } catch (err) {
+      if (isPdfjsPasswordError(err)) {
+        throw new PdfPasswordError(err.code === PasswordResponses.INCORRECT_PASSWORD);
+      }
+      throw err;
     } finally {
       await loadingTask.destroy();
     }

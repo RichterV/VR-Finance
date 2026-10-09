@@ -315,3 +315,73 @@ def test_indicadores_sem_dados(client, db_session):
     assert body["comprometimento"]["pct"] is None
     assert body["custo_fixo"]["itens"] == []
     assert body["essencial"]["inclinacao_pp_mes"] is None
+
+
+# --- Detalhes do mês ---
+
+
+def _detalhes(client, headers, ano=2026, mes=9):
+    response = client.get("/resumo/mensal/detalhes", params={"ano": ano, "mes": mes}, headers=headers)
+    assert response.status_code == 200
+    return response.json()
+
+
+def test_detalhes_totais_e_comparacao_com_3_meses(client, auth_headers, db_session, user):
+    casa = _item(db_session, user, "Casa", "essencial")
+    for mes, gasto in ((6, 900), (7, 1000), (8, 1100)):
+        _receita(db_session, user, 3000, date(2026, mes, 1))
+        _gasto(db_session, user, casa, gasto, date(2026, mes, 5))
+    _receita(db_session, user, 3000, date(2026, 9, 1))  # caixa 30% = 900
+    _gasto(db_session, user, casa, 1500, date(2026, 9, 5))
+
+    d = _detalhes(client, auth_headers)
+
+    assert d["situacao"] == "atual" and d["dia_atual"] == 15 and d["dias_no_mes"] == 30
+    assert d["gastos"] == {"valor": 1500, "media": 1000, "variacao_pct": 50}
+    assert d["disponivel"]["valor"] == 3000 - 1500 - 900
+    assert d["caixa_real"]["valor"] == 1500
+
+
+def test_detalhes_categorias_composicao_e_programado(client, auth_headers, db_session, user):
+    casa = _item(db_session, user, "Casa", "essencial")
+    lazer = _item(db_session, user, "Lazer")
+    _gasto(db_session, user, lazer, 100, date(2026, 8, 10))
+    rec = models.Recorrencia(user_id=user.id, tipo="gasto", priority="essencial", item_id=casa.id, value=500,
+                             dia=5, proximo_mes=date(2026, 10, 1))
+    db_session.add(rec)
+    db_session.commit()
+    _gasto(db_session, user, casa, 500, date(2026, 9, 5), recorrencia_id=rec.id)
+    _gasto(db_session, user, lazer, 300, date(2026, 9, 10))
+    _gasto(db_session, user, lazer, 200, date(2026, 9, 25), is_installment=True,
+           installment_count=2, installment_number=1, installment_group_id="g")
+
+    d = _detalhes(client, auth_headers)
+
+    # Empate no total: desempata pelo nome.
+    assert [(c["item_name"], c["total"], c["lancamentos"]) for c in d["categorias"]] == [("Casa", 500, 1), ("Lazer", 500, 2)]
+    casa_cat, lazer_cat = d["categorias"]
+    assert lazer_cat["pct"] == 50 and lazer_cat["media"] == 100 and lazer_cat["variacao_pct"] == 400
+    assert casa_cat["media"] == 0 and casa_cat["variacao_pct"] is None  # nova no mês
+    assert d["composicao"] == {"recorrentes": 500, "parcelas": 200, "avulsos_essenciais": 0, "avulsos_nao_essenciais": 300}
+    assert d["ja_lancado"] == 800 and d["programado"] == 200
+
+
+def test_detalhes_mes_passado_sem_historico(client, auth_headers, db_session, user):
+    item = _item(db_session, user)
+    _gasto(db_session, user, item, 50, date(2026, 3, 28))
+
+    d = _detalhes(client, auth_headers, mes=3)
+
+    assert d["situacao"] == "passado" and d["dia_atual"] is None
+    assert d["programado"] == 0 and d["ja_lancado"] == 50
+    assert d["gastos"]["media"] is None and d["categorias"][0]["media"] is None
+
+
+def test_detalhes_isolado_por_usuario(client, auth_headers, db_session):
+    outro = _create_user(db_session, "outro", "senha")
+    item = _item(db_session, outro)
+    _gasto(db_session, outro, item, 999, date(2026, 9, 5))
+
+    d = _detalhes(client, auth_headers)
+
+    assert d["gastos"]["valor"] == 0 and d["categorias"] == []

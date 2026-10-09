@@ -30,3 +30,32 @@ export function formatIsoBr(iso: string): string {
   const [year, month, day] = iso.slice(0, 10).split('-');
   return `${day}/${month}/${year}`;
 }
+
+function monthIndex(iso: string): number {
+  const [year, month] = iso.split('-').map(Number);
+  return year * 12 + (month - 1);
+}
+
+function isoFromMonthIndex(index: number): string {
+  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, '0')}-01`;
+}
+
+/** Último mês padrão ao ligar "Tem data de término": 12 lançamentos contando o cadastrado. */
+export function defaultEndMonthIso(launchIso: string): string {
+  return isoFromMonthIndex(monthIndex(launchIso) + 11);
+}
+
+/** O último mês precisa ser depois do mês do lançamento (senão a recorrência nunca geraria nada). */
+export function isEndMonthValid(launchIso: string, endIso: string): boolean {
+  return monthIndex(endIso) > monthIndex(launchIso);
+}
+
+/** Quantos lançamentos ao todo, contando o cadastrado e o do último mês. */
+export function totalOccurrences(launchIso: string, endIso: string): number {
+  return monthIndex(endIso) - monthIndex(launchIso) + 1;
+}
+
+/** `AAAA-MM-01` a partir de ano e mês (1-12). */
+export function monthIso(year: number, month: number): string {
+  return isoFromMonthIndex(year * 12 + (month - 1));
+}

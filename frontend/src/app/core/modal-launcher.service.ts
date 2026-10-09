@@ -56,9 +56,9 @@ export class ModalLauncherService {
     return this.present(NotificacoesModalComponent, { valoresOcultos });
   }
 
-  async detalhesMes(ano: number, mes: number) {
+  async detalhesMes(ano: number, mes: number, valoresOcultos = false) {
     const { DetalhesMesModalComponent } = await import('../modals/detalhes-mes/detalhes-mes-modal.component');
-    return this.present(DetalhesMesModalComponent, { ano, mes }, { cssClass: 'fullscreen-modal' } as any);
+    return this.present(DetalhesMesModalComponent, { ano, mes, valoresOcultos }, { cssClass: 'fullscreen-modal' } as any);
   }
 
   async graficoExpandido(chartType: 'line' | 'bar', title: string, ano: number) {

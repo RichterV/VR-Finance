@@ -62,7 +62,11 @@ reserva que se planejou guardar.
 
 ### Projeção do fim do mês (`GET /resumo/previsao`)
 
-Card exibido **só quando o seletor está no mês atual**. Estima quanto vai sobrar no fim do mês:
+!!! note "Card removido da Home em 2026-10-05"
+    A pedido do usuário, o card saiu do Resumo mensal (web e celular). O endpoint continua no backend,
+    sem nenhuma tela chamando — a descrição abaixo fica como referência caso ele volte.
+
+Era exibido **só quando o seletor estava no mês atual**. Estima quanto vai sobrar no fim do mês:
 
 ```
 Saldo previsto = Receita − Já lançado no mês − Gasto variável que ainda falta − Caixa pretendido
@@ -86,10 +90,29 @@ esticava a linha inteira de cards.
 
 ### Botão "Ver detalhes"
 
-Ao lado do seletor, abre um modal read-only com as tabelas de Gastos e Receitas do mês, ordenadas do
-maior valor pro menor, com os **3 maiores gastos** destacados (linha divisória e valor em vermelho). O
-destaque é calculado à parte e continua nos mesmos lançamentos mesmo que o usuário reordene por outra
-coluna.
+Ao lado do seletor, abre um modal **só de leitura** com a visão completa do mês (editar e excluir ficam
+em Visualizar dados). Os dados vêm de `GET /resumo/mensal/detalhes` mais as listas de `/gastos` e
+`/receitas`:
+
+- **Navegação**: setas "‹ ›" trocam de mês sem fechar o modal; um selo diz se o mês está em andamento
+  ("dia 5 de 31"), encerrado ou é futuro.
+- **Resumo**: Disponível pra gastar, Receita, Gastos, Caixa pretendido e Caixa real, cada um comparado
+  com a média dos 3 meses anteriores que tiveram lançamento (mesma regra do resumo da virada do mês).
+  Disponível e Caixa real, que podem ser negativos, comparam pela diferença em R$ ("R$ 300 acima da
+  média"), não em %. Cor pelo sentido: gasto subir é vermelho, receita subir é verde, caixa
+  pretendido é neutro. Uma barra mostra quanto da receita foi pra gastos, pra caixa e quanto sobra
+  (ou quanto passou da receita).
+- **Para onde foi o dinheiro**: total por categoria (com parcelas), % do mês, quantidade de
+  lançamentos e variação contra a média (categoria que não apareceu nos meses base = "Novo neste
+  mês"). Mostra as 8 maiores, com "Ver todas". Tocar numa categoria filtra a lista.
+- **Como o gasto se compõe**: recorrentes, parcelas, avulsos essenciais e não essenciais.
+- **Ainda vai cair este mês** (mês atual ou futuro): até hoje × programado, com a lista do que tem
+  data depois de hoje.
+- **Lançamentos**: agrupados por categoria (padrão), ou por valor ou por data; chips Essencial, Não
+  essencial, Parcelado, Recorrente e Com anexo; o anexo abre a lista com pré-visualização. Na visão por
+  valor, os 3 maiores ganham um selo neutro "1º/2º/3º maior" (antes eram destacados em vermelho, que no
+  app significa negativo).
+- Respeita o olho da Home: R$ ocultos, percentuais visíveis.
 
 ## Indicadores (`GET /resumo/indicadores?ate_ano=&ate_mes=`)
 
@@ -115,7 +138,7 @@ viravam "conta fixa" por engano:
   dia de costume passou, porque a conta pode só não ter sido lançada ainda);
 - série ligada a uma [recorrência](#gastos-e-receitas-recorrentes) sempre conta.
 
-A lista "Ver n contas" abre num balão (popover), pelo mesmo motivo do "Como calculamos".
+A lista "Ver n contas" abre num balão (popover) em vez de expandir o card — na web, expandir esticava a linha inteira de cards.
 
 ## Resumo Anual (`GET /resumo/anual?ano=&meses=&ate_ano=&ate_mes=`)
 
@@ -146,6 +169,10 @@ a partir de hoje (ou do corte), pra ficarem consistentes entre si.
 
 Os dois gráficos têm um ícone de expandir que abre um modal fullscreen com seletor de janela 12/24/36
 meses (parâmetro `meses`).
+
+Nos gráficos mensais (Evolução, Caixa pretendido vs. real, Análise inflacionária e o de Manutenção
+Veículos), o ano aparece embaixo do mês no primeiro ponto e em cada janeiro, uma linha tracejada marca
+a virada do ano e o tooltip mostra mês/ano ("Fev/2025") — `shared/month-axis.ts`.
 
 ## Relatório Geral (`GET /resumo/geral?ate_ano=&ate_mes=`)
 
@@ -218,7 +245,10 @@ Uma categoria precisa ter gasto em 2 dos 3 meses-base pra ter média; senão, se
 ## Gastos e receitas recorrentes
 
 "Repetir todo mês" + "Dia do mês" em Adicionar gasto/receita. O lançamento salvo é o primeiro; a regra
-gera os próximos a partir do mês seguinte. Efeito nos números:
+gera os próximos a partir do mês seguinte. Opcionalmente, "Tem data de término" define o último mês
+(inclusive) já no cadastro — ao ligar, vem preenchido com 12 lançamentos contando o atual, e o campo
+mostra quantos lançamentos serão e a data do último; sem data, a recorrência repete sem fim. Efeito nos
+números:
 
 - Cada mês gerado é um gasto/receita comum, criado **na virada do mês** já com a data do dia escolhido
   — por isso já conta no resumo mensal, nos indicadores e na **projeção do fim do mês** desde o dia 1,

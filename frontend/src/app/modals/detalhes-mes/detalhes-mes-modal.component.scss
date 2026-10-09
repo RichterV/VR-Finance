@@ -1,74 +1,420 @@
-.detalhes-mes {
-  max-width: 1200px;
+@use "../../../theme/mixins" as ds;
+
+// Cards, stat-card e cores do dashboard vêm do global (.dashboard em theme/_dashboard.scss).
+.detalhes {
+  max-width: 1100px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
 }
 
-.data-section {
+.card {
+  @include ds.app-card-compact;
+  padding: 16px 18px;
+}
+
+.bloco {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
 
-  h2 .count {
+h2 {
+  margin: 0;
+  font-size: 1.05rem;
+
+  .count {
     font-weight: 400;
+    font-size: 0.85rem;
     color: var(--app-text-secondary);
-    font-size: 0.9rem;
   }
 }
 
-.legend-top3 {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
-  font-weight: 400;
+.nota,
+.vazio {
+  margin: 0;
+  font-size: 0.8rem;
   color: var(--app-text-secondary);
-  margin-left: 12px;
 }
 
-.legend-swatch {
-  width: 14px;
-  height: 2px;
-  border-radius: 1px;
-  background: var(--ion-color-danger);
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.table-scroll {
-  max-height: 400px;
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
 }
 
-tbody tr.top-gasto td {
-  border-bottom: 2px solid var(--ion-color-danger);
+.month-title {
+  text-align: center;
+
+  h1 {
+    margin: 0;
+    font-size: 1.4rem;
+  }
 }
 
-tbody tr.top-gasto td.num {
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--app-surface-border);
+  background: var(--app-surface);
+  color: var(--app-text-primary);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.status-chip {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: var(--app-text-secondary);
+  background: var(--app-surface-hover);
+
+  &.atual {
+    color: var(--ion-color-primary);
+    background: rgba(var(--ion-color-primary-rgb), 0.12);
+  }
+}
+
+.delta {
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.tom-bom {
+  color: var(--ion-color-success);
+}
+
+.tom-ruim {
   color: var(--ion-color-danger);
 }
 
-td.description {
-  max-width: 320px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.tom-neutro {
   color: var(--app-text-secondary);
 }
 
-// Título + "Ordenar por" (este só aparece no celular, junto com os cartões).
-.section-title-row {
+.stat-card--highlight .delta {
+  color: inherit;
+  opacity: 0.75;
+}
+
+// Barras empilhadas (uso da receita e composição)
+.uso-bar,
+.comp-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--app-surface-hover);
+}
+
+.seg {
+  height: 100%;
+}
+
+.seg-gastos { background: var(--ion-color-danger); }
+.seg-caixa { background: var(--ion-color-primary); }
+.seg-livre { background: rgba(148, 163, 184, 0.35); }
+.comp-recorrentes { background: #60a5fa; }
+.comp-parcelas { background: var(--ion-color-warning); }
+.comp-essenciais { background: var(--ion-color-success); }
+.comp-nao-essenciais { background: #a78bfa; }
+
+.dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.uso-receita {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.uso-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 0.8rem;
+  color: var(--app-text-secondary);
+
+  .excesso {
+    color: var(--ion-color-danger);
+    font-weight: 600;
+  }
+}
+
+.duas-colunas {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.coluna {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+// Para onde foi o dinheiro
+.categorias,
+.comp-legenda,
+.cair-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.categorias {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.categoria {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+
+  &:hover { background: var(--app-surface-hover); }
+
+  &.ativa {
+    border-color: rgba(var(--ion-color-primary-rgb), 0.5);
+    background: rgba(var(--ion-color-primary-rgb), 0.08);
+  }
+}
+
+.cat-topo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.cat-nome { flex: 1; }
+.cat-valor { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.cat-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--app-surface-hover);
+}
+
+.cat-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ion-color-primary);
+}
+
+.cat-meta {
+  font-size: 0.75rem;
+  color: var(--app-text-secondary);
+}
+
+.comp-legenda,
+.cair-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    > span:nth-last-child(2) { flex: 1; }
+  }
+
+  small { color: var(--app-text-secondary); }
+}
+
+.cair-totais {
+  display: flex;
+  gap: 24px;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  strong { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+}
+
+// Lançamentos
+.lista-topo {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
+}
 
-  app-sort-select {
-    flex: 0 0 160px;
+.modo {
+  display: inline-flex;
+  border: 1px solid var(--app-surface-border);
+  border-radius: 999px;
+  overflow: hidden;
+
+  button {
+    padding: 6px 14px;
+    border: none;
+
+    &.ativo {
+      background: rgba(var(--ion-color-primary-rgb), 0.15);
+      color: var(--ion-color-primary);
+      font-weight: 600;
+    }
   }
 }
 
-// Top-3 no cartão: mesma linha vermelha da tabela, na borda esquerda.
-.entry-card.top-gasto {
-  box-shadow: inset 3px 0 0 var(--ion-color-danger);
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.modo button,
+.chip,
+.limpar,
+.ver-todas {
+  background: none;
+  color: var(--app-text-secondary);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.chip,
+.limpar {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--app-surface-border);
+}
+
+.chip.ativo {
+  border-color: rgba(var(--ion-color-primary-rgb), 0.6);
+  background: rgba(var(--ion-color-primary-rgb), 0.12);
+  color: var(--ion-color-primary);
+}
+
+.ver-todas {
+  align-self: flex-start;
+  border: none;
+  padding: 0;
+  color: var(--ion-color-primary);
+  font-weight: 600;
+}
+
+.grupo {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 14px;
+}
+
+.grupo-topo {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0 6px;
+  border-bottom: 1px solid var(--app-surface-border);
+}
+
+.grupo-info { color: var(--app-text-secondary); font-size: 0.85rem; }
+
+.linha {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto 32px 110px;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  font-size: 0.88rem;
+
+  & + & { border-top: 1px solid rgba(51, 65, 85, 0.5); }
+
+  .data { color: var(--app-text-secondary); }
+
+  .titulo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .cat, .meta { color: var(--app-text-secondary); }
+  .meta { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; }
+  .valor { text-align: right; font-weight: 600; }
+  .valor.receita { color: var(--ion-color-success); }
+}
+
+.selo {
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--app-surface-border);
+  font-size: 0.72rem;
+}
+
+.marca { color: var(--ion-color-primary); }
+.total-receitas { color: var(--ion-color-success); font-weight: 600; }
+
+@media (max-width: 767px) {
+  .duas-colunas { grid-template-columns: 1fr; }
+
+  // Dois cards por linha; o "Disponível" ocupa a linha toda.
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stat-card {
+    padding: 14px 16px;
+  }
+
+  .stat-card--highlight {
+    grid-column: 1 / -1;
+  }
+
+  .stat-value {
+    font-size: 1.1rem;
+  }
+
+  .linha {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "titulo valor" "data meta";
+    row-gap: 2px;
+    padding: 8px 0;
+
+    .titulo { grid-area: titulo; }
+    .valor { grid-area: valor; }
+    .data { grid-area: data; }
+    .meta { grid-area: meta; justify-content: flex-end; }
+    .acoes { display: none; }
+  }
 }

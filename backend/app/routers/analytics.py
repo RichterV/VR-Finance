@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.analytics import build_indicadores, build_previsao, check_anomalia
+from app.analytics import build_detalhes_mes, build_indicadores, build_previsao, check_anomalia
 from app.deps import get_current_user, get_db
 
 # Endpoints de analytics ficam fora de routers/resumo.py e routers/gastos.py porque app.analytics
@@ -39,3 +39,14 @@ def resumo_indicadores(
     current_user: models.User = Depends(get_current_user),
 ):
     return build_indicadores(db, current_user, ate_ano, ate_mes)
+
+
+@router.get("/resumo/mensal/detalhes", response_model=schemas.DetalhesMesOut)
+def resumo_mensal_detalhes(
+    ano: int = Query(..., ge=2000, le=2100),
+    mes: int = Query(..., ge=1, le=12),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Modal "Ver detalhes": totais com comparação, categorias, composição e o que ainda vai cair."""
+    return build_detalhes_mes(db, current_user, ano, mes)

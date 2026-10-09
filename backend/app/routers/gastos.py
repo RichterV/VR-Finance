@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app import models, schemas
 from app.deps import get_current_user, get_db
-from app.recorrencias import create_from_launch
+from app.recorrencias import FimInvalido, create_from_launch
 from app.routers.attachments import delete_attachments_for_key
 from app.utils import add_months, like_contains, period_filters, resolve_launch_date, today_local
 
@@ -118,7 +118,11 @@ def create_gasto(
 
     db.add_all(rows)
     if payload.recorrente:
-        create_from_launch(db, rows[0], payload.recorrencia_dia)
+        try:
+            create_from_launch(db, rows[0], payload.recorrencia_dia, payload.recorrencia_fim)
+        except FimInvalido as exc:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     db.commit()
     for row in rows:
         db.refresh(row)

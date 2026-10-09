@@ -13,8 +13,9 @@ from typing import Optional
 from sqlalchemy.orm import Session, joinedload
 
 from app import models, schemas
+from app.resumo_mensal import MESES_BASE, _indicador, _variacao_pct
 from app.routers.resumo import monthly_totals
-from app.utils import add_months, today_local
+from app.utils import add_months, month_range, today_local
 
 # --- Alerta de anomalia ---
 ANOMALIA_MESES = 12
@@ -336,4 +337,103 @@ def build_indicadores(db: Session, user: models.User, ano: Optional[int], mes: O
             inclinacao_pp_mes=_round(inclinacao),
             serie=serie_essencial,
         ),
+    )
+
+
+# =====================================================================================
+# Detalhes do mês (modal "Ver detalhes")
+# =====================================================================================
+
+
+def build_detalhes_mes(db: Session, user: models.User, ano: int, mes: int) -> schemas.DetalhesMesOut:
+    """Leitura do mês: totais com a mesma comparação do resumo da virada (média dos 3 meses anteriores
+    com algum lançamento), gasto por categoria, composição e quanto ainda vai cair até o fim do mês."""
+    today = today_local()
+    referencia = date(ano, mes, 1)
+    inicio, fim = month_range(ano, mes)
+    bases = [add_months(referencia, -i) for i in range(1, MESES_BASE + 1)]
+    totais_janela = monthly_totals(db, user.id, bases[-1], fim)
+    totais = totais_janela[(ano, mes)]
+    base_com_dados = [
+        b for b in bases
+        if totais_janela[(b.year, b.month)]["quantidade_gastos"] or totais_janela[(b.year, b.month)]["quantidade_receitas"]
+    ]
+    totais_base = [totais_janela[(b.year, b.month)] for b in base_com_dados]
+
+    def _disponivel(t: dict) -> float:
+        return round(t["total_receita"] - t["total_gastos"] - t["total_caixa_pretendido"], 2)
+
+    def _ind(chave: str) -> schemas.IndicadorMensal:
+        return _indicador(totais[chave], [t[chave] for t in totais_base])
+
+    gastos = (
+        db.query(models.Gasto)
+        .options(joinedload(models.Gasto.item))
+        .filter(models.Gasto.user_id == user.id, models.Gasto.date >= bases[-1], models.Gasto.date < fim)
+        .all()
+    )
+    do_mes = [g for g in gastos if g.date >= inicio]
+    meses_base = {(b.year, b.month) for b in base_com_dados}
+
+    # Por categoria: total do mês e média dos meses base (com zero onde a categoria não apareceu).
+    por_item: dict[int, dict] = {}
+    for g in do_mes:
+        info = por_item.setdefault(g.item_id, {"item": g.item, "priority": g.priority, "total": 0.0, "n": 0})
+        info["total"] += g.value
+        info["n"] += 1
+    base_por_item: dict[int, float] = defaultdict(float)
+    for g in gastos:
+        if (g.date.year, g.date.month) in meses_base:
+            base_por_item[g.item_id] += g.value
+    total_gastos = totais["total_gastos"]
+    categorias = []
+    for item_id, info in por_item.items():
+        media = base_por_item[item_id] / len(base_com_dados) if base_com_dados else None
+        categorias.append(
+            schemas.DetalheCategoria(
+                item_id=item_id,
+                item_name=info["item"].name,
+                priority=info["priority"],
+                total=_round(info["total"]),
+                pct=_round(info["total"] / total_gastos * 100) if total_gastos else 0.0,
+                lancamentos=info["n"],
+                media=_round(media) if media is not None else None,
+                variacao_pct=_round(_variacao_pct(info["total"], media)) if media else None,
+            )
+        )
+    categorias.sort(key=lambda c: (-c.total, c.item_name))
+
+    composicao = schemas.ComposicaoGastos(
+        recorrentes=_round(sum(g.value for g in do_mes if g.recorrencia_id and not g.is_installment)),
+        parcelas=_round(sum(g.value for g in do_mes if g.is_installment)),
+        avulsos_essenciais=_round(
+            sum(g.value for g in do_mes if not g.is_installment and not g.recorrencia_id and g.priority == "essencial")
+        ),
+        avulsos_nao_essenciais=_round(
+            sum(g.value for g in do_mes if not g.is_installment and not g.recorrencia_id and g.priority != "essencial")
+        ),
+    )
+
+    mes_atual = date(today.year, today.month, 1)
+    situacao = "atual" if referencia == mes_atual else ("passado" if referencia < mes_atual else "futuro")
+    programado = sum(g.value for g in do_mes if g.date > today)
+
+    return schemas.DetalhesMesOut(
+        ano=ano,
+        mes=mes,
+        situacao=situacao,
+        dia_atual=today.day if situacao == "atual" else None,
+        dias_no_mes=calendar.monthrange(ano, mes)[1],
+        meses_base=MESES_BASE,
+        receita=_ind("total_receita"),
+        gastos=_ind("total_gastos"),
+        caixa_pretendido=_ind("total_caixa_pretendido"),
+        caixa_real=_ind("total_caixa_real"),
+        disponivel=_indicador(_disponivel(totais), [_disponivel(t) for t in totais_base]),
+        quantidade_gastos=totais["quantidade_gastos"],
+        quantidade_receitas=totais["quantidade_receitas"],
+        categorias=categorias,
+        composicao=composicao,
+        ja_lancado=_round(total_gastos - programado),
+        programado=_round(programado),
     )

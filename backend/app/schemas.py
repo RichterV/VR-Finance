@@ -151,6 +151,8 @@ class GastoCreate(BaseModel):
     # Recorrente: este lançamento é o 1º; a regra gera os próximos a partir do mês seguinte.
     recorrente: bool = False
     recorrencia_dia: Optional[int] = Field(default=None, ge=1, le=31)
+    # Último mês que gera (qualquer dia dele serve); omitido = repete sem fim.
+    recorrencia_fim: Optional[DateField] = None
 
 
 class GastoUpdate(BaseModel):
@@ -198,6 +200,8 @@ class ReceitaCreate(BaseModel):
     date: Optional[DateField] = None
     recorrente: bool = False
     recorrencia_dia: Optional[int] = Field(default=None, ge=1, le=31)
+    # Último mês que gera (qualquer dia dele serve); omitido = repete sem fim.
+    recorrencia_fim: Optional[DateField] = None
 
 
 class ReceitaUpdate(BaseModel):
@@ -450,6 +454,46 @@ class IndicadorMensal(BaseModel):
     valor: float
     media: Optional[float]  # média dos meses base com dados; None = sem histórico pra comparar
     variacao_pct: Optional[float]
+
+
+class DetalheCategoria(BaseModel):
+    item_id: int
+    item_name: str
+    priority: Priority
+    total: float
+    pct: float  # do total de gastos do mês
+    lancamentos: int
+    media: Optional[float]  # média dos meses base com dados (zero onde a categoria não apareceu)
+    variacao_pct: Optional[float]
+
+
+class ComposicaoGastos(BaseModel):
+    recorrentes: float  # avulsos ligados a uma recorrência
+    parcelas: float
+    avulsos_essenciais: float
+    avulsos_nao_essenciais: float
+
+
+class DetalhesMesOut(BaseModel):
+    """Modal "Ver detalhes" do mês: totais com comparação, categorias, composição e o que ainda vai cair."""
+
+    ano: int
+    mes: int
+    situacao: Literal["passado", "atual", "futuro"]
+    dia_atual: Optional[int]  # só no mês atual
+    dias_no_mes: int
+    meses_base: int
+    receita: IndicadorMensal
+    gastos: IndicadorMensal
+    caixa_pretendido: IndicadorMensal
+    caixa_real: IndicadorMensal
+    disponivel: IndicadorMensal  # receita − gastos − caixa pretendido
+    quantidade_gastos: int
+    quantidade_receitas: int
+    categorias: list[DetalheCategoria]
+    composicao: ComposicaoGastos
+    ja_lancado: float  # gastos com data até hoje (mês inteiro, se passado)
+    programado: float  # gastos com data depois de hoje (mês inteiro, se futuro)
 
 
 class TaxaPoupanca(BaseModel):

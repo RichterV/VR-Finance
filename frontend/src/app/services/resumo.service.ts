@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { Priority } from './dropdown-options.service';
+import { IndicadorMensal } from './notificacoes.service';
 
 export interface ItemPercentual {
   item_id: number;
@@ -108,24 +109,6 @@ export interface ResumoInflacao {
   headline_yoy_pct: number | null;
 }
 
-export interface Previsao {
-  ano: number;
-  mes: number;
-  dia: number;
-  /** Menos de 3 meses com gasto avulso: a projeção é pouco confiável. */
-  historico_suficiente: boolean;
-  receita: number;
-  /** Sem receita lançada no mês: estimada pela mediana dos últimos 6 meses. */
-  receita_estimada: boolean;
-  comprometido: number;
-  variavel_ate_hoje: number;
-  variavel_restante: number;
-  caixa_pretendido: number;
-  saldo_previsto: number;
-  saldo_min: number;
-  saldo_max: number;
-}
-
 export interface PontoIndicador {
   ano: number;
   mes: number;
@@ -145,6 +128,48 @@ export interface Indicadores {
   comprometimento: { pct: number | null; total: number; receita_media: number; meses: PontoIndicador[] };
   custo_fixo: { pct: number | null; total: number; itens: CustoFixoItem[] };
   essencial: { atual_pct: number | null; inclinacao_pp_mes: number | null; serie: PontoIndicador[] };
+}
+
+export interface DetalheCategoria {
+  item_id: number;
+  item_name: string;
+  priority: Priority;
+  total: number;
+  /** % do total de gastos do mês. */
+  pct: number;
+  lancamentos: number;
+  /** Média dos 3 meses anteriores com dados (0 = categoria nova no mês); null = sem histórico. */
+  media: number | null;
+  variacao_pct: number | null;
+}
+
+export interface ComposicaoGastos {
+  recorrentes: number;
+  parcelas: number;
+  avulsos_essenciais: number;
+  avulsos_nao_essenciais: number;
+}
+
+/** Modal "Ver detalhes" (`GET /resumo/mensal/detalhes`). */
+export interface DetalhesMes {
+  ano: number;
+  mes: number;
+  situacao: 'passado' | 'atual' | 'futuro';
+  dia_atual: number | null;
+  dias_no_mes: number;
+  meses_base: number;
+  receita: IndicadorMensal;
+  gastos: IndicadorMensal;
+  caixa_pretendido: IndicadorMensal;
+  caixa_real: IndicadorMensal;
+  /** Receita − gastos − caixa pretendido. */
+  disponivel: IndicadorMensal;
+  quantidade_gastos: number;
+  quantidade_receitas: number;
+  categorias: DetalheCategoria[];
+  composicao: ComposicaoGastos;
+  ja_lancado: number;
+  programado: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -181,8 +206,8 @@ export class ResumoService {
   }
 
   /** Projeção do saldo no fim do mês atual. */
-  previsao(): Observable<Previsao> {
-    return this.http.get<Previsao>(`${this.baseUrl}/previsao`);
+  detalhesMes(ano: number, mes: number): Observable<DetalhesMes> {
+    return this.http.get<DetalhesMes>(`${this.baseUrl}/mensal/detalhes`, { params: { ano, mes } });
   }
 
   indicadores(corte?: Corte): Observable<Indicadores> {

@@ -17,6 +17,8 @@ export interface ReceitaCreatePayload extends ReceitaUpdatePayload {
   recorrente?: boolean;
   /** 1-31; omitido = dia da data do lançamento. */
   recorrencia_dia?: number;
+  /** Último mês que gera (`AAAA-MM-01`); omitido = sem fim. */
+  recorrencia_fim?: string;
 }
 
 export interface ReceitaListParams {

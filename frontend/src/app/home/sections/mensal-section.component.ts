@@ -1,12 +1,9 @@
 import { Component, DestroyRef, computed, effect, inject, input, output, untracked } from '@angular/core';
-import { IonIcon, IonPopover } from '@ionic/angular';
-import { addIcons } from 'ionicons';
-import { chevronDownOutline, informationCircleOutline } from 'ionicons/icons';
 
 import { ErrorStateComponent } from '../../shared/error-state.component';
 import { SectionSkeletonComponent } from '../../shared/section-skeleton.component';
 import { SparklineComponent } from '../../shared/sparkline.component';
-import { Previsao, ResumoAnual, ResumoMensal, ResumoService } from '../../services/resumo.service';
+import { ResumoAnual, ResumoMensal, ResumoService } from '../../services/resumo.service';
 import { COLOR_CAIXA_REAL, COLOR_ESSENCIAL, COLOR_INFLACAO, COLOR_NAO_ESSENCIAL } from '../dashboard-charts';
 import { PercentuaisItensComponent } from './percentuais-itens.component';
 import { SectionLoader } from './section-loader';
@@ -15,12 +12,12 @@ import { maskCount, maskCurrency, maskPercentParen } from './value-mask';
 /** Quantos meses (terminando no selecionado) cada mini-tendência dos cards mostra. */
 const MESES_TENDENCIA = 6;
 
-/** Cards do Resumo mensal + projeção do fim do mês (só no mês atual) + barras por categoria. */
+/** Cards do Resumo mensal + barras por categoria. */
 @Component({
   selector: 'app-mensal-section',
   templateUrl: './mensal-section.component.html',
   styleUrls: ['./mensal-section.component.scss'],
-  imports: [IonIcon, IonPopover, PercentuaisItensComponent, SectionSkeletonComponent, ErrorStateComponent, SparklineComponent],
+  imports: [PercentuaisItensComponent, SectionSkeletonComponent, ErrorStateComponent, SparklineComponent],
 })
 export class MensalSectionComponent {
   readonly ano = input.required<number>();
@@ -35,15 +32,8 @@ export class MensalSectionComponent {
 
   readonly resumo = new SectionLoader<ResumoMensal>(this.destroyRef, () => this.settled.emit());
   private readonly tendencia = new SectionLoader<ResumoAnual>(this.destroyRef);
-  readonly previsao = new SectionLoader<Previsao>(this.destroyRef);
 
   readonly colors = { gastos: COLOR_INFLACAO, essencial: COLOR_ESSENCIAL, naoEssencial: COLOR_NAO_ESSENCIAL, caixa: COLOR_CAIXA_REAL };
-
-  /** Projeção só faz sentido pro mês corrente. */
-  readonly ehMesAtual = computed(() => {
-    const hoje = new Date();
-    return this.ano() === hoje.getFullYear() && this.mes() === hoje.getMonth() + 1;
-  });
 
   readonly series = computed(() => {
     const evolucao = this.tendencia.data()?.evolucao_12_meses ?? [];
@@ -56,7 +46,6 @@ export class MensalSectionComponent {
   });
 
   constructor() {
-    addIcons({ chevronDownOutline, informationCircleOutline });
     effect(() => {
       const ano = this.ano();
       const mes = this.mes();
@@ -68,7 +57,6 @@ export class MensalSectionComponent {
   carregar(ano = this.ano(), mes = this.mes()): void {
     this.resumo.load(this.resumoService.mensal(ano, mes));
     this.tendencia.load(this.resumoService.anual(ano, MESES_TENDENCIA, { ateAno: ano, ateMes: mes }));
-    if (this.ehMesAtual()) this.previsao.load(this.resumoService.previsao());
   }
 
   currency(valor: number): string {

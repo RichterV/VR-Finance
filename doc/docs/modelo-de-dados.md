@@ -204,7 +204,7 @@ físico do resto do app, mas seção logicamente isolada.
 |---|---|---|
 | id | INTEGER PK | |
 | user_id | INTEGER FK → users.id | |
-| ticker | TEXT nullable | `null` para `compra_dolar`/`venda_dolar` (câmbio puro, sem ativo) |
+| ticker | TEXT nullable | sempre em maiúsculas (o backend grava `.upper()` e o campo converte enquanto digita); `null` para `compra_dolar`/`venda_dolar` (câmbio puro, sem ativo) |
 | operation | TEXT | `compra` \| `venda` \| `compra_dolar` \| `venda_dolar` |
 | quantity | REAL nullable | `null` para `compra_dolar`/`venda_dolar`; aceita fração (ex: cotas de ETF) |
 | currency | TEXT | `BRL` \| `USD` — moeda em que o valor foi informado no formulário |
