@@ -29,7 +29,7 @@ router = APIRouter(
 # de gravar o zip, em vez de carregar todos os arquivos na memória de uma vez).
 ZipEntries = dict[str, "bytes | Path"]
 
-Modulo = Literal["gastos", "receitas", "veiculos", "categorias"]
+Modulo = Literal["gastos", "receitas", "veiculos", "categorias", "empresa"]
 
 
 def _fmt_decimal(value: Optional[float], casas: int = 2) -> str:
@@ -277,11 +277,72 @@ def _export_categorias(db: Session, user: models.User) -> ZipEntries:
     return {"categorias.csv": _write_csv(csv_rows, columns)}
 
 
+def _export_empresa(db: Session, user: models.User) -> ZipEntries:
+    """Tudo do módulo Empresa: dados da empresa, notas fiscais (CSV + XML/PDF em anexos/) e os
+    documentos da empresa (pasta documentos/)."""
+    files: ZipEntries = {}
+    empresa = db.query(models.Empresa).filter(models.Empresa.user_id == user.id).first()
+
+    notas = (
+        db.query(models.NotaFiscal)
+        .filter(models.NotaFiscal.user_id == user.id)
+        .order_by(models.NotaFiscal.data_emissao.asc(), models.NotaFiscal.id.asc())
+        .all()
+    )
+    anexos_notas = _attachments_by_key(db, user.id, "nota_fiscal")
+    nota_rows = [
+        {
+            "id": nota.id,
+            "numero": nota.numero,
+            "chave_acesso": nota.chave_acesso or "",
+            "data_emissao": _fmt_date(nota.data_emissao),
+            "competencia": nota.competencia.strftime("%m/%Y"),
+            "tomador": nota.tomador_nome,
+            "tomador_documento": nota.tomador_documento or "",
+            "valor": _fmt_decimal(nota.valor),
+            "descricao": nota.descricao or "",
+            "substitui_chave": nota.substitui_chave or "",
+            "substituida": _fmt_bool(nota.substituida_por is not None),
+            "anexos": _anexos_cell_and_files(anexos_notas.get(str(nota.id), []), "nota_fiscal", files),
+            "criado_em": _fmt_datetime(nota.created_at),
+        }
+        for nota in notas
+    ]
+    nota_columns = [
+        "id", "numero", "chave_acesso", "data_emissao", "competencia", "tomador", "tomador_documento",
+        "valor", "descricao", "substitui_chave", "substituida", "anexos", "criado_em",
+    ]
+    files["notas_fiscais.csv"] = _write_csv(nota_rows, nota_columns)
+
+    if empresa is not None:
+        files["empresa.csv"] = _write_csv(
+            [
+                {
+                    "nome": empresa.nome,
+                    "cnpj": empresa.cnpj,
+                    "data_abertura": _fmt_date(empresa.data_abertura),
+                    "criado_em": _fmt_datetime(empresa.created_at),
+                }
+            ],
+            ["nome", "cnpj", "data_abertura", "criado_em"],
+        )
+
+    # Documentos da empresa (CCMEI, contratos, declarações): só os arquivos, na pasta documentos/
+    if empresa is not None:
+        for attachment in _attachments_by_key(db, user.id, "empresa").get(str(empresa.id), []):
+            disk_path = Path(settings.upload_dir, attachment.entity_type, attachment.stored_filename)
+            if disk_path.is_file():
+                nome = safe_filename(attachment.original_filename, attachment.stored_filename)
+                files[f"documentos/{attachment.id}_{nome}"] = disk_path
+    return files
+
+
 _BUILDERS = {
     "gastos": _export_gastos,
     "receitas": _export_receitas,
     "veiculos": _export_veiculos,
     "categorias": _export_categorias,
+    "empresa": _export_empresa,
 }
 
 # Módulo de exportação -> módulo opcional que também precisa estar habilitado (gastos/receitas/
@@ -290,6 +351,7 @@ _REQUIRED_MODULE = {
     "veiculos": "veiculos",
     "operacoes_bolsa": "operacoes_bolsa",
     "devedores": "devedores",
+    "empresa": "empresa",
 }
 
 

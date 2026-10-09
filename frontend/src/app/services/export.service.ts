@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 
-export type ExportModulo = 'gastos' | 'receitas' | 'veiculos' | 'operacoes_bolsa' | 'devedores' | 'categorias';
+export type ExportModulo = 'gastos' | 'receitas' | 'veiculos' | 'operacoes_bolsa' | 'devedores' | 'categorias' | 'empresa';
 
 @Injectable({ providedIn: 'root' })
 export class ExportService {

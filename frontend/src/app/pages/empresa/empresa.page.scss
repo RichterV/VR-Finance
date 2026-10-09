@@ -1,0 +1,258 @@
+@use "../../../theme/mixins" as ds;
+
+.empresa {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.card {
+  @include ds.app-card;
+  padding: 18px 20px;
+}
+
+.rotulo {
+  font-size: 0.8rem;
+  color: var(--app-text-secondary);
+}
+
+.vazio {
+  max-width: 440px;
+  margin: 48px auto;
+  text-align: center;
+  color: var(--app-text-secondary);
+
+  > ion-icon {
+    font-size: 3rem;
+    color: var(--ion-color-primary);
+  }
+
+  h2 {
+    color: var(--app-text-primary);
+  }
+}
+
+.topo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.empresa-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.empresa-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .nome {
+    font-size: 1.15rem;
+  }
+
+  .meta {
+    font-size: 0.85rem;
+    color: var(--app-text-secondary);
+  }
+}
+
+.empresa-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--app-surface-border);
+  background: none;
+  color: var(--app-text-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    border-color: rgba(var(--ion-color-primary-rgb), 0.6);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.limite-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  --limite-cor: var(--ion-color-primary);
+
+  &.situacao-atencao {
+    --limite-cor: var(--ion-color-warning);
+  }
+
+  &.situacao-excedido_ate_20,
+  &.situacao-excedido_acima_20 {
+    --limite-cor: var(--ion-color-danger);
+  }
+}
+
+.limite-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .ano-select {
+    min-height: 0;
+    max-width: 90px;
+  }
+}
+
+.limite-valores {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+
+  strong {
+    font-size: 1.4rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  span {
+    color: var(--app-text-secondary);
+    font-size: 0.9rem;
+  }
+}
+
+.barra {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--app-surface-hover);
+  overflow: hidden;
+}
+
+.barra-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--limite-cor);
+}
+
+.limite-texto,
+.limite-nota {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.limite-card:not(.situacao-ok) .limite-texto {
+  color: var(--limite-cor);
+}
+
+.limite-nota {
+  color: var(--app-text-secondary);
+  font-size: 0.8rem;
+}
+
+.data-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  h2 .count {
+    font-weight: 400;
+    color: var(--app-text-secondary);
+    font-size: 0.9rem;
+  }
+}
+
+.top-controls .busca-filter {
+  max-width: 320px;
+  border-radius: 8px;
+}
+
+.period-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  ion-select {
+    max-width: 220px;
+    border-radius: 8px;
+  }
+}
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  app-sort-select {
+    flex: 0 0 170px;
+  }
+}
+
+.doc {
+  display: block;
+  color: var(--app-text-secondary);
+  font-size: 0.75rem;
+}
+
+.selo {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  color: var(--app-text-secondary);
+  border: 1px solid var(--app-surface-border);
+}
+
+.selo-sub {
+  color: var(--ion-color-primary);
+  border-color: rgba(var(--ion-color-primary-rgb), 0.4);
+}
+
+// Substituída: continua visível (histórico), mas apagada -- não conta no limite.
+tbody tr.substituida td,
+.entry-card.substituida {
+  opacity: 0.55;
+}
+
+tbody tr.substituida .valor {
+  text-decoration: line-through;
+}
+
+@media (max-width: 767px) {
+  .topo {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-controls .busca-filter {
+    max-width: none;
+  }
+
+  .period-filters {
+    width: 100%;
+  }
+
+  .period-filters ion-select {
+    max-width: none;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}

@@ -1,0 +1,245 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Início"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Empresa</ion-title>
+    @if (empresa()) {
+      <ion-buttons slot="end">
+        <ion-button (click)="abrirNota()">
+          <ion-icon slot="start" name="add-circle-outline"></ion-icon>
+          <span class="btn-text">Adicionar nota</span>
+        </ion-button>
+      </ion-buttons>
+    }
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="empresa">
+    @if (carregando()) {
+      <app-loading-state message="Carregando empresa..."></app-loading-state>
+    } @else if (!empresa()) {
+      <div class="vazio">
+        <ion-icon name="briefcase-outline" aria-hidden="true"></ion-icon>
+        <h2>Cadastre sua empresa</h2>
+        <p>Com o CNPJ e a data de abertura, o app acompanha o limite de faturamento do MEI e guarda suas notas fiscais e documentos.</p>
+        <ion-button (click)="abrirConfig()">Cadastrar empresa</ion-button>
+      </div>
+    } @else {
+      @let e = empresa()!;
+      <div class="topo">
+        <section class="card empresa-card">
+          <div class="empresa-info">
+            <span class="rotulo">Empresa</span>
+            <strong class="nome">{{ e.nome }}</strong>
+            <span class="meta">CNPJ {{ formatCnpj(e.cnpj) }} · aberta em {{ e.data_abertura | date: 'dd/MM/yyyy' : 'UTC' }}</span>
+          </div>
+          <div class="empresa-acoes">
+            <button class="chip-btn" [disabled]="!documentos().length" (click)="abrirDocumentos($event)">
+              <ion-icon name="documents-outline" aria-hidden="true"></ion-icon>
+              {{ documentos().length }} {{ documentos().length === 1 ? 'documento' : 'documentos' }}
+            </button>
+            <button class="chip-btn" (click)="abrirConfig()">
+              <ion-icon name="settings-outline" aria-hidden="true"></ion-icon>
+              Dados e documentos
+            </button>
+            <button class="chip-btn" (click)="abrirDeclaracao()">
+              <ion-icon name="document-text-outline" aria-hidden="true"></ion-icon>
+              Exportar declaração anual
+            </button>
+          </div>
+        </section>
+
+        <section [class]="'card limite-card situacao-' + (limite()?.situacao ?? 'ok')">
+          <div class="limite-topo">
+            <span class="rotulo">Limite do MEI</span>
+            <ion-select
+              aria-label="Ano do limite"
+              [value]="limiteAno()"
+              (ionChange)="onLimiteAnoChange($any($event.detail.value))"
+              interface="popover"
+              class="ano-select"
+            >
+              @for (a of anosLimite(); track a) {
+                <ion-select-option [value]="a">{{ a }}</ion-select-option>
+              }
+            </ion-select>
+          </div>
+          @if (limite(); as l) {
+            <div class="limite-valores">
+              <strong>{{ l.faturado | currency: 'BRL' }}</strong>
+              <span>de {{ l.limite | currency: 'BRL' }} · {{ l.pct.toLocaleString('pt-BR') }}%</span>
+            </div>
+            <div class="barra" role="img" [attr.aria-label]="'Faturado ' + l.pct + '% do limite'">
+              <span class="barra-fill" [style.width.%]="barraPct()"></span>
+            </div>
+            <p class="limite-texto">
+              @if (l.situacao === 'ok' || l.situacao === 'atencao') {
+                Ainda pode faturar <strong>{{ l.restante | currency: 'BRL' }}</strong> em {{ l.ano }}.
+              }
+              {{ situacaoTexto() }}
+            </p>
+            @if (proporcionalTexto()) {
+              <p class="limite-nota">{{ proporcionalTexto() }}</p>
+            }
+          }
+        </section>
+      </div>
+
+      <section class="data-section">
+        <div class="top-controls">
+          <ion-input
+            [value]="busca()"
+            (ionInput)="onBuscaInput($event)"
+            fill="outline"
+            placeholder="Buscar número, tomador ou descrição"
+            class="busca-filter"
+          ></ion-input>
+          <div class="period-filters">
+            <app-reset-period-button [disabled]="mes() === null && ano() === null" (reset)="resetPeriodo()"></app-reset-period-button>
+            <ion-select
+              [value]="mes()"
+              (ionChange)="onMesChange($any($event.detail.value))"
+              interface="popover"
+              [interfaceOptions]="{ size: 'auto' }"
+              fill="outline"
+              label="Mês"
+              labelPlacement="floating"
+              title="Mês de competência"
+              [selectedText]="mes() === null ? 'Todos' : null"
+            >
+              <ion-select-option [value]="null">Todos os meses</ion-select-option>
+              @for (m of meses; track $index) {
+                <ion-select-option [value]="$index + 1">{{ m }}</ion-select-option>
+              }
+            </ion-select>
+            <ion-select
+              [value]="ano()"
+              (ionChange)="onAnoChange($any($event.detail.value))"
+              interface="popover"
+              fill="outline"
+              label="Ano"
+              labelPlacement="floating"
+              [selectedText]="ano() === null ? 'Todos' : null"
+            >
+              <ion-select-option [value]="null">Todos os anos</ion-select-option>
+              @for (a of anosFiltro; track a) {
+                <ion-select-option [value]="a">{{ a }}</ion-select-option>
+              }
+            </ion-select>
+          </div>
+        </div>
+
+        <div class="section-title-row">
+          <h2>
+            Notas fiscais <span class="count">({{ notas().length }} de {{ total() }} · {{ somaValor() | currency: 'BRL' }})</span>
+          </h2>
+          <app-sort-select [options]="sortOptions" [state]="sort()" (stateChange)="sort.set($event)"></app-sort-select>
+        </div>
+
+        <div class="table-card has-cards">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th appSortTh="numero" [sortColumn]="sort().column" [sortDirection]="sort().direction" (sort)="toggleSort($event)">Nº</th>
+                  <th appSortTh="emissao" [sortColumn]="sort().column" [sortDirection]="sort().direction" (sort)="toggleSort($event)">Emissão</th>
+                  <th appSortTh="competencia" [sortColumn]="sort().column" [sortDirection]="sort().direction" (sort)="toggleSort($event)">Competência</th>
+                  <th appSortTh="tomador" [sortColumn]="sort().column" [sortDirection]="sort().direction" (sort)="toggleSort($event)">Tomador</th>
+                  <th class="num" appSortTh="valor" [sortColumn]="sort().column" [sortDirection]="sort().direction" (sort)="toggleSort($event)">Valor</th>
+                  <th class="actions-col">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (n of sortedNotas(); track n.id) {
+                  <tr [class.substituida]="n.substituida_por">
+                    <td>
+                      {{ n.numero }}
+                      @if (n.substituida_por) {
+                        <span class="selo" [title]="'Substituída pela nota ' + n.substituida_por_numero + ' — não conta no limite'">substituída pela {{ n.substituida_por_numero }}</span>
+                      } @else if (n.substitui_numero) {
+                        <span class="selo selo-sub" [title]="'Substitui a nota ' + n.substitui_numero">substitui a {{ n.substitui_numero }}</span>
+                      }
+                    </td>
+                    <td>{{ n.data_emissao | date: 'dd/MM/yyyy' : 'UTC' }}</td>
+                    <td>{{ n.competencia | date: 'MM/yyyy' : 'UTC' }}</td>
+                    <td>
+                      {{ n.tomador_nome }}
+                      @if (n.tomador_documento) {
+                        <small class="doc">{{ formatDocumento(n.tomador_documento) }}</small>
+                      }
+                    </td>
+                    <td class="num valor">{{ n.valor | currency: 'BRL' }}</td>
+                    <td class="actions-col">
+                      @if (notasComAnexo().has('' + n.id)) {
+                        <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexos($event, n)">
+                          <ion-icon name="attach-outline"></ion-icon>
+                        </button>
+                      }
+                      <button aria-label="Editar" class="icon-btn" title="Editar" (click)="abrirNota(n)">
+                        <ion-icon name="create"></ion-icon>
+                      </button>
+                      <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirNota(n)">
+                        <ion-icon name="trash"></ion-icon>
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="empty">Nenhuma nota fiscal encontrada.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="entry-list">
+          @for (n of sortedNotas(); track n.id) {
+            <article class="entry-card" [class.substituida]="n.substituida_por">
+              <div class="entry-main">
+                <strong class="entry-title">Nº {{ n.numero }} · {{ n.tomador_nome }}</strong>
+                <span class="entry-value">{{ n.valor | currency: 'BRL' }}</span>
+              </div>
+              <div class="entry-meta">
+                <span class="entry-meta-text">
+                  {{ n.data_emissao | date: 'dd/MM/yyyy' : 'UTC' }} · comp. {{ n.competencia | date: 'MM/yyyy' : 'UTC' }}
+                  @if (n.substituida_por) {
+                    · <span class="selo">substituída pela {{ n.substituida_por_numero }}</span>
+                  } @else if (n.substitui_numero) {
+                    · <span class="selo selo-sub">substitui a {{ n.substitui_numero }}</span>
+                  }
+                </span>
+                <span class="entry-actions">
+                  @if (notasComAnexo().has('' + n.id)) {
+                    <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexos($event, n)">
+                      <ion-icon name="attach-outline"></ion-icon>
+                    </button>
+                  }
+                  <button aria-label="Editar" class="icon-btn" title="Editar" (click)="abrirNota(n)">
+                    <ion-icon name="create"></ion-icon>
+                  </button>
+                  <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirNota(n)">
+                    <ion-icon name="trash"></ion-icon>
+                  </button>
+                </span>
+              </div>
+              @if (n.descricao) {
+                <p class="entry-desc">{{ n.descricao }}</p>
+              }
+            </article>
+          } @empty {
+            <div class="entry-empty">Nenhuma nota fiscal encontrada.</div>
+          }
+        </div>
+
+        @if (notas().length < total()) {
+          <button class="load-more-btn" (click)="carregarMais()">
+            Carregar mais 25 ({{ total() - notas().length }} restantes)
+          </button>
+        }
+      </section>
+    }
+  </div>
+</ion-content>

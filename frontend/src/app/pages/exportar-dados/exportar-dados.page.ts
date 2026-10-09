@@ -50,6 +50,12 @@ const MODULOS: ModuloExport[] = [
     descricao: 'Parcelas de dívidas de terceiros, com os comprovantes anexados.',
   },
   {
+    chave: 'empresa',
+    requer: 'empresa',
+    label: 'Empresa',
+    descricao: 'Dados da empresa, notas fiscais (com XML e PDF) e os documentos da empresa.',
+  },
+  {
     chave: 'categorias',
     label: 'Categorias',
     descricao: 'Categorias cadastradas (essenciais e não essenciais), ativas e inativas.',

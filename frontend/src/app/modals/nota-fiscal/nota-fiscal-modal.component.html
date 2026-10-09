@@ -1,0 +1,105 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>{{ isEdit ? 'Editar nota ' + nota!.numero : 'Adicionar nota fiscal' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  @if (!isEdit) {
+    <div class="xml-card">
+      <button type="button" class="xml-btn" [disabled]="lendoXml() || saving()" (click)="escolherXml(xmlInput)">
+        @if (lendoXml()) {
+          <ion-spinner name="crescent"></ion-spinner>
+          <span>Lendo XML...</span>
+        } @else {
+          <ion-icon name="code-download-outline"></ion-icon>
+          <span>Importar do XML da nota</span>
+        }
+      </button>
+      <p class="hint">O formulário é preenchido com os dados do XML e o arquivo já entra nos anexos. Confira e salve.</p>
+      <input #xmlInput type="file" accept=".xml,application/xml,text/xml" hidden (change)="onXmlEscolhido($event)" />
+    </div>
+  }
+
+  @for (aviso of avisos(); track aviso) {
+    <p class="aviso"><ion-icon name="warning-outline" aria-hidden="true"></ion-icon>{{ aviso }}</p>
+  }
+
+  @if (nota?.substituida_por_numero) {
+    <p class="info"><ion-icon name="swap-horizontal-outline" aria-hidden="true"></ion-icon>Substituída pela nota nº {{ nota!.substituida_por_numero }} — não conta no limite.</p>
+  } @else if (isEdit && substituiChave()) {
+    <p class="info">
+      <ion-icon name="swap-horizontal-outline" aria-hidden="true"></ion-icon>
+      Substitui {{ nota?.substitui_numero ? 'a nota nº ' + nota!.substitui_numero : 'outra nota' }}, que deixa de contar no limite.
+    </p>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="field-row">
+      <ion-item class="col-grow">
+        <ion-input label="Número" labelPlacement="stacked" formControlName="numero" inputmode="numeric"></ion-input>
+      </ion-item>
+      <ion-item class="col-grow">
+        <ion-input label="Emissão" labelPlacement="stacked" type="date" formControlName="dataEmissao"></ion-input>
+      </ion-item>
+    </div>
+
+    <div class="field-row">
+      <ion-item class="col-grow">
+        <ion-select label="Competência" labelPlacement="stacked" formControlName="competenciaMes" interface="popover" [interfaceOptions]="{ size: 'auto' }">
+          @for (m of meses; track $index) {
+            <ion-select-option [value]="$index + 1">{{ m }}</ion-select-option>
+          }
+        </ion-select>
+      </ion-item>
+      <ion-item class="col-grow">
+        <ion-select label="Ano" labelPlacement="stacked" formControlName="competenciaAno" interface="popover">
+          @for (a of anos; track a) {
+            <ion-select-option [value]="a">{{ a }}</ion-select-option>
+          }
+        </ion-select>
+      </ion-item>
+    </div>
+    <p class="hint">É o mês de competência que conta no limite do MEI.</p>
+
+    <ion-item>
+      <ion-input label="Tomador (cliente)" labelPlacement="stacked" formControlName="tomadorNome"></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-input label="CPF/CNPJ do tomador" labelPlacement="stacked" formControlName="tomadorDocumento" inputmode="numeric" placeholder="Opcional"></ion-input>
+    </ion-item>
+
+    <ion-item class="value-primary">
+      <ion-input labelPlacement="stacked" type="text" [appCurrencyInput]="form.controls.valor" placeholder="0,00">
+        <div slot="label">Valor do serviço</div>
+        <div slot="start" class="currency-prefix">R$</div>
+      </ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-textarea label="Descrição do serviço" labelPlacement="stacked" formControlName="descricao" autoGrow="true"></ion-textarea>
+    </ion-item>
+
+    <app-attachment-picker
+      entityType="nota_fiscal"
+      [mode]="isEdit ? 'edit' : 'create'"
+      [entityId]="nota?.id ?? null"
+      [allowXml]="true"
+    ></app-attachment-picker>
+
+    @if (errorMessage()) {
+      <ion-text color="danger">
+        <p>{{ errorMessage() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving() || attachmentBusy || lendoXml()">
+      {{ saving() ? 'Salvando...' : attachmentBusy ? 'Aguarde o anexo...' : isEdit ? 'Salvar alterações' : 'Salvar nota' }}
+    </ion-button>
+  </form>
+</ion-content>

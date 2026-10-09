@@ -237,6 +237,42 @@ linhas** (uma por mês), ligadas pelo mesmo `installment_group_id`, mesma conven
 Editar devedor/descrição/valor de uma parcela replica em todas as parcelas do grupo; o `status`
 continua por parcela (cada mês é pago separado).
 
+## `empresas`
+
+Empresa do usuário no módulo Empresa (hoje uma por usuário, MEI).
+
+| campo | tipo | descrição |
+|---|---|---|
+| id | INTEGER PK | |
+| user_id | INTEGER FK → users.id, UNIQUE | uma empresa por usuário |
+| nome | TEXT | nome empresarial |
+| cnpj | TEXT | só dígitos, validado pelos dígitos verificadores |
+| data_abertura | DATE | define o limite proporcional no ano de abertura |
+| created_at | DATETIME | |
+
+Os documentos da empresa (CCMEI, contratos, declarações) são anexos com `entity_type = empresa`.
+
+## `notas_fiscais`
+
+Notas fiscais de serviço emitidas pela empresa.
+
+| campo | tipo | descrição |
+|---|---|---|
+| id | INTEGER PK | |
+| user_id | INTEGER FK → users.id | |
+| numero | TEXT | UNIQUE com `user_id` |
+| chave_acesso | TEXT nullable | NFS-e nacional: 50 dígitos |
+| data_emissao | DATE | |
+| competencia | DATE | dia 1 do mês de competência — é o que conta no limite do MEI |
+| tomador_nome, tomador_documento | TEXT / TEXT nullable | cliente; documento só com dígitos |
+| valor | REAL | valor do serviço |
+| descricao | TEXT nullable | |
+| substitui_chave | TEXT nullable | nota substituta: chave da nota que ela substitui |
+| substituida_por | INTEGER nullable | nota original: id da substituta. Não conta no limite nem nas somas |
+| created_at | DATETIME | |
+
+Índice `(user_id, competencia)`. O XML e o PDF da nota são anexos com `entity_type = nota_fiscal`.
+
 ## `attachments`
 
 Anexos (comprovantes de imagem/PDF) de gastos, receitas, serviços de veículo, operações bolsa e
@@ -249,7 +285,7 @@ banco — só o metadado; o conteúdo vai pra `backend/uploads/<entity_type>/<st
 |---|---|---|
 | id | INTEGER PK | |
 | user_id | INTEGER FK → users.id | anexos são por usuário, mesmo dono do registro referenciado |
-| entity_type | TEXT | `gasto` \| `receita` \| `servico_veiculo` \| `operacao_bolsa` \| `devedor` |
+| entity_type | TEXT | `gasto` \| `receita` \| `servico_veiculo` \| `operacao_bolsa` \| `devedor` \| `nota_fiscal` \| `empresa` |
 | entity_id | TEXT | `str(id)` da linha, ou `installment_group_id` para gasto parcelado/devedor — sempre vinculado ao grupo inteiro, nunca a uma parcela específica |
 | original_filename | TEXT | nome enviado pelo usuário (sanitizado), usado só pro `Content-Disposition` no download |
 | stored_filename | TEXT UNIQUE | nome real em disco: `uuid4().hex` + extensão (nunca o nome original, evita path traversal/colisão) |

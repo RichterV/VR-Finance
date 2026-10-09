@@ -8,7 +8,7 @@ ServiceType = Literal["peca", "peca_mao_de_obra", "peca_mao_de_obra_propria"]
 BolsaOperation = Literal["compra", "venda", "compra_dolar", "venda_dolar"]
 BolsaCurrency = Literal["BRL", "USD"]
 DevedorStatus = Literal["pago", "nao_pago"]
-EntityType = Literal["gasto", "receita", "servico_veiculo"]
+EntityType = Literal["gasto", "receita", "servico_veiculo", "nota_fiscal", "empresa"]
 # Espelha app.modules.OPTIONAL_MODULES
 # Alias pra campos chamados `date` com default: `date: Optional[date] = None` faria o Pydantic
 # resolver o tipo como o próprio default (None) em vez de `datetime.date`.
@@ -31,7 +31,9 @@ Money = Annotated[float, BeforeValidator(_round_money)]
 # Texto obrigatório: espaços nas pontas removidos e vazio rejeitado (422).
 NonBlank = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
-ModuleKey = Literal["veiculos", "operacoes_bolsa", "devedores", "ferramentas", "exportar_dados", "analise_inflacionaria"]
+ModuleKey = Literal[
+    "veiculos", "operacoes_bolsa", "devedores", "ferramentas", "exportar_dados", "analise_inflacionaria", "empresa"
+]
 
 
 # --- Auth ---
@@ -338,6 +340,100 @@ class VehiclesResumo(BaseModel):
     veiculos: list[VehicleResumoItem]
     meses: list[str]
     series: list[dict]
+
+
+# --- Empresa (MEI) ---
+
+def _only_digits(value):
+    return "".join(ch for ch in value if ch.isdigit()) if isinstance(value, str) else value
+
+
+Digits = Annotated[str, BeforeValidator(_only_digits)]
+
+
+class EmpresaIn(BaseModel):
+    nome: NonBlank
+    cnpj: Digits
+    data_abertura: date
+
+
+class EmpresaOut(BaseModel):
+    id: int
+    nome: str
+    cnpj: str
+    data_abertura: date
+
+    class Config:
+        from_attributes = True
+
+
+class NotaFiscalIn(BaseModel):
+    numero: NonBlank
+    chave_acesso: Optional[Digits] = None
+    data_emissao: date
+    competencia: date  # qualquer dia do mês; gravado como dia 1
+    tomador_nome: NonBlank
+    tomador_documento: Optional[Digits] = None
+    valor: Money = Field(gt=0)
+    descricao: Optional[str] = None
+    substitui_chave: Optional[Digits] = None
+
+
+class NotaFiscalOut(BaseModel):
+    id: int
+    numero: str
+    chave_acesso: Optional[str]
+    data_emissao: date
+    competencia: date
+    tomador_nome: str
+    tomador_documento: Optional[str]
+    valor: float
+    descricao: Optional[str]
+    substitui_chave: Optional[str]
+    substituida_por: Optional[int]
+    # Números das notas ligadas (pra exibir "Substituída pela nº X" / "Substitui a nº Y")
+    substituida_por_numero: Optional[str] = None
+    substitui_numero: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class NotaFiscalPage(BaseModel):
+    items: list[NotaFiscalOut]
+    total: int
+    soma_valor: float  # sem as notas substituídas
+
+
+class NotaXmlLida(BaseModel):
+    """Campos lidos do XML pra pré-preencher o formulário -- nada é gravado nessa etapa."""
+
+    numero: str
+    chave_acesso: Optional[str]
+    data_emissao: date
+    competencia: date
+    tomador_nome: str
+    tomador_documento: Optional[str]
+    valor: float
+    descricao: Optional[str]
+    prestador_documento: Optional[str]
+    substitui_chave: Optional[str]
+    avisos: list[str]
+
+
+LimiteSituacao = Literal["ok", "atencao", "excedido_ate_20", "excedido_acima_20"]
+
+
+class LimiteMeiOut(BaseModel):
+    ano: int
+    limite: float
+    faturado: float
+    restante: float
+    pct: float
+    situacao: LimiteSituacao
+    por_mes: list[float]
+    proporcional: bool  # ano de abertura: limite de R$ 6.750 por mês aberto
 
 
 # --- Resumo ---

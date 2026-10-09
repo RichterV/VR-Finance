@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 
-export type EntityType = 'gasto' | 'receita' | 'servico_veiculo';
+export type EntityType = 'gasto' | 'receita' | 'servico_veiculo' | 'nota_fiscal' | 'empresa';
 
 export interface Attachment {
   id: number;

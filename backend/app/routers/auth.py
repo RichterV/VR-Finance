@@ -202,6 +202,8 @@ def delete_user(
     db.query(models.Recorrencia).filter(models.Recorrencia.user_id == user_id).delete(synchronize_session=False)
     db.query(models.DropdownOption).filter(models.DropdownOption.user_id == user_id).delete(synchronize_session=False)
     db.query(models.Notificacao).filter(models.Notificacao.user_id == user_id).delete(synchronize_session=False)
+    db.query(models.NotaFiscal).filter(models.NotaFiscal.user_id == user_id).delete(synchronize_session=False)
+    db.query(models.Empresa).filter(models.Empresa.user_id == user_id).delete(synchronize_session=False)
     delete_all_attachments_for_user(db, user_id)
     db.delete(user)
     db.commit()

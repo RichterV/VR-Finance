@@ -9,10 +9,13 @@ import { markExpectedExternalActivity } from '../core/expected-exit';
 import { Attachment, AttachmentsService, EntityType } from '../services/attachments.service';
 import {
   ALLOWED_ATTACHMENT_TYPES,
+  MAX_ATTACHMENT_SIZE_BYTES,
+  asXmlFile,
   buildPastedFileName,
   extractHttpErrorMessage,
   formatFileSize,
   isAllowedAttachmentFile,
+  isXmlFile,
 } from './attachment-types';
 import { shrinkPhoto } from './camera-photo';
 
@@ -231,6 +234,8 @@ export class AttachmentPickerComponent implements OnInit {
   @Input({ required: true }) entityType!: EntityType;
   @Input() entityId: string | number | null = null;
   @Input() mode: 'create' | 'edit' = 'create';
+  /** Aceita também XML (só notas fiscais -- o backend recusa XML nos outros tipos). */
+  @Input() allowXml = false;
   @Output() readonly filesChanged = new EventEmitter<void>();
 
   /** Celular = app nativo ou navegador com tela de toque. */
@@ -243,7 +248,9 @@ export class AttachmentPickerComponent implements OnInit {
    * abriria o mesmo seletor de arquivos. */
   readonly showCameraButton = this.isMobile;
 
-  readonly acceptAttr = ALLOWED_ATTACHMENT_TYPES.join(',');
+  get acceptAttr(): string {
+    return [...ALLOWED_ATTACHMENT_TYPES, ...(this.allowXml ? ['.xml', 'application/xml', 'text/xml'] : [])].join(',');
+  }
   readonly uploading = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly dragOver = signal(false);
@@ -337,14 +344,24 @@ export class AttachmentPickerComponent implements OnInit {
     this.addFiles([new File([blob], buildPastedFileName(item.type), { type: item.type })]);
   }
 
+  /** Pra o modal pai já deixar um arquivo na fila (ex: o XML que acabou de ser lido). */
+  addPendingFiles(files: File[]): void {
+    this.addFiles(files);
+  }
+
   private addFiles(files: File[]): void {
     this.errorMessage.set(null);
     if (!files.length) return;
 
     const valid: File[] = [];
     for (const file of files) {
+      if (this.allowXml && isXmlFile(file) && file.size <= MAX_ATTACHMENT_SIZE_BYTES) {
+        valid.push(asXmlFile(file));
+        continue;
+      }
       if (!isAllowedAttachmentFile(file)) {
-        this.errorMessage.set(`"${file.name}" não é um arquivo válido (só imagem ou PDF, até 10MB).`);
+        const tipos = this.allowXml ? 'imagem, PDF ou XML' : 'imagem ou PDF';
+        this.errorMessage.set(`"${file.name}" não é um arquivo válido (só ${tipos}, até 10MB).`);
         continue;
       }
       valid.push(file);

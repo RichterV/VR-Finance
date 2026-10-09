@@ -13,12 +13,24 @@ export function isAllowedAttachmentFile(file: File): boolean {
   return ALLOWED_ATTACHMENT_TYPES.includes(file.type) && file.size <= MAX_ATTACHMENT_SIZE_BYTES;
 }
 
+/** XML de NFS-e -- aceito só como anexo de nota fiscal. O tipo varia (application/xml, text/xml, ou
+ * vazio no Android), então vale também a extensão. */
+export function isXmlFile(file: File): boolean {
+  return file.type === 'application/xml' || file.type === 'text/xml' || /\.xml$/i.test(file.name);
+}
+
+/** Mesmo arquivo com o tipo que o backend espera pra XML. */
+export function asXmlFile(file: File): File {
+  return file.type === 'application/xml' ? file : new File([file], file.name, { type: 'application/xml' });
+}
+
 const EXTENSION_BY_TYPE: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
   'image/heic': 'heic',
   'application/pdf': 'pdf',
+  'application/xml': 'xml',
 };
 
 /** Imagem colada (Ctrl+V) chega sem nome de arquivo -- gera um baseado no tipo/horário. */

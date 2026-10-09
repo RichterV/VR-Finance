@@ -19,6 +19,9 @@ ALLOWED_CONTENT_TYPES = {
     "image/heic": ".heic",
     "application/pdf": ".pdf",
 }
+# XML só é aceito como anexo de nota fiscal (o arquivo da NFS-e), nunca nos outros módulos.
+XML_CONTENT_TYPE = "application/xml"
+XML_ENTITY_TYPES = {"nota_fiscal"}
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 MAX_FILENAME_LENGTH = 200
 
@@ -70,11 +73,19 @@ def sniff_content_type(head: bytes) -> str | None:
         return "image/heic"
     return None
 
+def looks_like_xml(data: bytes) -> bool:
+    """Começo de um documento XML (com ou sem BOM/declaração)."""
+    head = data[:64].lstrip(b"\xef\xbb\xbf").lstrip()
+    return head.startswith(b"<?xml") or (head.startswith(b"<") and not head[:9].lower().startswith(b"<!doctype"))
+
+
 # entity_type -> (model, tem installment_group_id -- ver nota em _authorize_entity)
 ENTITY_CONFIG: dict[str, tuple[type, bool]] = {
     "gasto": (models.Gasto, True),
     "receita": (models.Receita, False),
     "servico_veiculo": (models.VehicleService, False),
+    "nota_fiscal": (models.NotaFiscal, False),
+    "empresa": (models.Empresa, False),
 }
 
 
@@ -83,6 +94,8 @@ ENTITY_MODULE: dict[str, str] = {
     "servico_veiculo": "veiculos",
     "operacao_bolsa": "operacoes_bolsa",
     "devedor": "devedores",
+    "nota_fiscal": "empresa",
+    "empresa": "empresa",
 }
 
 
@@ -164,7 +177,12 @@ async def upload_attachment(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    extension = ALLOWED_CONTENT_TYPES.get(file.content_type or "")
+    # XML de NFS-e: o navegador manda application/xml, text/xml ou nada (Android) -- vale pelo nome
+    # e pelo conteúdo, e é gravado sempre como application/xml.
+    is_xml = entity_type in XML_ENTITY_TYPES and (
+        (file.content_type or "") in {XML_CONTENT_TYPE, "text/xml"} or (file.filename or "").lower().endswith(".xml")
+    )
+    extension = ".xml" if is_xml else ALLOWED_CONTENT_TYPES.get(file.content_type or "")
     if extension is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -178,8 +196,13 @@ async def upload_attachment(
             detail="Arquivo maior que o limite permitido (10MB)",
         )
 
-    detected = sniff_content_type(data[:16])
-    if detected is None or detected != file.content_type:
+    if is_xml:
+        detected = XML_CONTENT_TYPE if looks_like_xml(data) else None
+        declared = XML_CONTENT_TYPE
+    else:
+        detected = sniff_content_type(data[:16])
+        declared = file.content_type
+    if detected is None or detected != declared:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="O conteúdo do arquivo não corresponde ao tipo informado (só imagens ou PDF)",

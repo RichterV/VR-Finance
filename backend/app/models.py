@@ -157,6 +157,47 @@ class Vehicle(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class Empresa(Base):
+    """Empresa do usuário (módulo Empresa) -- hoje uma só por usuário, MEI."""
+
+    __tablename__ = "empresas"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+    nome = Column(String, nullable=False)
+    cnpj = Column(String, nullable=False)  # só dígitos
+    data_abertura = Column(Date, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class NotaFiscal(Base):
+    """Nota fiscal de serviço emitida pela empresa do usuário."""
+
+    __tablename__ = "notas_fiscais"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    numero = Column(String, nullable=False)
+    chave_acesso = Column(String, nullable=True)  # NFS-e nacional: 50 dígitos
+    data_emissao = Column(Date, nullable=False)
+    competencia = Column(Date, nullable=False)  # dia 1 do mês de competência -- é o que conta no limite
+    tomador_nome = Column(String, nullable=False)
+    tomador_documento = Column(String, nullable=True)  # CPF/CNPJ, só dígitos
+    valor = Column(Float, nullable=False)
+    descricao = Column(String, nullable=True)
+    # Nota substituta: chave de acesso da nota que ela substitui (vem do XML, `subst/chSubstda`)
+    substitui_chave = Column(String, nullable=True)
+    # Nota original já substituída: id da substituta. Fica no histórico, mas não conta no limite.
+    substituida_por = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "numero", name="uq_notas_fiscais_user_numero"),
+        Index("ix_notas_fiscais_user_competencia", "user_id", "competencia"),
+    )
+
+
+
 class VehicleService(Base):
     __tablename__ = "vehicle_services"
 

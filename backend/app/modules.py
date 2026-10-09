@@ -11,4 +11,5 @@ OPTIONAL_MODULES: tuple[str, ...] = (
     "ferramentas",
     "exportar_dados",
     "analise_inflacionaria",
+    "empresa",
 )

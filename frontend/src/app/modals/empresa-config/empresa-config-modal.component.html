@@ -1,0 +1,51 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>{{ empresa ? 'Dados da empresa' : 'Cadastrar empresa' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <ion-item>
+      <ion-input label="Nome empresarial" labelPlacement="stacked" formControlName="nome"></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-input
+        label="CNPJ"
+        labelPlacement="stacked"
+        formControlName="cnpj"
+        inputmode="numeric"
+        placeholder="00.000.000/0000-00"
+        (ionInput)="onCnpjInput($event)"
+      ></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-input label="Data de abertura" labelPlacement="stacked" type="date" formControlName="dataAbertura"></ion-input>
+    </ion-item>
+    <p class="form-hint">No ano de abertura, o limite do MEI é proporcional aos meses em que a empresa existiu.</p>
+
+    <h3 class="section-label">Documentos</h3>
+    <p class="form-hint">CCMEI, contratos, declarações anuais... Ficam guardados aqui e entram na exportação.</p>
+    <app-attachment-picker
+      entityType="empresa"
+      [mode]="empresa ? 'edit' : 'create'"
+      [entityId]="empresa?.id ?? null"
+      (filesChanged)="onDocumentosChanged()"
+    ></app-attachment-picker>
+
+    @if (errorMessage()) {
+      <ion-text color="danger">
+        <p>{{ errorMessage() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving() || attachmentBusy">
+      {{ saving() ? 'Salvando...' : attachmentBusy ? 'Aguarde o anexo...' : 'Salvar' }}
+    </ion-button>
+  </form>
+</ion-content>

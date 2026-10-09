@@ -140,6 +140,8 @@ def _reset_user_data(db, user: models.User) -> None:
     db.query(models.DropdownOption).filter(models.DropdownOption.user_id == user.id).delete()
     # Resumos mensais antigos refletiam a base anterior -- o próximo é gerado de novo sob demanda.
     db.query(models.Notificacao).filter(models.Notificacao.user_id == user.id).delete()
+    db.query(models.NotaFiscal).filter(models.NotaFiscal.user_id == user.id).delete()
+    db.query(models.Empresa).filter(models.Empresa.user_id == user.id).delete()
 
 
 def _seed_categorias(db, user: models.User) -> dict[str, models.DropdownOption]:
@@ -362,6 +364,60 @@ def _seed_veiculos(db, user, months: list[date], today: date, rng: random.Random
     return services
 
 
+def _seed_empresa(db, user, today: date, rng: random.Random) -> tuple[int, int]:
+    """MEI fictício aberto há ~14 meses, com uma nota por mês pra um cliente fictício e uma nota
+    substituída (corrigida depois), pra testar o limite proporcional e o selo de substituição."""
+    abertura = add_months(_month_start(0, today), -14).replace(day=16)
+    empresa = models.Empresa(user_id=user.id, nome="Empresa Teste MEI", cnpj="11222333000181", data_abertura=abertura)
+    db.add(empresa)
+    db.flush()
+    _add_attachment(db, user.id, "empresa", str(empresa.id), "CCMEI")
+    _add_attachment(db, user.id, "empresa", str(empresa.id), "Contrato de prestacao de servico")
+
+    notas = []
+    mes = add_months(_month_start(0, today), -13)
+    numero = 1
+    while mes < _month_start(0, today):
+        emissao = min(add_months(mes, 1).replace(day=5), today)  # emitida no começo do mês seguinte
+        notas.append(
+            models.NotaFiscal(
+                user_id=user.id,
+                numero=str(numero),
+                chave_acesso=f"{numero:050d}",
+                data_emissao=emissao,
+                competencia=mes,
+                tomador_nome="Cliente Fictício Ltda",
+                tomador_documento="11444777000161",
+                valor=round(4800 + rng.uniform(0, 400), 2),
+                descricao=f"Consultoria em software, referente a {mes:%m/%Y}.",
+            )
+        )
+        numero += 1
+        mes = add_months(mes, 1)
+    db.add_all(notas)
+    db.flush()
+    # A segunda nota mais recente foi substituída por uma corrigida (mesmo valor e competência)
+    original = notas[-2]
+    substituta = models.NotaFiscal(
+        user_id=user.id,
+        numero=str(numero),
+        chave_acesso=f"{numero:050d}",
+        data_emissao=today,
+        competencia=original.competencia,
+        tomador_nome=original.tomador_nome,
+        tomador_documento=original.tomador_documento,
+        valor=original.valor,
+        descricao=original.descricao + " (corrigida)",
+        substitui_chave=original.chave_acesso,
+    )
+    db.add(substituta)
+    db.flush()
+    original.substituida_por = substituta.id
+    for nota in rng.sample(notas, 4) + [substituta]:
+        _add_attachment(db, user.id, "nota_fiscal", str(nota.id), f"NFS-e {nota.numero}")
+    return len(notas) + 1, 2 + 5
+
+
 def main() -> None:
     # Importar app.main roda o create_all + as migrações de schema (_migrate_schema) -- sem isso, num
     # banco ainda não migrado (backend não reiniciado depois de um deploy), o create_all sozinho
@@ -423,13 +479,15 @@ def main() -> None:
         for service in rng.sample(services, min(10, len(services))):
             _add_attachment(db, user.id, "servico_veiculo", str(service.id), f"Nota {service.description}")
             anexos += 1
+        notas_empresa, anexos_empresa = _seed_empresa(db, user, today, rng)
+        anexos += anexos_empresa
         extra_resumo = ""
 
         db.commit()
         print(
             f"Base mocada criada ({months[0]:%m/%Y} a {months[-1]:%m/%Y}): {len(items)} categorias, "
             f"{len(gastos)} gastos, {len(receitas)} receitas, {recorrencias} recorrências, "
-            f"{len(services)} serviços de veículo"
+            f"{len(services)} serviços de veículo, {notas_empresa} notas fiscais da empresa"
             f"{extra_resumo}, {anexos} anexos."
         )
         print(f"Login: usuario='{TEST_USERNAME}' senha='{TEST_PASSWORD}'")

@@ -13,6 +13,7 @@ from app.routers import (
     auth,
     backup_status,
     dropdown_options,
+    empresa,
     export,
     gastos,
     notificacoes,
@@ -178,6 +179,7 @@ app.include_router(export.router)
 app.include_router(notificacoes.router)
 app.include_router(analytics.router)
 app.include_router(recorrencias.router)
+app.include_router(empresa.router)
 
 
 @app.get("/health")

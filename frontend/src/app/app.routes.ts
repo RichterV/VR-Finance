@@ -37,6 +37,12 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/veiculos/veiculos.page').then((m) => m.VeiculosPage),
       },
       {
+        path: 'empresa',
+        canActivate: [moduleGuard],
+        data: { module: 'empresa' },
+        loadComponent: () => import('./pages/empresa/empresa.page').then((m) => m.EmpresaPage),
+      },
+      {
         path: 'ferramentas',
         canActivate: [moduleGuard],
         data: { module: 'ferramentas' },

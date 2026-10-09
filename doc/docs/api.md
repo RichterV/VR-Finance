@@ -37,6 +37,7 @@ os endpoints do router de uma vez. Vale na hora: o usuário é relido do banco a
 | `veiculos` | `/veiculos/*`, `/servicos-veiculos/*`, anexos com `entity_type=servico_veiculo` |
 | `operacoes_bolsa` | `/operacoes-bolsa/*`, anexos com `entity_type=operacao_bolsa` |
 | `devedores` | `/devedores/*`, anexos com `entity_type=devedor` |
+| `empresa` | `/empresa/*`, anexos com `entity_type=nota_fiscal` ou `empresa` |
 | `exportar_dados` | `/export/*` (e cada módulo exportado também exige o próprio módulo) |
 | `analise_inflacionaria` | `GET /resumo/inflacao`; `PUT /dropdown-options/{id}` com `include_in_inflation` |
 | `ferramentas` | — (só frontend, não tem backend) |
@@ -194,10 +195,32 @@ de uma vez.
 | PUT | `/devedores/{id}` | edita `devedor`/`description`/`value` — **replicados em todas as parcelas do grupo** — e o `status`, que vale só pra parcela editada |
 | DELETE | `/devedores/{id}` | exclui uma parcela específica |
 
+## Empresa (MEI)
+
+Exige o módulo `empresa`. Uma empresa por usuário; notas e limite respondem 400 enquanto ela não
+estiver cadastrada.
+
+| método | rota | descrição |
+|---|---|---|
+| GET | `/empresa` | a empresa do usuário, ou `null` |
+| PUT | `/empresa` | cria ou edita (`nome`, `cnpj` com ou sem pontuação, `data_abertura`). 400 se o CNPJ não tiver os dígitos verificadores certos ou a abertura for no futuro |
+| GET | `/empresa/limite?ano=` | faturamento do ano (soma das notas pela **competência**, sem as substituídas) contra o limite do MEI: R$ 81.000, ou R$ 6.750 por mês no ano de abertura. Devolve `faturado`, `limite`, `restante`, `pct`, `por_mes` e `situacao` (`ok` \| `atencao` ≥ 80% \| `excedido_ate_20` \| `excedido_acima_20`) |
+| POST | `/empresa/notas/ler-xml` | multipart `file`: lê o XML da NFS-e (leiaute nacional; ABRASF como reserva) e devolve os campos pra pré-preencher, com `avisos` (nota já cadastrada, prestador diferente do CNPJ da empresa, substituição). **Não grava nada.** 400 com a explicação se o XML não for uma NFS-e legível |
+| GET | `/empresa/notas?ano=&mes=&busca=&limit=&offset=` | lista paginada (`{items, total, soma_valor}`), por emissão decrescente. `ano`/`mes` filtram pela competência; `busca` em número, tomador e descrição; `soma_valor` não inclui as substituídas |
+| POST | `/empresa/notas` | cria nota (`numero`, `data_emissao`, `competencia`, `tomador_nome`, `valor` obrigatórios; `chave_acesso`, `tomador_documento`, `descricao`, `substitui_chave` opcionais). 400 se o número ou a chave já existirem |
+| PUT | `/empresa/notas/{id}` | edita (mesmas regras) |
+| DELETE | `/empresa/notas/{id}` | exclui a nota e os anexos dela; se era uma substituta, a original volta a contar |
+| GET | `/empresa/declaracao-anual?ano=&empregado=&outras_receitas=` | PDF de apoio pra declaração anual do MEI (DASN-SIMEI): dados da empresa, período (desde a abertura no 1º ano), receita de serviços = notas do ano pela **competência** sem as substituídas + `outras_receitas` (receita sem nota, opcional), "possuiu empregado" (`empregado`, padrão `false`), avisos (ano em andamento, número de nota faltando na sequência, limite excedido), limite, mês a mês e listas das notas incluídas e substituídas. 400 se o ano for antes da abertura ou ainda não tiver começado. **Não grava nada** |
+
+**Substituição**: a NFS-e substituta traz no XML a chave da nota que ela substitui
+(`subst/chSubstda`). A original fica gravada (`substituida_por` = id da substituta) e aparece com o
+selo "substituída", mas sai do limite e das somas. A ligação é feita em qualquer ordem de cadastro.
+
 ## Anexos
 
-Comprovantes (imagem/PDF) opcionais em gastos, receitas, serviços de veículo, operações bolsa e
-devedores — ver [Modelo de dados](modelo-de-dados.md#attachments). Router genérico único cobrindo os
+Comprovantes (imagem/PDF) opcionais em gastos, receitas, serviços de veículo, operações bolsa,
+devedores, notas fiscais (`nota_fiscal`, que aceita também o XML da NFS-e) e documentos da empresa
+(`empresa`, com `entity_id` = id da empresa) — ver [Modelo de dados](modelo-de-dados.md#attachments). Router genérico único cobrindo os
 5 módulos via `entity_type` + `entity_id`. Anexos de `servico_veiculo`, `operacao_bolsa` e `devedor`
 exigem o módulo correspondente (403 sem ele).
 
@@ -219,12 +242,13 @@ Exige o módulo `exportar_dados`.
 
 | método | rota | descrição |
 |---|---|---|
-| GET | `/export/{modulo}` | `modulo` ∈ `gastos` \| `receitas` \| `veiculos` \| `operacoes_bolsa` \| `devedores` \| `categorias` (422 se inválido). Retorna um `.zip` com o(s) CSV(s) do módulo + pasta `anexos/` com os comprovantes dos registros exportados. `veiculos`, `operacoes_bolsa` e `devedores` exigem também o próprio módulo (403) |
+| GET | `/export/{modulo}` | `modulo` ∈ `gastos` \| `receitas` \| `veiculos` \| `operacoes_bolsa` \| `devedores` \| `categorias` \| `empresa` (422 se inválido). Retorna um `.zip` com o(s) CSV(s) do módulo + pasta `anexos/` com os comprovantes dos registros exportados. `veiculos`, `operacoes_bolsa`, `devedores` e `empresa` exigem também o próprio módulo (403) |
 
 Formato do CSV: delimitador `;`, encoding latin-1 (caractere fora do latin-1 vira `?`), vírgula como
 separador decimal — a convenção que o Excel em português abre direto. Registros em ordem
 cronológica (mais antigo primeiro), sem paginação. `veiculos` gera dois CSVs (`veiculos.csv` +
-`servicos_veiculos.csv`); `categorias` inclui as inativas (é uma cópia de backup). A coluna
+`servicos_veiculos.csv`); `empresa` leva `empresa.csv`, `notas_fiscais.csv` (com XML/PDF em
+`anexos/`) e os documentos da empresa na pasta `documentos/`; `categorias` inclui as inativas (é uma cópia de backup). A coluna
 `anexos` lista o nome do arquivo dentro do zip (`<entity_type>_<entity_id>_<id do anexo>_<nome
 original>`); anexo de grupo parcelado aparece em todas as linhas do grupo, mas só uma cópia física
 entra no zip. O zip é montado num arquivo temporário (anexos lidos do disco em blocos) e apagado

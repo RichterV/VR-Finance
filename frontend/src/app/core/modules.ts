@@ -10,7 +10,8 @@ export type ModuleKey =
   | 'devedores'
   | 'ferramentas'
   | 'exportar_dados'
-  | 'analise_inflacionaria';
+  | 'analise_inflacionaria'
+  | 'empresa';
 
 export interface AppModule {
   key: ModuleKey;
@@ -22,6 +23,7 @@ export interface AppModule {
 
 export const OPTIONAL_MODULES: AppModule[] = [
   { key: 'veiculos', label: 'Manutenção Veículos', icon: 'car-sport-outline', route: '/veiculos' },
+  { key: 'empresa', label: 'Empresa', icon: 'briefcase-outline', route: '/empresa' },
   { key: 'ferramentas', label: 'Ferramentas', icon: 'calculator-outline', route: '/ferramentas' },
   { key: 'exportar_dados', label: 'Exportar Dados', icon: 'download-outline', route: '/exportar-dados' },
   // Seção "Análise inflacionária" da Home + toggles "Cesta de inflação" no modal Categorias.

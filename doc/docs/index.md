@@ -19,7 +19,7 @@ pretende guardar), com um dashboard analítico em cima disso e alguns módulos o
 | **Notificações** | Sino na Home com o **resumo da virada do mês** (gerado no dia 1, guarda os últimos 12) |
 | **Alertas** | Confirmação antes de salvar um gasto muito acima do normal da categoria (anomalia) |
 | **Anexos** | Comprovante (imagem/PDF) em gastos, receitas, serviços de veículo, operações e devedores: arrastar e soltar, Ctrl+V, foto direto da câmera no celular, pré-visualização com zoom e compartilhar (WhatsApp etc.) no celular |
-| **Módulos opcionais** | Manutenção Veículos, Operações Bolsa, Devedores, Ferramentas (calculadoras), Exportar Dados (CSV + anexos em `.zip`) e Análise inflacionária — habilitados por usuário |
+| **Módulos opcionais** | Manutenção Veículos, Operações Bolsa, Devedores, Empresa (MEI: notas fiscais, limite de faturamento, documentos e PDF da declaração anual), Ferramentas (calculadoras), Exportar Dados (CSV + anexos em `.zip`) e Análise inflacionária — habilitados por usuário |
 | **Usuários** | Login obrigatório (JWT), sem cadastro público: o usuário master cria as contas no painel `/admin`, escolhe os módulos de cada uma e a conta nova troca a senha no primeiro acesso — ver [Autenticação](autenticacao.md) |
 | **App Android** | Login por digital, bloqueio por digital/PIN ao voltar do segundo plano, tenta a rede local antes do Tailscale |
 | **Celular** | Botão flutuante "+", tabelas viram cartões, menu lateral com hambúrguer; no desktop os modais abrem como painel lateral |

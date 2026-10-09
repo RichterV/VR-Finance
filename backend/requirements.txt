@@ -7,3 +7,4 @@ python-dotenv>=1.0
 pyjwt>=2.9
 bcrypt>=4.2
 python-multipart>=0.0.9
+fpdf2>=2.8

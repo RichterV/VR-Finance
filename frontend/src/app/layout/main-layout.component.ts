@@ -16,6 +16,7 @@ import {
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
+  briefcaseOutline,
   calculatorOutline,
   carSportOutline,
   downloadOutline,
@@ -117,6 +118,7 @@ export class MainLayoutComponent {
     private readonly modals: ModalLauncherService,
   ) {
     addIcons({
+      briefcaseOutline,
       homeOutline,
       carSportOutline,
       logOutOutline,
