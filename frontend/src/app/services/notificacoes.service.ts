@@ -54,18 +54,30 @@ export interface ResumoMensalPayload {
   devedores: { parcelas_atrasadas: number; valor_atrasado: number } | null;
 }
 
-export interface Notificacao {
+interface NotificacaoBase {
   id: number;
-  tipo: 'resumo_mensal';
   ano: number;
   mes: number;
   titulo: string;
   lida: boolean;
   created_at: string;
+}
+
+/** Resumo da virada do mês (dia 1). */
+export interface NotificacaoResumoMensal extends NotificacaoBase {
+  tipo: 'resumo_mensal';
   payload: ResumoMensalPayload;
 }
 
-/** Central de notificações (hoje só o resumo da virada do mês, gerado pelo backend no dia 1). */
+/** Aviso de que o relatório do ano que passou está pronto (virada do ano) -- não leva dados. */
+export interface NotificacaoRelatorioAnual extends NotificacaoBase {
+  tipo: 'relatorio_anual';
+  payload: null;
+}
+
+export type Notificacao = NotificacaoResumoMensal | NotificacaoRelatorioAnual;
+
+/** Central de notificações: resumo da virada do mês (dia 1) e aviso de relatório anual (virada do ano), gerados pelo backend. */
 @Injectable({ providedIn: 'root' })
 export class NotificacoesService {
   private readonly baseUrl = `${environment.apiUrl}/notificacoes`;
@@ -73,7 +85,9 @@ export class NotificacoesService {
   readonly items = signal<Notificacao[]>([]);
   readonly naoLidas = computed(() => this.items().filter((n) => !n.lida).length);
   /** Resumo mais recente ainda não lido -- vira o card de destaque no topo da Home. */
-  readonly resumoPendente = computed(() => this.items().find((n) => !n.lida && n.tipo === 'resumo_mensal') ?? null);
+  readonly resumoPendente = computed(
+    () => this.items().find((n): n is NotificacaoResumoMensal => !n.lida && n.tipo === 'resumo_mensal') ?? null,
+  );
 
   constructor(private readonly http: HttpClient) {}
 

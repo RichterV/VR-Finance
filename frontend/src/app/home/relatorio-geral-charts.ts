@@ -81,7 +81,18 @@ export const TOTAIS_GERAIS_CHART_OPTIONS: ChartConfiguration<'bar'>['options'] =
   responsive: true,
   maintainAspectRatio: false,
   scales: {
-    x: { grid: { display: false }, ticks: { color: CHART_TEXT_COLOR } },
+    // Rótulos de duas palavras quebram em duas linhas ("Não / essenciais") e nenhum é pulado -- os
+    // rótulos do eixo X não inclinam mais (chart-setup.ts), e aqui cada barra precisa do nome.
+    x: {
+      grid: { display: false },
+      ticks: {
+        color: CHART_TEXT_COLOR,
+        autoSkip: false,
+        callback(this: { getLabelForValue(v: number): string }, value: string | number) {
+          return this.getLabelForValue(Number(value)).split(' ');
+        },
+      },
+    },
     y: { grid: { color: CHART_GRID_COLOR }, ticks: { color: CHART_TEXT_COLOR } },
   },
   plugins: {

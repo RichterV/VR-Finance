@@ -311,17 +311,18 @@ apaga o arquivo que tinha acabado de gravar.
 
 ## `notificacoes`
 
-Central de notificações — hoje só o resumo da virada do mês (`tipo = resumo_mensal`), gerado sob
-demanda por `app/resumo_mensal.py` quando o app consulta `GET /notificacoes` (sem cron).
+Central de notificações — o resumo da virada do mês (`tipo = resumo_mensal`, `app/resumo_mensal.py`)
+e o aviso de relatório anual pronto (`tipo = relatorio_anual`, `app/relatorio_anual.py`), os dois
+gerados sob demanda quando o app consulta `GET /notificacoes` (sem cron).
 
 | campo | tipo | descrição |
 |---|---|---|
 | id | INTEGER PK | |
 | user_id | INTEGER FK → users.id | |
-| tipo | TEXT | `resumo_mensal` |
-| ano, mes | INTEGER | mês de referência; `UNIQUE(user_id, tipo, ano, mes)` |
+| tipo | TEXT | `resumo_mensal` \| `relatorio_anual` |
+| ano, mes | INTEGER | mês de referência (no aviso anual, o ano e `mes = 12`); `UNIQUE(user_id, tipo, ano, mes)` |
 | titulo | TEXT | ex: "Resumo de setembro/2026" |
-| payload | TEXT (JSON) | conteúdo calculado na geração (`ResumoMensalPayload` em `schemas.py`) |
+| payload | TEXT (JSON) | conteúdo calculado na geração (`ResumoMensalPayload` em `schemas.py`); `{}` no aviso anual, que não leva dados |
 | lida_em | DATETIME nullable | `null` = não lida |
 | created_at | DATETIME | |
 

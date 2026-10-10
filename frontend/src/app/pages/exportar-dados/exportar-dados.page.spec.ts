@@ -3,8 +3,10 @@ import { provideIonicAngular, ToastController } from '@ionic/angular';
 import { of, throwError } from 'rxjs';
 
 import { AuthService } from '../../core/auth.service';
+import { ModalLauncherService } from '../../core/modal-launcher.service';
 import { ModuleKey } from '../../core/modules';
 import { DownloadFileService } from '../../shared/download-file.service';
+import { EmpresaService } from '../../services/empresa.service';
 import { ExportService } from '../../services/export.service';
 import { ExportarDadosPage } from './exportar-dados.page';
 
@@ -15,12 +17,16 @@ describe('ExportarDadosPage', () => {
   let shareFileSpy: ReturnType<typeof vi.fn>;
   let toastCreateSpy: ReturnType<typeof vi.fn>;
   let enabledModules: Set<ModuleKey>;
+  let launcher: { relatorioAnual: ReturnType<typeof vi.fn>; declaracaoAnualMei: ReturnType<typeof vi.fn> };
+  let empresaGet: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     downloadSpy = vi.fn(() => of(new Blob(['dados'])));
     shareFileSpy = vi.fn().mockResolvedValue({ shared: true });
     toastCreateSpy = vi.fn().mockResolvedValue({ present: vi.fn().mockResolvedValue(undefined) });
     enabledModules = new Set<ModuleKey>(['veiculos', 'operacoes_bolsa', 'devedores', 'ferramentas', 'exportar_dados']);
+    launcher = { relatorioAnual: vi.fn().mockResolvedValue(undefined), declaracaoAnualMei: vi.fn().mockResolvedValue(undefined) };
+    empresaGet = vi.fn(() => of(null));
 
     TestBed.configureTestingModule({
       providers: [
@@ -29,6 +35,8 @@ describe('ExportarDadosPage', () => {
         { provide: ExportService, useValue: { download: downloadSpy } },
         { provide: DownloadFileService, useValue: { shareFile: shareFileSpy } },
         { provide: ToastController, useValue: { create: toastCreateSpy } },
+        { provide: ModalLauncherService, useValue: launcher },
+        { provide: EmpresaService, useValue: { get: empresaGet } },
       ],
     });
     fixture = TestBed.createComponent(ExportarDadosPage);
@@ -97,5 +105,39 @@ describe('ExportarDadosPage', () => {
     component.baixar('operacoes_bolsa');
 
     expect(component.baixando()).toBe('operacoes_bolsa');
+  });
+
+  describe('aba Relatórios', () => {
+    it('shows the MEI declaration only with the Empresa module', () => {
+      expect(component.relatorios().map((r) => r.chave)).toEqual(['anual']);
+      enabledModules.add('empresa');
+      const comEmpresa = TestBed.createComponent(ExportarDadosPage).componentInstance;
+      expect(comEmpresa.relatorios().map((r) => r.chave)).toEqual(['anual', 'declaracao_mei']);
+    });
+
+    it('switches tabs', () => {
+      expect(component.aba()).toBe('dados');
+      component.onAbaChange('relatorios');
+      expect(component.aba()).toBe('relatorios');
+    });
+
+    it('opens the annual report year picker', async () => {
+      await component.abrirRelatorio('anual');
+      expect(launcher.relatorioAnual).toHaveBeenCalledWith();
+      expect(component.abrindo()).toBeNull();
+    });
+
+    it('asks to register the company before the MEI declaration', async () => {
+      await component.abrirRelatorio('declaracao_mei');
+      expect(launcher.declaracaoAnualMei).not.toHaveBeenCalled();
+      expect(toastCreateSpy).toHaveBeenCalledWith(expect.objectContaining({ color: 'warning' }));
+    });
+
+    it('opens the MEI declaration with the company', async () => {
+      const empresa = { id: 1, nome: 'Empresa Exemplo', cnpj: '11222333000181', data_abertura: '2020-05-10' };
+      empresaGet.mockReturnValue(of(empresa));
+      await component.abrirRelatorio('declaracao_mei');
+      expect(launcher.declaracaoAnualMei).toHaveBeenCalledWith(empresa);
+    });
   });
 });

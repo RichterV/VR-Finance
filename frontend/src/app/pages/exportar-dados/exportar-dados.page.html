@@ -9,29 +9,66 @@
 
 <ion-content [fullscreen]="true" class="ion-padding">
   <div class="exportar-dados">
-    <p class="tool-hint">
-      Baixa um módulo por vez num arquivo .zip: um CSV (separado por ";", encoding latin-1 -- abre direto no
-      Excel) mais uma pasta "anexos" com os comprovantes vinculados aos registros exportados. Só os seus
-      próprios dados.
-    </p>
+    <ion-segment class="page-tabs" [value]="aba()" (ionChange)="onAbaChange($event.detail.value)">
+      <ion-segment-button value="dados">
+        <ion-label>Dados</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="relatorios">
+        <ion-label>Relatórios</ion-label>
+      </ion-segment-button>
+    </ion-segment>
 
-    @for (modulo of modulos(); track modulo.chave) {
-      <div class="modulo-card">
-        <div class="modulo-info">
-          <h3>{{ modulo.label }}</h3>
-          <p>{{ modulo.descricao }}</p>
+    @if (aba() === 'dados') {
+      <p class="tool-hint">
+        Cada módulo vira um arquivo .zip com uma planilha CSV, que abre direto no Excel, e uma pasta "anexos" com
+        os comprovantes. Só os seus próprios dados.
+      </p>
+
+      <div class="modulo-list">
+      @for (modulo of modulos(); track modulo.chave) {
+        <div class="modulo-row">
+          <div class="modulo-info">
+            <h3>{{ modulo.label }}</h3>
+            <p>{{ modulo.descricao }}</p>
+          </div>
+          <ion-button
+            fill="clear"
+            [disabled]="baixando() !== null"
+            (click)="baixar(modulo.chave)"
+          >
+            @if (baixando() === modulo.chave) {
+              <ion-spinner name="dots"></ion-spinner>
+            } @else {
+              <ion-icon slot="start" name="download-outline"></ion-icon>
+              <span>Baixar</span>
+            }
+          </ion-button>
         </div>
-        <ion-button
-          [disabled]="baixando() !== null"
-          (click)="baixar(modulo.chave)"
-        >
-          @if (baixando() === modulo.chave) {
-            <ion-spinner name="dots"></ion-spinner>
-          } @else {
-            <ion-icon slot="start" name="download-outline"></ion-icon>
-            <span>Baixar</span>
-          }
-        </ion-button>
+      }
+      </div>
+    } @else {
+      <p class="tool-hint">
+        Relatórios em PDF para ler, guardar ou imprimir. Ao gerar, você escolhe o ano; o ano em andamento sai parcial,
+        até hoje.
+      </p>
+
+      <div class="modulo-list">
+      @for (rel of relatorios(); track rel.chave) {
+        <div class="modulo-row">
+          <div class="modulo-info">
+            <h3>{{ rel.label }}</h3>
+            <p>{{ rel.descricao }}</p>
+          </div>
+          <ion-button fill="clear" [disabled]="abrindo() !== null" (click)="abrirRelatorio(rel.chave)">
+            @if (abrindo() === rel.chave) {
+              <ion-spinner name="dots"></ion-spinner>
+            } @else {
+              <ion-icon slot="start" name="document-text-outline"></ion-icon>
+              <span>Gerar PDF</span>
+            }
+          </ion-button>
+        </div>
+      }
       </div>
     }
   </div>

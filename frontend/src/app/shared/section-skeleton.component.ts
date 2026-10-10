@@ -57,7 +57,7 @@ import { IonSkeletonText } from '@ionic/angular';
       .sk-card {
         background: var(--app-surface-glass);
         border: 1px solid var(--app-surface-border);
-        border-radius: 16px;
+        border-radius: var(--r-md);
         padding: 22px 24px;
         display: flex;
         flex-direction: column;
@@ -67,7 +67,7 @@ import { IonSkeletonText } from '@ionic/angular';
         --background: rgba(148, 163, 184, 0.12);
         --background-rgb: 148, 163, 184;
         margin: 0;
-        border-radius: 6px;
+        border-radius: var(--r-sm);
       }
       .sk-label {
         width: 45%;

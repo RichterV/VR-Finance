@@ -18,7 +18,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   line-height: 1.4;
   color: var(--app-text-secondary);
 }
@@ -54,7 +54,7 @@ app-sparkline {
 }
 
 .mini-bar-label {
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
 }
 
@@ -67,7 +67,7 @@ app-sparkline {
   border: none;
   background: none;
   font: inherit;
-  font-size: 0.8rem;
+  font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--ion-color-primary);
   cursor: pointer;
@@ -83,14 +83,14 @@ app-sparkline {
 .fixos-pop-title {
   display: block;
   margin-bottom: 8px;
-  font-size: 0.8rem;
+  font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--app-text-secondary);
 }
 
 .fixos-help {
   margin: 10px 0 0;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   line-height: 1.45;
   color: var(--app-text-secondary);
 }
@@ -107,7 +107,7 @@ app-sparkline {
     display: flex;
     justify-content: space-between;
     gap: 10px;
-    font-size: 0.8rem;
+    font-size: var(--fs-xs);
   }
 
   li.total {
@@ -125,7 +125,7 @@ app-sparkline {
 
     small {
       color: var(--app-text-secondary);
-      font-size: 0.75rem;
+      font-size: var(--fs-xs);
     }
   }
 

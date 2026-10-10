@@ -14,7 +14,7 @@
 }
 
 .rotulo {
-  font-size: 0.8rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
 }
 
@@ -53,11 +53,11 @@
   gap: 4px;
 
   .nome {
-    font-size: 1.15rem;
+    font-size: var(--fs-lg);
   }
 
   .meta {
-    font-size: 0.85rem;
+    font-size: var(--fs-sm);
     color: var(--app-text-secondary);
   }
 }
@@ -78,7 +78,7 @@
   background: none;
   color: var(--app-text-primary);
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   cursor: pointer;
 
   &:hover:not(:disabled) {
@@ -125,13 +125,13 @@
   gap: 6px 10px;
 
   strong {
-    font-size: 1.4rem;
+    font-size: var(--fs-lg);
     font-variant-numeric: tabular-nums;
   }
 
   span {
     color: var(--app-text-secondary);
-    font-size: 0.9rem;
+    font-size: var(--fs-sm);
   }
 }
 
@@ -152,7 +152,7 @@
 .limite-texto,
 .limite-nota {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
 }
 
 .limite-card:not(.situacao-ok) .limite-texto {
@@ -161,7 +161,7 @@
 
 .limite-nota {
   color: var(--app-text-secondary);
-  font-size: 0.8rem;
+  font-size: var(--fs-xs);
 }
 
 .data-section {
@@ -172,13 +172,13 @@
   h2 .count {
     font-weight: 400;
     color: var(--app-text-secondary);
-    font-size: 0.9rem;
+    font-size: var(--fs-sm);
   }
 }
 
 .top-controls .busca-filter {
   max-width: 320px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
 }
 
 .period-filters {
@@ -188,7 +188,7 @@
 
   ion-select {
     max-width: 220px;
-    border-radius: 8px;
+    border-radius: var(--r-sm);
   }
 }
 
@@ -206,7 +206,7 @@
 .doc {
   display: block;
   color: var(--app-text-secondary);
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
 }
 
 .selo {
@@ -214,7 +214,7 @@
   margin-left: 6px;
   padding: 1px 8px;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   white-space: nowrap;
   color: var(--app-text-secondary);
   border: 1px solid var(--app-surface-border);

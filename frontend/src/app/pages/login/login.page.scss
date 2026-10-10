@@ -1,5 +1,5 @@
 .login-content {
-  --background: radial-gradient(circle at 50% 0%, rgba(var(--ion-color-primary-rgb), 0.18), transparent 60%), var(--ion-background-color);
+  --background: var(--ion-background-color);
 }
 
 .login-wrap {
@@ -23,45 +23,42 @@
 .brand-icon {
   width: 64px;
   height: 64px;
-  border-radius: 16px;
+  border-radius: var(--r-md);
   background: var(--ion-color-primary);
   color: var(--ion-color-primary-contrast);
   font-size: 32px;
-  font-weight: 700;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 12px 28px rgba(var(--ion-color-primary-rgb), 0.35);
 }
 
 .brand h1 {
-  font-size: 1.6rem;
-  font-weight: 700;
+  font-size: var(--fs-xl);
+  font-weight: 600;
 }
 
 .brand-subtitle {
   margin: 0;
   color: var(--app-text-secondary);
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
 }
 
 .login-card {
   width: 100%;
   max-width: 380px;
-  background: var(--app-surface-glass);
-  backdrop-filter: blur(12px);
+  background: var(--app-surface);
   border: 1px solid var(--app-surface-border);
-  border-radius: 20px;
+  border-radius: var(--r-md);
   padding: 28px 24px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
 }
 
 .login-card ion-item {
-  --background: var(--app-surface);
+  --background: var(--ion-background-color);
   --padding-start: 14px;
   --inner-padding-end: 14px;
-  border: 1px solid var(--app-surface-border);
-  border-radius: 12px;
+  border: 1px solid var(--app-field-border);
+  border-radius: var(--r-sm);
   overflow: hidden;
   margin-bottom: 14px;
   transition: border-color 0.15s ease;
@@ -75,7 +72,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   color: var(--app-text-secondary);
   cursor: pointer;
   user-select: none;
@@ -83,7 +80,7 @@
 }
 
 .login-card ion-button[type="submit"] {
-  --border-radius: 12px;
+  --border-radius: var(--r-sm);
   font-weight: 600;
   margin-top: 8px;
 }
@@ -130,7 +127,7 @@
 }
 
 .login-card ion-button {
-  --border-radius: 12px;
+  --border-radius: var(--r-sm);
   font-weight: 600;
 }
 
@@ -138,7 +135,7 @@
   background: none;
   border: none;
   color: var(--app-text-secondary);
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   margin-top: 14px;
   cursor: pointer;
   text-decoration: underline;

@@ -1,3 +1,12 @@
+.add-row {
+  padding: var(--sp-2) var(--sp-2) 0;
+
+  ion-button {
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
 .actions {
   display: flex;
   align-items: center;
@@ -10,7 +19,7 @@
   align-items: center;
 
   ion-toggle {
-    font-size: 0.78rem;
+    font-size: var(--fs-xs);
     color: var(--app-text-secondary);
     --handle-height: 18px;
     --handle-width: 18px;
@@ -22,7 +31,7 @@
   background: transparent;
   color: var(--app-text-secondary);
   padding: 6px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   display: inline-flex;
   align-items: center;

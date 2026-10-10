@@ -2,13 +2,13 @@
 
 .hint {
   margin: 4px 4px 8px;
-  font-size: 0.8rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
 }
 
 .modules-title {
   margin: 20px 0 4px;
-  font-size: 1rem;
+  font-size: var(--fs-md);
   color: var(--app-text-primary);
 }
 

@@ -10,7 +10,7 @@
 <ion-content [fullscreen]="true" class="ion-padding">
   <div class="dados">
     <div class="top-controls">
-      <ion-segment [value]="aba()" (ionChange)="onAbaChange($any($event.detail.value))">
+      <ion-segment class="page-tabs" [value]="aba()" (ionChange)="onAbaChange($any($event.detail.value))">
         <ion-segment-button value="gastos">
           <ion-label>Gastos</ion-label>
         </ion-segment-button>
@@ -83,8 +83,7 @@
               <thead>
                 <tr>
                   <th appSortTh="date" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Data</th>
-                  <th appSortTh="priority" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Prioridade</th>
-                  <th appSortTh="item" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Item</th>
+                  <th appSortTh="item" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Categoria</th>
                   <th class="num" appSortTh="value" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Valor</th>
                   <th appSortTh="installment" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Parcela</th>
                   <th appSortTh="description" [sortColumn]="gastosSort().column" [sortDirection]="gastosSort().direction" (sort)="toggleGastosSort($event)">Descrição</th>
@@ -100,8 +99,8 @@
                         <ion-icon class="rec-mark" name="repeat-outline" role="img" aria-label="Recorrente" title="Recorrente"></ion-icon>
                       }
                     </td>
-                    <td>{{ gasto.priority === 'essencial' ? 'Essencial' : 'Não essencial' }}</td>
-                    <td>{{ gasto.item_name }}</td>
+                    <!-- Prioridade como ponto antes da categoria (o nome dela fica no aria-label/title do ponto). -->
+                    <td><span class="cat-cell"><app-prio-dot [priority]="gasto.priority"></app-prio-dot>{{ gasto.item_name }}</span></td>
                     <td class="num">{{ gasto.value | currency: 'BRL' }}</td>
                     <td>{{ gasto.is_installment ? gasto.installment_number + '/' + gasto.installment_count : '-' }}</td>
                     <td class="description">{{ gasto.description || '-' }}</td>
@@ -110,23 +109,27 @@
                         <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexosGasto($event, gasto)">
                           <ion-icon name="attach-outline"></ion-icon>
                         </button>
+                      } @else {
+                        <span class="icon-slot" aria-hidden="true"></span>
                       }
                       @if (isAntecipavel(gasto)) {
                         <button aria-label="Antecipar pra este mês" class="icon-btn highlight" title="Antecipar pra este mês" (click)="anteciparGasto(gasto)">
                           <ion-icon name="today-outline"></ion-icon>
                         </button>
+                      } @else {
+                        <span class="icon-slot" aria-hidden="true"></span>
                       }
                       <button aria-label="Editar" class="icon-btn" (click)="editarGasto(gasto)">
-                        <ion-icon name="create"></ion-icon>
+                        <ion-icon name="create-outline"></ion-icon>
                       </button>
                       <button aria-label="Excluir" class="icon-btn danger" (click)="excluirGasto(gasto)">
-                        <ion-icon name="trash"></ion-icon>
+                        <ion-icon name="trash-outline"></ion-icon>
                       </button>
                     </td>
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="7" class="empty">Nenhum gasto encontrado para o filtro selecionado.</td>
+                    <td colspan="6" class="empty">Nenhum gasto encontrado para o filtro selecionado.</td>
                   </tr>
                 }
               </tbody>
@@ -157,17 +160,21 @@
                     <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexosGasto($event, gasto)">
                       <ion-icon name="attach-outline"></ion-icon>
                     </button>
+                  } @else {
+                    <span class="icon-slot" aria-hidden="true"></span>
                   }
                   @if (isAntecipavel(gasto)) {
                     <button aria-label="Antecipar pra este mês" class="icon-btn highlight" title="Antecipar pra este mês" (click)="anteciparGasto(gasto)">
                       <ion-icon name="today-outline"></ion-icon>
                     </button>
+                  } @else {
+                    <span class="icon-slot" aria-hidden="true"></span>
                   }
                   <button aria-label="Editar" class="icon-btn" title="Editar" (click)="editarGasto(gasto)">
-                    <ion-icon name="create"></ion-icon>
+                    <ion-icon name="create-outline"></ion-icon>
                   </button>
                   <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirGasto(gasto)">
-                    <ion-icon name="trash"></ion-icon>
+                    <ion-icon name="trash-outline"></ion-icon>
                   </button>
                 </span>
               </div>
@@ -229,12 +236,14 @@
                         <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexosReceita($event, receita)">
                           <ion-icon name="attach-outline"></ion-icon>
                         </button>
+                      } @else {
+                        <span class="icon-slot" aria-hidden="true"></span>
                       }
                       <button aria-label="Editar" class="icon-btn" (click)="editarReceita(receita)">
-                        <ion-icon name="create"></ion-icon>
+                        <ion-icon name="create-outline"></ion-icon>
                       </button>
                       <button aria-label="Excluir" class="icon-btn danger" (click)="excluirReceita(receita)">
-                        <ion-icon name="trash"></ion-icon>
+                        <ion-icon name="trash-outline"></ion-icon>
                       </button>
                     </td>
                   </tr>
@@ -267,12 +276,14 @@
                     <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexosReceita($event, receita)">
                       <ion-icon name="attach-outline"></ion-icon>
                     </button>
+                  } @else {
+                    <span class="icon-slot" aria-hidden="true"></span>
                   }
                   <button aria-label="Editar" class="icon-btn" title="Editar" (click)="editarReceita(receita)">
-                    <ion-icon name="create"></ion-icon>
+                    <ion-icon name="create-outline"></ion-icon>
                   </button>
                   <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirReceita(receita)">
-                    <ion-icon name="trash"></ion-icon>
+                    <ion-icon name="trash-outline"></ion-icon>
                   </button>
                 </span>
               </div>

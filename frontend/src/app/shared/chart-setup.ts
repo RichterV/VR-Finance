@@ -25,3 +25,19 @@ Chart.register(LineController, BarController, LineElement, BarElement, PointElem
 // Nos demais gráficos os dois não mudam nada (sem rótulo com ano, não há divisória; o título fica igual).
 Chart.register(yearDividerPlugin);
 Chart.defaults.plugins.tooltip.callbacks.title = defaultTooltipTitle;
+
+// Padrões visuais de todos os gráficos do app:
+// - números no formato brasileiro ("6.000", não "6,000" -- sem isso o chart.js usa en-US);
+// - mesma fonte do app;
+// - curva suavizada "monotone": passa sempre pelos pontos e nunca desenha um pico ou vale que não
+//   existe nos dados (a suavização comum, com `tension`, ultrapassava os marcadores);
+// - marcador da legenda pequeno (8px) e rótulos do eixo X sem inclinação, pulando os que não cabem.
+Chart.defaults.locale = 'pt-BR';
+Chart.defaults.font.family = '"IBM Plex Sans", system-ui, sans-serif';
+Chart.defaults.font.size = 12;
+Chart.defaults.elements.line.cubicInterpolationMode = 'monotone';
+Chart.defaults.plugins.legend.labels.boxWidth = 8;
+Chart.defaults.plugins.legend.labels.boxHeight = 8;
+Chart.defaults.plugins.legend.labels.padding = 14;
+Chart.defaults.scales.category.ticks.maxRotation = 0;
+Chart.defaults.scales.category.ticks.autoSkipPadding = 12;

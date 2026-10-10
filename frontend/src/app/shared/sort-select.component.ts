@@ -30,7 +30,7 @@ import { SortOption, SortState, sortKeyToState, sortStateToKey } from './sortabl
   styles: [
     `
       ion-select {
-        border-radius: 8px;
+        border-radius: var(--r-sm);
       }
     `,
   ],

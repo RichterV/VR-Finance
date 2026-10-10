@@ -222,15 +222,16 @@ class VehicleService(Base):
 
 
 class Notificacao(Base):
-    """Avisos da central de notificações do app. Hoje só o resumo da virada do mês
-    (tipo "resumo_mensal", gerado sob demanda por app/resumo_mensal.py); payload é o conteúdo já
-    calculado, em JSON -- uma foto do momento da geração, não recalculada depois."""
+    """Avisos da central de notificações do app: o resumo da virada do mês (tipo "resumo_mensal",
+    gerado sob demanda por app/resumo_mensal.py; payload é o conteúdo já calculado, em JSON -- uma
+    foto do momento da geração) e o aviso de relatório anual pronto (tipo "relatorio_anual",
+    app/relatorio_anual.py; payload "{}", mes = 12)."""
 
     __tablename__ = "notificacoes"
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    tipo = Column(String, nullable=False)  # "resumo_mensal"
+    tipo = Column(String, nullable=False)  # "resumo_mensal" | "relatorio_anual"
     ano = Column(Integer, nullable=False)  # mês de referência do aviso
     mes = Column(Integer, nullable=False)
     titulo = Column(String, nullable=False)

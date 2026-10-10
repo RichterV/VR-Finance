@@ -12,7 +12,7 @@ import { describeCombo, describeEvolucao } from '../chart-descriptions';
 import { COMBO_CHART_OPTIONS, LINE_CHART_OPTIONS, buildComboChartData, buildLineChartData } from '../dashboard-charts';
 import { PercentuaisItensComponent } from './percentuais-itens.component';
 import { SectionLoader } from './section-loader';
-import { maskChartOptions, maskCount, maskCurrency, maskPercentParen } from './value-mask';
+import { maskChartOptions, maskCount, maskCurrency, maskPercent } from './value-mask';
 
 /** Cards do ano + gráficos de Evolução e Caixa pretendido vs. real + barras por categoria. */
 @Component({
@@ -67,7 +67,8 @@ export class AnualSectionComponent {
     return maskCount(valor, this.valoresOcultos());
   }
 
-  percentParen(valor: number, total: number): string {
-    return maskPercentParen(valor, total, this.valoresOcultos());
+  /** "78,9%" de `valor` sobre `total` (ex: Essenciais sobre o total de gastos). */
+  percentOf(valor: number, total: number): string {
+    return maskPercent(total ? (valor / total) * 100 : 0, this.valoresOcultos());
   }
 }

@@ -1,56 +1,69 @@
 @use "../../../theme/mixins" as ds;
 
+// Mesma largura das outras páginas (antes era uma coluna estreita de 640px centralizada).
 .exportar-dados {
-  max-width: 640px;
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--sp-4);
 }
 
 .tool-hint {
   color: var(--app-text-secondary);
-  font-size: 0.85rem;
-  margin: 0 0 6px;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 72ch;
 }
 
-.modulo-card {
+// Uma lista só, uma linha por módulo, com a ação em texto verde (antes: um cartão e um botão verde
+// sólido por módulo, sete blocos verdes empilhados).
+.modulo-list {
   @include ds.app-card;
-  padding: 18px 20px;
+  max-width: 760px;
+}
+
+.modulo-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--sp-3);
+  padding: 14px var(--sp-2) 14px 20px;
+  border-top: 1px solid var(--app-surface-border);
+
+  &:first-child {
+    border-top: none;
+  }
 }
 
 .modulo-info {
   min-width: 0;
 
   h3 {
-    margin: 0 0 4px;
-    font-size: 1rem;
+    margin: 0 0 2px;
+    font-size: var(--fs-md);
   }
 
   p {
     margin: 0;
-    font-size: 0.82rem;
+    font-size: var(--fs-sm);
     color: var(--app-text-secondary);
   }
 }
 
-.modulo-card ion-button {
+.modulo-row ion-button {
   flex-shrink: 0;
-  --border-radius: 10px;
+  margin: 0;
+  font-weight: 600;
 }
 
 @media (max-width: 480px) {
-  .modulo-card {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
+  .modulo-row {
+    padding-left: var(--sp-4);
   }
 
-  .modulo-card ion-button {
-    width: 100%;
+  .modulo-info p {
+    font-size: var(--fs-xs);
   }
 }

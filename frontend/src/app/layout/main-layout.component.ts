@@ -2,6 +2,7 @@ import { Component, HostListener, OnInit, computed, signal } from '@angular/core
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
   IonContent,
+  IonFooter,
   IonHeader,
   IonIcon,
   IonItem,
@@ -19,6 +20,7 @@ import {
   briefcaseOutline,
   calculatorOutline,
   carSportOutline,
+  chevronForward,
   downloadOutline,
   homeOutline,
   logOutOutline,
@@ -36,6 +38,7 @@ import { HomeRefreshService } from '../core/home-refresh.service';
 import { ModalLauncherService } from '../core/modal-launcher.service';
 import { OPTIONAL_MODULES } from '../core/modules';
 import { BackupWarningBannerComponent } from '../shared/backup-warning-banner.component';
+import { AccountFooterComponent } from './account-footer.component';
 
 interface NavSubItem {
   label: string;
@@ -65,8 +68,6 @@ const HOME_ITEM: NavItem = {
   ],
 };
 
-const ADMIN_ITEM: NavItem = { label: 'Administração', icon: 'shield-checkmark-outline', route: '/admin' };
-
 /** Below this width we keep the classic always-visible/hamburger split-pane menu (touch-friendly, no hover). */
 const DESKTOP_BREAKPOINT = 992;
 
@@ -83,16 +84,21 @@ const DESKTOP_BREAKPOINT = 992;
     IonToolbar,
     IonTitle,
     IonContent,
+    IonFooter,
     IonList,
     IonItem,
     IonLabel,
     IonIcon,
     IonRouterOutlet,
     BackupWarningBannerComponent,
+    AccountFooterComponent,
   ],
 })
 export class MainLayoutComponent {
-  /** Início sempre + módulos opcionais habilitados pro usuário + Administração (só master). */
+  /**
+   * Só navegação de módulos: Início + módulos opcionais habilitados. Administração, Categorias e Perfil
+   * ficam no rodapé da conta (`AccountFooterComponent`), pra não parecerem módulos.
+   */
   readonly navItems = computed<NavItem[]>(() => {
     const user = this.auth.currentUser();
     const modules = OPTIONAL_MODULES.filter((m) => m.route && user?.modules.includes(m.key)).map(
@@ -101,7 +107,7 @@ export class MainLayoutComponent {
     const home = user?.modules.includes('analise_inflacionaria')
       ? HOME_ITEM
       : { ...HOME_ITEM, children: HOME_ITEM.children?.filter((c) => c.fragment !== INFLACAO_FRAGMENT) };
-    return [home, ...modules, ...(user?.role === 'master' ? [ADMIN_ITEM] : [])];
+    return [home, ...modules];
   });
 
   readonly isDesktop = signal(MainLayoutComponent.checkDesktop());
@@ -129,6 +135,7 @@ export class MainLayoutComponent {
       pinOutline,
       trendingUpOutline,
       calculatorOutline,
+      chevronForward,
       downloadOutline,
       shieldCheckmarkOutline,
     });

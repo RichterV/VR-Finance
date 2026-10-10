@@ -5,29 +5,24 @@ $mobile-max: 767px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: var(--sp-5);
 }
 
+// Abas à esquerda, mês/ano à direita, na mesma linha (no desktop).
 .top-controls {
-  ion-segment {
-    max-width: 560px;
-  }
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.cat-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
 }
 
 // Mês/ano não se aplicam à aba Recorrências.
 .filters.hidden {
   display: none;
-}
-
-// Três abas no celular: em caixa alta "Recorrências" não cabia e virava "RECORR...".
-@media (max-width: 480px) {
-  .top-controls ion-segment-button {
-    --padding-start: 4px;
-    --padding-end: 4px;
-    min-width: 0;
-    text-transform: none;
-    letter-spacing: 0;
-  }
 }
 
 .rec-mark {
@@ -46,8 +41,7 @@ $mobile-max: 767px;
   gap: 8px;
 
   ion-select {
-    max-width: 200px;
-    border-radius: 8px;
+    width: 150px;
   }
 }
 
@@ -75,12 +69,11 @@ $mobile-max: 767px;
   h2 .count {
     font-weight: 400;
     color: var(--app-text-secondary);
-    font-size: 0.9rem;
+    font-size: var(--fs-sm);
   }
 
   .busca-filter {
-    max-width: 320px;
-    border-radius: 8px;
+    max-width: 360px;
   }
 }
 
@@ -105,11 +98,11 @@ td.description {
     font-size: 0;
 
     .count {
-      font-size: 0.85rem;
+      font-size: var(--fs-sm);
     }
   }
 
   .dados {
-    gap: 20px;
+    gap: var(--sp-4);
   }
 }

@@ -6,7 +6,7 @@
   h2 .count {
     font-weight: 400;
     color: var(--app-text-secondary);
-    font-size: 0.9rem;
+    font-size: var(--fs-sm);
   }
 }
 
@@ -15,7 +15,7 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 4px 14px;
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   color: var(--app-text-secondary);
 }
 
@@ -41,12 +41,12 @@
 
 .rec-sub {
   margin-top: 2px;
-  font-size: 0.8rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
 }
 
 .rec-flag {
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   color: var(--ion-color-warning);
 }
 
@@ -70,7 +70,7 @@ td.num.income,
   padding: 1px 8px;
   margin-right: 4px;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   font-weight: 600;
   white-space: nowrap;
 
@@ -112,7 +112,7 @@ tr.inactive td:not(.actions-col),
 
   .rec-empty-hint {
     max-width: 440px;
-    font-size: 0.85rem;
+    font-size: var(--fs-sm);
   }
 }
 

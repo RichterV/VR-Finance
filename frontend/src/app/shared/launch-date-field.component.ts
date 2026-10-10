@@ -44,11 +44,11 @@ let nextId = 0;
       ion-datetime-button::part(native) {
         background: var(--app-surface-hover);
         color: var(--ion-color-primary);
-        border-radius: 8px;
+        border-radius: var(--r-sm);
       }
       .launch-date-hint {
         margin: -4px 6px 12px;
-        font-size: 0.8rem;
+        font-size: var(--fs-xs);
         color: var(--ion-color-warning);
       }
     `,

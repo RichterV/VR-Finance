@@ -20,7 +20,7 @@ import {
   ToastController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { attachOutline, create, repeatOutline, todayOutline, trash } from 'ionicons/icons';
+import { attachOutline, createOutline, repeatOutline, todayOutline, trashOutline } from 'ionicons/icons';
 import { firstValueFrom, forkJoin } from 'rxjs';
 
 import { isDesktopViewport, slideInFromRight, slideOutToRight, SIDE_MODAL_CSS_CLASS } from '../../modals/side-modal.animations';
@@ -131,7 +131,7 @@ export class DadosPage {
     private readonly modalCtrl: ModalController,
     private readonly popoverCtrl: PopoverController,
   ) {
-    addIcons({ create, trash, todayOutline, attachOutline, repeatOutline });
+    addIcons({ createOutline, trashOutline, todayOutline, attachOutline, repeatOutline });
     const currentYear = new Date().getFullYear();
     this.anos = Array.from({ length: 6 }, (_, i) => currentYear - i);
   }

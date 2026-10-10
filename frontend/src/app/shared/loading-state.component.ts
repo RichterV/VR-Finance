@@ -31,7 +31,7 @@ import { IonSpinner } from '@ionic/angular';
       }
       .loading-state p {
         margin: 0;
-        font-size: 0.95rem;
+        font-size: var(--fs-md);
       }
     `,
   ],

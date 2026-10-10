@@ -7,7 +7,7 @@ import { ResumoAnual, ResumoMensal, ResumoService } from '../../services/resumo.
 import { COLOR_CAIXA_REAL, COLOR_ESSENCIAL, COLOR_INFLACAO, COLOR_NAO_ESSENCIAL } from '../dashboard-charts';
 import { PercentuaisItensComponent } from './percentuais-itens.component';
 import { SectionLoader } from './section-loader';
-import { maskCount, maskCurrency, maskPercentParen } from './value-mask';
+import { maskCount, maskCurrency, maskPercent } from './value-mask';
 
 /** Quantos meses (terminando no selecionado) cada mini-tendência dos cards mostra. */
 const MESES_TENDENCIA = 6;
@@ -67,7 +67,8 @@ export class MensalSectionComponent {
     return maskCount(valor, this.valoresOcultos());
   }
 
-  percentParen(valor: number, total: number): string {
-    return maskPercentParen(valor, total, this.valoresOcultos());
+  /** "78,9%" de `valor` sobre `total` (ex: Essenciais sobre o total de gastos). */
+  percentOf(valor: number, total: number): string {
+    return maskPercent(total ? (valor / total) * 100 : 0, this.valoresOcultos());
   }
 }

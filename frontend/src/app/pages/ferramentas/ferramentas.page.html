@@ -9,7 +9,7 @@
 
 <ion-content [fullscreen]="true" class="ion-padding">
   <div class="ferramentas">
-    <ion-segment [value]="tab()" (ionChange)="onTabChange($any($event.detail.value))">
+    <ion-segment class="page-tabs" [value]="tab()" (ionChange)="onTabChange($any($event.detail.value))">
       <ion-segment-button value="juros-compostos">
         <ion-label>Juros compostos</ion-label>
       </ion-segment-button>

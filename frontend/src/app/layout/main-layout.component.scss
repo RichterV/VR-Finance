@@ -13,12 +13,12 @@ ion-menu ion-list {
 
 ion-menu ion-item {
   --background: transparent;
-  --border-radius: 12px;
+  --border-radius: var(--r-md);
   --padding-start: 14px;
   --inner-padding-end: 14px;
   --color: var(--ion-color-medium);
-  margin-bottom: 4px;
-  font-weight: 500;
+  margin-bottom: 2px;
+  font-weight: 400;
 }
 
 ion-menu ion-item ion-icon {
@@ -28,45 +28,19 @@ ion-menu ion-item ion-icon {
 ion-menu ion-item.active-nav-item {
   --background: var(--app-surface-active);
   --color: var(--ion-color-primary);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 ion-menu ion-item.active-nav-item ion-icon {
   color: var(--ion-color-primary);
 }
 
-.user-box {
-  padding: 20px 20px 4px;
-  border-top: 1px solid var(--app-surface-border);
-  margin-top: 8px;
-}
-
-.user-box .username {
-  font-weight: 600;
-  margin: 0;
-}
-
-.user-box .role {
-  margin: 2px 0 0;
-  font-size: 0.8rem;
-  color: var(--ion-color-medium);
-}
-
 .sub-nav-item {
   --padding-start: 46px;
   --min-height: 38px;
   --color: var(--ion-color-medium);
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   margin-bottom: 2px;
-}
-
-.logout-item {
-  margin: 4px 12px 12px;
-  --color: var(--ion-color-danger);
-}
-
-.logout-item ion-icon {
-  color: var(--ion-color-danger);
 }
 
 /**
@@ -135,7 +109,7 @@ ion-menu ion-item.active-nav-item ion-icon {
   padding: 16px 16px 8px;
 
   .brand {
-    font-weight: 700;
+    font-weight: 600;
     white-space: nowrap;
   }
 }
@@ -145,7 +119,7 @@ ion-menu ion-item.active-nav-item ion-icon {
   background: transparent;
   color: var(--ion-color-medium);
   padding: 6px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -176,16 +150,16 @@ ion-menu ion-item.active-nav-item ion-icon {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
-  border-radius: 12px;
+  padding: 9px 14px;
+  border-radius: var(--r-sm);
   color: var(--ion-color-medium);
-  font-weight: 500;
+  font-weight: 400;
   text-decoration: none;
   white-space: nowrap;
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: var(--fs-sm);
 
   ion-icon {
     font-size: 1.2rem;
@@ -194,7 +168,7 @@ ion-menu ion-item.active-nav-item ion-icon {
 
   .pendencias-badge {
     margin-left: auto;
-    font-size: 0.7rem;
+    font-size: var(--fs-xs);
   }
 
   &:hover {
@@ -204,11 +178,9 @@ ion-menu ion-item.active-nav-item ion-icon {
   &.active {
     background: var(--app-surface-active);
     color: var(--ion-color-primary);
+    font-weight: 500;
   }
 
-  &.logout {
-    color: var(--ion-color-danger);
-  }
 }
 
 .side-nav-sublist {
@@ -222,10 +194,10 @@ ion-menu ion-item.active-nav-item ion-icon {
   display: flex;
   align-items: center;
   padding: 7px 14px 7px 44px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   color: var(--ion-color-medium);
   font-weight: 400;
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
@@ -235,9 +207,6 @@ ion-menu ion-item.active-nav-item ion-icon {
   }
 }
 
-.side-nav-footer {
-  padding: 8px 12px 16px;
-}
 
 .desktop-shell .main-content {
   /* Ionic's global .ion-page rule sets position: absolute + inset: 0, which pulls this
@@ -252,9 +221,8 @@ ion-menu ion-item.active-nav-item ion-icon {
   flex-direction: column;
 }
 
-// Categorias / Perfil (só no celular): separados da navegação por rota.
-.action-list {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--app-surface-border);
+
+ion-menu ion-footer {
+  background: var(--app-surface);
+  box-shadow: none;
 }

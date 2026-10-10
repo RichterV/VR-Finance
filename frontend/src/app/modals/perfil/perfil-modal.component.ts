@@ -42,10 +42,38 @@ function passwordsMatchValidator(newControlName: string, confirmControlName: str
   templateUrl: './perfil-modal.component.html',
   styles: [
     `
+      .account-head {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: var(--sp-1) 0 var(--sp-2);
+
+        strong {
+          font-size: var(--fs-lg);
+          font-weight: 600;
+        }
+
+        span {
+          font-size: var(--fs-sm);
+          color: var(--app-text-secondary);
+        }
+      }
+
+      .perfil-section {
+        margin: var(--sp-6) 0 var(--sp-3);
+        font-size: var(--fs-md);
+        font-weight: 600;
+      }
+
+      .logout-btn {
+        margin-top: var(--sp-6);
+        font-weight: 600;
+      }
+
       .lock-hint {
         display: block;
         margin: 8px 4px 0;
-        font-size: 0.8rem;
+        font-size: var(--fs-xs);
         line-height: 1.45;
         color: var(--app-text-secondary);
       }

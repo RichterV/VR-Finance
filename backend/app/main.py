@@ -19,6 +19,7 @@ from app.routers import (
     notificacoes,
     receitas,
     recorrencias,
+    relatorios,
     resumo,
     servicos_veiculos,
     veiculos,
@@ -179,6 +180,7 @@ app.include_router(export.router)
 app.include_router(notificacoes.router)
 app.include_router(analytics.router)
 app.include_router(recorrencias.router)
+app.include_router(relatorios.router)
 app.include_router(empresa.router)
 
 

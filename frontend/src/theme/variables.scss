@@ -6,6 +6,11 @@
 // combinações passam de 4.5:1 de contraste. --ion-color-success continua um verde-esmeralda
 // deliberadamente distinto do primary (marca vs. "ganho financeiro" são papéis diferentes,
 // mesmo os dois sendo verdes -- ver CLAUDE.md, decisões da reformulação visual).
+//
+// Revisão visual de 2026-10-09 (menos ruído, conforto pra visão sensível): texto principal menos
+// brilhante (#e2e8f0, 14,5:1 em vez de 17:1), vermelho mais claro e menos saturado (vale pra texto
+// e pra fundo, sempre com texto escuro em cima, igual ao verde), superfícies opacas sem vidro/blur e
+// escalas fixas de tipo, espaço e raio. Toda tela nova usa estes tokens em vez de valores soltos.
 :root {
   // Cor de destaque / ação (Verde)
   --ion-color-primary: #22c55e;
@@ -23,12 +28,14 @@
   --ion-color-success-shade: #0ea371;
   --ion-color-success-tint: #26c491;
 
-  --ion-color-danger: #ef4444;
-  --ion-color-danger-rgb: 239, 68, 68;
-  --ion-color-danger-contrast: #ffffff;
-  --ion-color-danger-contrast-rgb: 255, 255, 255;
-  --ion-color-danger-shade: #d23c3c;
-  --ion-color-danger-tint: #f15757;
+  // Vermelho claro (#f87171) em vez do #ef4444: em fundo escuro o vermelho saturado "vibra" e cansa.
+  // Como fundo de botão leva texto escuro, mesmo padrão do verde.
+  --ion-color-danger: #f87171;
+  --ion-color-danger-rgb: 248, 113, 113;
+  --ion-color-danger-contrast: #450a0a;
+  --ion-color-danger-contrast-rgb: 69, 10, 10;
+  --ion-color-danger-shade: #da6363;
+  --ion-color-danger-tint: #f97f7f;
 
   // Alertas/avisos (badge de pendências, aviso de backup) -- antes caía no amarelo padrão do
   // Ionic (#ffc409) sem ninguém ter escolhido isso de propósito.
@@ -39,26 +46,61 @@
   --ion-color-warning-shade: #d97706;
   --ion-color-warning-tint: #fbbf24;
 
-  // Fundo principal (Slate 900) e superfícies elevadas
-  --ion-background-color: #0f172a;
-  --ion-background-color-rgb: 15, 23, 42;
+  // Fundo principal e superfícies (3 tons: fundo, superfície, superfície elevada)
+  --ion-background-color: #0e1524;
+  --ion-background-color-rgb: 14, 21, 36;
 
-  --ion-toolbar-background: #111827;
-  --ion-item-background: #1e293b;
+  --ion-toolbar-background: #0e1524;
+  --ion-item-background: #152033;
 
   // Texto
-  --ion-text-color: #f8fafc;
-  --ion-text-color-rgb: 248, 250, 252;
+  --ion-text-color: #e2e8f0;
+  --ion-text-color-rgb: 226, 232, 240;
 
   --ion-color-medium: #94a3b8;
   --ion-color-medium-rgb: 148, 163, 184;
 
-  // Tokens próprios do app (cards, bordas, glass) — usados fora dos componentes Ionic
-  --app-surface: #1e293b;
-  --app-surface-glass: rgba(30, 41, 59, 0.72);
-  --app-surface-border: #334155;
-  --app-surface-hover: rgba(255, 255, 255, 0.06);
-  --app-surface-active: rgba(34, 197, 94, 0.16);
-  --app-text-primary: #f8fafc;
+  --ion-font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  // Tokens próprios do app (cards, bordas) — usados fora dos componentes Ionic.
+  // --app-surface-glass ficou com o nome antigo por compatibilidade, mas agora é opaco (sem blur).
+  --app-surface: #152033;
+  --app-surface-glass: #152033;
+  --app-surface-raised: #1c2940;
+  --app-surface-border: rgba(148, 163, 184, 0.16);
+  --app-field-border: rgba(148, 163, 184, 0.26);
+  --app-surface-hover: rgba(148, 163, 184, 0.08);
+  --app-surface-active: rgba(34, 197, 94, 0.14);
+  --app-text-primary: #e2e8f0;
   --app-text-secondary: #94a3b8;
+  --app-positive: #4ade80;
+  --app-negative: #f87171;
+  --app-tint-positive: rgba(34, 197, 94, 0.12);
+  --app-tint-negative: rgba(248, 113, 113, 0.1);
+  --app-tint-warning: rgba(245, 158, 11, 0.12);
+
+  // Escala de tipo (6 passos) -- piso de 0,75rem pra texto
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.75rem;
+  --fs-hero: 2.25rem;
+
+  // Raios: controles/chips, cartões/modais, pílulas
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-pill: 999px;
+
+  // Espaços (base 4)
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  // Sombra só pro que flutua (modal, popover, toast, botão flutuante) -- cartões da página não têm.
+  --app-shadow-float: 0 12px 32px rgba(0, 0, 0, 0.45);
 }

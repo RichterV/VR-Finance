@@ -53,7 +53,7 @@ export function resetBackupWarningSession(): void {
         max-width: calc(100vw - 32px);
         z-index: 30000;
         pointer-events: none;
-        border-radius: 12px;
+        border-radius: var(--r-md);
         animation: backup-warning-life 5s ease forwards;
         display: flex;
         align-items: center;
@@ -62,7 +62,7 @@ export function resetBackupWarningSession(): void {
         padding: 10px 16px;
         background: linear-gradient(90deg, var(--ion-color-warning-shade), var(--ion-color-danger));
         color: #fff;
-        font-size: 0.85rem;
+        font-size: var(--fs-sm);
         font-weight: 600;
         text-align: center;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);

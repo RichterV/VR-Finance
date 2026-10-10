@@ -32,7 +32,7 @@
   flex-shrink: 0;
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -50,17 +50,17 @@
 }
 
 .notif-title {
-  font-size: 0.92rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--app-text-primary);
 }
 
 .notif.unread .notif-title {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .notif-sub {
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
 }
 
@@ -81,7 +81,7 @@
 .retention-note {
   margin: 14px 2px 0;
   text-align: center;
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
 }
 
@@ -103,7 +103,7 @@
 
   p {
     margin: 0;
-    font-size: 0.85rem;
+    font-size: var(--fs-sm);
     line-height: 1.5;
   }
 }

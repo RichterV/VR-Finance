@@ -39,7 +39,7 @@ import { Subscription, catchError, debounceTime, of } from 'rxjs';
 import { AuthService } from '../core/auth.service';
 import { HomeRefreshService } from '../core/home-refresh.service';
 import { ModalLauncherService } from '../core/modal-launcher.service';
-import { Notificacao, NotificacoesService } from '../services/notificacoes.service';
+import { NotificacaoResumoMensal, NotificacoesService } from '../services/notificacoes.service';
 import { Corte } from '../services/resumo.service';
 import { MESES_COMPLETOS } from '../shared/months';
 import { ResetPeriodButtonComponent } from '../shared/reset-period-button.component';
@@ -122,6 +122,22 @@ export class HomePage implements OnInit, OnDestroy {
     () => (this.limitarAteMesSelecionado() ? { ateAno: this.anoMensal(), ateMes: this.mes() } : undefined),
     // Mesmo corte = mesmo valor: as seções que não dependem do mês não recarregam à toa.
     { equal: (a, b) => a?.ateAno === b?.ateAno && a?.ateMes === b?.ateMes },
+  );
+
+  /** "outubro/2026" -- mês/ano do seletor, usado no checkbox de corte e nos subtítulos das seções. */
+  readonly mesAnoRotulo = computed(() => `${MESES_COMPLETOS[this.mes() - 1].toLowerCase()}/${this.anoMensal()}`);
+
+  /** Subtítulo das seções que obedecem o corte: deixa claro até quando estão contando. */
+  readonly corteSubtitulo = computed(() => (this.limitarAteMesSelecionado() ? `(até ${this.mesAnoRotulo()})` : ''));
+
+  readonly anualSubtitulo = computed(() =>
+    this.limitarAteMesSelecionado()
+      ? `(${this.anoMensal()}, até ${MESES_COMPLETOS[this.mes() - 1].toLowerCase()})`
+      : `(${this.anoMensal()})`,
+  );
+
+  readonly inflacaoSubtitulo = computed(() =>
+    this.limitarAteMesSelecionado() ? `(12 meses até ${this.mesAnoRotulo()})` : '(últimos 12 meses)',
   );
 
   /** Incrementado pra forçar todas as seções a recarregar. */
@@ -267,7 +283,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   /** Uma linha de prévia do resumo pro card da Home (só %, nunca R$ -- vale mesmo com valores ocultos). */
-  teaserResumo(n: Notificacao): string {
+  teaserResumo(n: NotificacaoResumoMensal): string {
     const p = n.payload;
     const partes: string[] = [];
     const variacao = p.gastos.variacao_pct;
@@ -286,11 +302,11 @@ export class HomePage implements OnInit, OnDestroy {
     return partes.length ? partes.join(' · ') : 'Veja como foi o mês em relação aos anteriores';
   }
 
-  abrirResumo(n: Notificacao): void {
+  abrirResumo(n: NotificacaoResumoMensal): void {
     void this.modals.resumoMensal(n, this.valoresOcultos());
   }
 
-  dispensarResumo(n: Notificacao): void {
+  dispensarResumo(n: NotificacaoResumoMensal): void {
     this.notificacoes.markRead(n.id).subscribe();
   }
 

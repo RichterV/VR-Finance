@@ -1,73 +1,79 @@
 @switch (resumo.state()) {
   @case ('loading') {
-    <app-section-skeleton [cards]="6"></app-section-skeleton>
+    <app-section-skeleton [cards]="5"></app-section-skeleton>
   }
   @case ('error') {
     <app-error-state title="Não foi possível carregar o resumo mensal" (retry)="carregar()"></app-error-state>
   }
   @default {
     @if (resumo.data(); as rm) {
-      <div class="stats-grid">
-        <div class="stat-card stat-card--highlight" [class.negativo]="rm.disponivel_para_gastar < 0">
+      <!-- Destaque + 4 números principais; quantidades e médias numa lista compacta embaixo. -->
+      <div class="mensal-top">
+        <div class="stat-card stat-card--highlight hero-card" [class.negativo]="rm.disponivel_para_gastar < 0">
           <span class="stat-label">Disponível pra gastar</span>
-          <span class="stat-value">{{ currency(rm.disponivel_para_gastar) }}</span>
+          <span class="stat-value hero-value">{{ currency(rm.disponivel_para_gastar) }}</span>
+          <dl class="hero-eq">
+            <dt>Receita</dt>
+            <dd>{{ currency(rm.total_receita) }}</dd>
+            <dt>− Gastos</dt>
+            <dd>{{ currency(rm.total_gastos) }}</dd>
+            <dt>− Caixa pretendido</dt>
+            <dd>{{ currency(rm.total_caixa_pretendido) }}</dd>
+          </dl>
         </div>
 
-        <div class="stat-card">
-          <span class="stat-label">Gastos do mês</span>
-          <span class="stat-value">{{ currency(rm.total_gastos) }}</span>
-          @if (!valoresOcultos()) {
-            <app-sparkline [values]="series().gastos" [color]="colors.gastos"></app-sparkline>
-          }
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Essenciais</span>
-          <span class="stat-value"
-            >{{ currency(rm.total_essenciais) }}
-            <span class="stat-percent">{{ percentParen(rm.total_essenciais, rm.total_gastos) }}</span></span
-          >
-          @if (!valoresOcultos()) {
-            <app-sparkline [values]="series().essencial" [color]="colors.essencial"></app-sparkline>
-          }
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Não essenciais</span>
-          <span class="stat-value"
-            >{{ currency(rm.total_nao_essenciais) }}
-            <span class="stat-percent">{{ percentParen(rm.total_nao_essenciais, rm.total_gastos) }}</span></span
-          >
-          @if (!valoresOcultos()) {
-            <app-sparkline [values]="series().naoEssencial" [color]="colors.naoEssencial"></app-sparkline>
-          }
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Qtd. de gastos</span>
-          <span class="stat-value">{{ count(rm.quantidade_gastos) }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Qtd. de receitas</span>
-          <span class="stat-value">{{ count(rm.quantidade_receitas) }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Média por gasto</span>
-          <span class="stat-value">{{ currency(rm.media_gastos_lancamento) }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Média por receita</span>
-          <span class="stat-value">{{ currency(rm.media_receitas_lancamento) }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Caixa pretendido</span>
-          <span class="stat-value">{{ currency(rm.total_caixa_pretendido) }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Caixa real</span>
-          <span class="stat-value">{{ currency(rm.total_caixa_real) }}</span>
-          @if (!valoresOcultos()) {
-            <app-sparkline [values]="series().caixa" [color]="colors.caixa"></app-sparkline>
-          }
+        <div class="key-grid">
+          <div class="stat-card">
+            <span class="stat-label">Gastos do mês</span>
+            <span class="stat-value">{{ currency(rm.total_gastos) }}</span>
+            @if (!valoresOcultos()) {
+              <app-sparkline [values]="series().gastos" [color]="colors.gastos"></app-sparkline>
+            }
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Caixa real</span>
+            <span class="stat-value">{{ currency(rm.total_caixa_real) }}</span>
+            @if (!valoresOcultos()) {
+              <app-sparkline [values]="series().caixa" [color]="colors.caixa"></app-sparkline>
+            }
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Essenciais</span>
+            <span class="stat-value">{{ currency(rm.total_essenciais) }}</span>
+            <span class="stat-percent">{{ percentOf(rm.total_essenciais, rm.total_gastos) }} dos gastos</span>
+            @if (!valoresOcultos()) {
+              <app-sparkline [values]="series().essencial" [color]="colors.essencial"></app-sparkline>
+            }
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Não essenciais</span>
+            <span class="stat-value">{{ currency(rm.total_nao_essenciais) }}</span>
+            <span class="stat-percent">{{ percentOf(rm.total_nao_essenciais, rm.total_gastos) }} dos gastos</span>
+            @if (!valoresOcultos()) {
+              <app-sparkline [values]="series().naoEssencial" [color]="colors.naoEssencial"></app-sparkline>
+            }
+          </div>
         </div>
       </div>
+
+      <dl class="metric-list">
+        <div>
+          <dt>Gastos lançados</dt>
+          <dd>{{ count(rm.quantidade_gastos) }}</dd>
+        </div>
+        <div>
+          <dt>Média por gasto</dt>
+          <dd>{{ currency(rm.media_gastos_lancamento) }}</dd>
+        </div>
+        <div>
+          <dt>Receitas lançadas</dt>
+          <dd>{{ count(rm.quantidade_receitas) }}</dd>
+        </div>
+        <div>
+          <dt>Média por receita</dt>
+          <dd>{{ currency(rm.media_receitas_lancamento) }}</dd>
+        </div>
+      </dl>
 
       <app-percentuais-itens [itens]="rm.percentuais_itens" [valoresOcultos]="valoresOcultos()"></app-percentuais-itens>
     }

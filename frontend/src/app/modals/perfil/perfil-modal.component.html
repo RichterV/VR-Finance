@@ -11,17 +11,13 @@
 
 <ion-content [fullscreen]="true" class="ion-padding">
   @if (auth.currentUser(); as user) {
-    <p>
-      <strong>{{ user.first_name }} {{ user.last_name }}</strong> — {{ user.username }} ({{ user.role }})
-    </p>
+    <div class="account-head">
+      <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+      <span>{{ user.username }} · {{ user.role === 'master' ? 'Master' : 'Usuário' }}</span>
+    </div>
   }
 
-  <ion-button expand="block" fill="outline" color="danger" (click)="logout()">
-    <ion-icon slot="start" name="log-out-outline"></ion-icon>
-    Sair
-  </ion-button>
-
-  <h2 class="ion-margin-top">Meus dados</h2>
+  <h2 class="perfil-section">Meus dados</h2>
   <form [formGroup]="profileForm" (ngSubmit)="submitProfile()">
     <ion-item>
       <ion-input label="Usuário" labelPlacement="stacked" formControlName="username" autocomplete="username"></ion-input>
@@ -46,7 +42,7 @@
     </ion-button>
   </form>
 
-  <h2 class="ion-margin-top">Trocar senha</h2>
+  <h2 class="perfil-section">Trocar senha</h2>
   <form [formGroup]="passwordForm" (ngSubmit)="submitPasswordChange()">
     <ion-item>
       <ion-input
@@ -88,7 +84,7 @@
   </form>
 
   @if (lockAvailable()) {
-    <h2 class="ion-margin-top">Segurança</h2>
+    <h2 class="perfil-section">Segurança</h2>
     <ion-item>
       <ion-select
         label="Pedir digital ao voltar pro app"
@@ -108,4 +104,10 @@
       celular) antes de mostrar seus dados. Vale só neste aparelho.
     </ion-note>
   }
+
+  <!-- Sair no fim, como botão de texto: é uma ação rara e não deve ser a primeira coisa do Perfil. -->
+  <ion-button expand="block" fill="clear" color="danger" class="logout-btn" (click)="logout()">
+    <ion-icon slot="start" name="log-out-outline"></ion-icon>
+    Sair
+  </ion-button>
 </ion-content>

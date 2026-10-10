@@ -20,6 +20,13 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
+  <!-- "Nova categoria" no topo da lista (antes um "+" flutuante, que cobria as ações da última linha). -->
+  <div class="add-row">
+    <ion-button fill="clear" (click)="addItem()">
+      <ion-icon slot="start" name="add"></ion-icon>
+      Nova categoria
+    </ion-button>
+  </div>
   <ion-list>
     @for (item of items(); track item.id) {
       <ion-item lines="full">
@@ -39,10 +46,10 @@
         </ion-label>
         <div class="actions" slot="end">
           <button aria-label="Editar categoria" type="button" class="icon-btn" title="Editar categoria" (click)="editItem(item)">
-            <ion-icon name="create"></ion-icon>
+            <ion-icon name="create-outline"></ion-icon>
           </button>
           <button aria-label="Excluir categoria" type="button" class="icon-btn danger" title="Excluir categoria" (click)="deleteItem(item)">
-            <ion-icon name="trash"></ion-icon>
+            <ion-icon name="trash-outline"></ion-icon>
           </button>
         </div>
       </ion-item>
@@ -52,10 +59,4 @@
       </ion-item>
     }
   </ion-list>
-
-  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-    <ion-fab-button (click)="addItem()">
-      <ion-icon name="add"></ion-icon>
-    </ion-fab-button>
-  </ion-fab>
 </ion-content>

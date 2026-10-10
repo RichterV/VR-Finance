@@ -653,13 +653,13 @@ class ResumoMensalPayload(BaseModel):
 
 class NotificacaoOut(BaseModel):
     id: int
-    tipo: Literal["resumo_mensal"]
+    tipo: Literal["resumo_mensal", "relatorio_anual"]
     ano: int
     mes: int
     titulo: str
     lida: bool
     created_at: datetime
-    payload: ResumoMensalPayload
+    payload: Optional[ResumoMensalPayload] = None  # None no aviso de relatório anual (não leva dados)
 
     @field_serializer("created_at")
     def _serialize_utc_datetime(self, value: datetime) -> str:

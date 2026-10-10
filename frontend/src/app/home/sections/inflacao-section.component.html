@@ -10,7 +10,7 @@
       @if (ri.possui_cesta) {
         <p class="inflacao-cesta">Cesta: {{ ri.cesta.join(', ') }}</p>
 
-        <ion-segment [value]="janela()" (ionChange)="janela.set($any($event.detail.value))" class="inflacao-segment">
+        <ion-segment [value]="janela()" (ionChange)="janela.set($any($event.detail.value))" class="inflacao-segment page-tabs">
           <ion-segment-button value="mensal">
             <ion-label>Mês a mês</ion-label>
           </ion-segment-button>
@@ -26,24 +26,25 @@
           }
         </p>
 
-        <div class="stats-grid">
-          <div class="stat-card stat-card--highlight" [class.negativo]="(headline() ?? 0) > 0">
-            <span class="stat-label">{{ janela() === 'mensal' ? 'Inflação no último mês' : 'Inflação no último mês (vs. mesmo mês do ano anterior)' }}</span>
-            <span class="stat-value">
-              @if (headline() === null) {
-                Sem dado suficiente
-              } @else if (valoresOcultos()) {
-                ••%
-              } @else {
-                {{ headlineTexto(headline()!) }}
-              }
-            </span>
-          </div>
-        </div>
-
         <div class="chart-card">
-          <div class="chart-card-header">
+          <div class="chart-card-header inflacao-header">
             <h3>Inflação vs. Caixa real / Gastos ({{ janela() === 'mensal' ? 'mês a mês' : 'ano a ano' }})</h3>
+            <div class="inflacao-headline">
+              <span class="stat-label">{{ janela() === 'mensal' ? 'Inflação no último mês' : 'Inflação no último mês (vs. mesmo mês do ano anterior)' }}</span>
+              <span
+                class="stat-value"
+                [class.valor-negativo]="(headline() ?? 0) > 0"
+                [class.valor-positivo]="(headline() ?? 0) < 0"
+              >
+                @if (headline() === null) {
+                  Sem dado suficiente
+                } @else if (valoresOcultos()) {
+                  ••%
+                } @else {
+                  {{ headlineTexto(headline()!) }}
+                }
+              </span>
+            </div>
           </div>
           <div class="chart-wrap">
             <canvas baseChart role="img" [attr.aria-label]="chartLabel()" [type]="'line'" [data]="chartData()" [options]="chartOptions()"></canvas>

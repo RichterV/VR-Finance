@@ -72,7 +72,7 @@ import { DownloadFileService } from './download-file.service';
       }
 
       .file-type span {
-        font-size: 0.7rem;
+        font-size: var(--fs-xs);
         font-weight: 600;
         letter-spacing: 0.04em;
         color: var(--app-text-secondary);
@@ -91,7 +91,7 @@ import { DownloadFileService } from './download-file.service';
       .empty {
         margin: 0;
         padding: 16px;
-        font-size: 0.9rem;
+        font-size: var(--fs-sm);
         color: var(--app-text-secondary);
       }
     `,

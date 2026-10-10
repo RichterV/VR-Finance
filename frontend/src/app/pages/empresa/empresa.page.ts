@@ -20,12 +20,11 @@ import {
   addCircleOutline,
   attachOutline,
   briefcaseOutline,
-  create,
-  documentTextOutline,
+  createOutline,
   documentsOutline,
   settingsOutline,
   swapHorizontalOutline,
-  trash,
+  trashOutline,
 } from 'ionicons/icons';
 import { firstValueFrom } from 'rxjs';
 
@@ -142,7 +141,7 @@ export class EmpresaPage {
     private readonly modalCtrl: ModalController,
     private readonly popoverCtrl: PopoverController,
   ) {
-    addIcons({ addCircleOutline, attachOutline, briefcaseOutline, create, documentTextOutline, documentsOutline, settingsOutline, swapHorizontalOutline, trash });
+    addIcons({ addCircleOutline, attachOutline, briefcaseOutline, createOutline, documentsOutline, settingsOutline, swapHorizontalOutline, trashOutline });
     const atual = new Date().getFullYear();
     this.anosFiltro = Array.from({ length: 6 }, (_, i) => atual - i);
   }
@@ -268,16 +267,6 @@ export class EmpresaPage {
     await modal.present();
     const { role } = await modal.onWillDismiss();
     if (role === 'saved') this.carregarEmpresa();
-  }
-
-  async abrirDeclaracao(): Promise<void> {
-    const { DeclaracaoAnualModalComponent } = await import('../../modals/declaracao-anual/declaracao-anual-modal.component');
-    const modal = await this.modalCtrl.create({
-      component: DeclaracaoAnualModalComponent,
-      componentProps: { empresa: this.empresa() },
-      ...this.sideModalOptions(),
-    });
-    await modal.present();
   }
 
   async abrirNota(nota: NotaFiscal | null = null): Promise<void> {

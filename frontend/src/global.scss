@@ -28,6 +28,111 @@
 @import "@ionic/angular/css/text-transformation.css";
 @import "@ionic/angular/css/flex-utils.css";
 
+/* Fonte do app (IBM Plex Sans), embutida no build -- web e APK com a mesma letra, sem depender de
+   rede. Só o subconjunto latino (cobre português, "−", "•", "€"...) nos 3 pesos usados: 400, 500, 600.
+   Antes o app declarava Roboto sem carregá-la: no PC caía numa fonte genérica, no Android na do sistema. */
+@import "@fontsource/ibm-plex-sans/latin-400.css";
+@import "@fontsource/ibm-plex-sans/latin-500.css";
+@import "@fontsource/ibm-plex-sans/latin-600.css";
+
+body {
+  font-family: var(--ion-font-family);
+  -webkit-font-smoothing: antialiased;
+}
+
+/**
+ * Caixa normal em botões, abas e "voltar"
+ * -----------------------------------------------------
+ * O tema md do Ionic põe tudo em caixa alta com espaçamento ("SALVAR GASTO", "GASTOS", "INÍCIO") --
+ * era padrão herdado, não decisão. Caixa normal lê melhor e faz menos ruído.
+ */
+ion-button,
+ion-segment-button,
+ion-back-button,
+ion-fab-button {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+ion-button {
+  --border-radius: var(--r-sm);
+  font-weight: 500;
+}
+
+// Botão sólido desabilitado: o Ionic só baixa a opacidade, e o verde a 50% sobre o fundo escuro virava
+// um verde-escuro com texto quase ilegível ("Entrar", "Salvar" com formulário incompleto).
+ion-button.button-solid.button-disabled {
+  opacity: 1;
+  --background: var(--app-surface-raised);
+  --color: var(--app-text-secondary);
+  --box-shadow: none;
+}
+
+ion-segment-button {
+  font-weight: 500;
+  min-height: 40px;
+  --indicator-height: 2px;
+}
+
+/**
+ * Abas de página (ion-segment.page-tabs: Visualizar dados, Exportar, Ferramentas, Inflação): sublinhado
+ * verde, alinhadas à esquerda e com a largura do texto no desktop; no celular dividem a largura.
+ */
+// O ion-segment do Ionic 8 é um grid de colunas iguais (1fr): no desktop cada aba fica com a largura
+// do próprio texto.
+ion-segment.page-tabs {
+  width: auto;
+  max-width: 100%;
+  grid-auto-columns: max-content;
+  justify-content: flex-start;
+  background: transparent;
+  border-bottom: 1px solid var(--app-surface-border);
+}
+
+ion-segment.page-tabs ion-segment-button {
+  flex: 0 0 auto;
+  min-width: 0;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --background: transparent;
+  --background-checked: transparent;
+  --color: var(--app-text-secondary);
+  --color-checked: var(--app-text-primary);
+  --indicator-color: var(--ion-color-primary);
+}
+
+@media (max-width: 767px) {
+  ion-segment.page-tabs {
+    width: 100%;
+    grid-auto-columns: 1fr;
+  }
+
+  ion-segment.page-tabs ion-segment-button {
+    flex: 1 1 0;
+    --padding-start: 4px;
+    --padding-end: 4px;
+  }
+}
+
+/**
+ * Cabeçalho das telas e dos modais: mesmo fundo da página, separado por uma borda fina em vez da
+ * sombra do tema md. Título em 600.
+ */
+ion-header.header-md {
+  box-shadow: none;
+}
+
+ion-header ion-toolbar {
+  --border-width: 0 0 1px 0;
+  --border-color: var(--app-surface-border);
+  --border-style: solid;
+}
+
+ion-title {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+
 /**
  * Ionic Dark Mode
  * -----------------------------------------------------
@@ -59,18 +164,9 @@ ion-modal.side-modal .modal-wrapper {
   border-left: 1px solid var(--app-surface-border);
 }
 
-/**
- * Side-modal chrome (header/title) — só existe no docked de desktop.
- * -----------------------------------------------------
- */
-.side-modal ion-header ion-toolbar {
-  --border-width: 0 0 1px 0;
-  --border-color: var(--app-surface-border);
-}
-
-.side-modal ion-title {
-  font-weight: 700;
-  font-size: 1.05rem;
+/* Título dos modais um passo menor que o das páginas (a borda do header vale pra todos, ver acima). */
+ion-modal ion-title {
+  font-size: var(--fs-md);
 }
 
 /**
@@ -86,14 +182,14 @@ ion-modal.side-modal .modal-wrapper {
  * fora de qualquer ion-modal e já tem o próprio estilo glass em login.page.scss.
  */
 ion-modal form ion-item:not([lines="none"]) {
-  --background: var(--app-surface-glass);
+  --background: var(--app-surface);
   --padding-start: 14px;
   --inner-padding-end: 14px;
   --min-height: 52px;
-  border: 1px solid var(--app-surface-border);
-  border-radius: 12px;
+  border: 1px solid var(--app-field-border);
+  border-radius: var(--r-sm);
   overflow: hidden;
-  margin-bottom: 14px;
+  margin-bottom: var(--sp-3);
   transition: border-color 0.15s ease;
 }
 
@@ -112,14 +208,15 @@ ion-modal form ion-item[lines="none"] {
    classe (só ele, nunca campos de apoio como "Cotação do dólar") pra ganhar mais destaque:
    fonte maior e o prefixo "R$"/"US$" alinhado com o mesmo tamanho/peso do valor digitado. */
 ion-modal form .value-primary {
-  --min-height: 64px;
+  --min-height: 68px;
 }
 
 ion-modal form .value-primary ion-input {
   --padding-top: 6px;
   --padding-bottom: 6px;
-  font-size: 1.4rem;
-  font-weight: 700;
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ion-input não expõe ::part(native-input) nesta versão do Ionic -- font-size no host
@@ -127,15 +224,17 @@ ion-modal form .value-primary ion-input {
    label vier do atributo `label`. Por isso o label desses campos vem via `slot="label"`
    (projetado no light DOM, HTML normal) em vez do atributo -- um elemento de verdade que
    aceita um font-size explícito próprio, sem herdar o tamanho grande do ion-input pai. */
+/* O Ionic reduz o rótulo empilhado a 75%: 1rem aqui vira 12px na tela (com 0,8rem ficava em ~9,6px,
+   abaixo do piso de 0,75rem). */
 ion-modal form .value-primary [slot="label"] {
-  font-size: 0.8rem;
+  font-size: var(--fs-md);
   font-weight: 400;
   color: var(--app-text-secondary);
 }
 
 ion-modal form .value-primary .currency-prefix {
-  font-size: 1.4rem;
-  font-weight: 700;
+  font-size: var(--fs-xl);
+  font-weight: 600;
   align-self: flex-end;
 }
 
@@ -144,7 +243,7 @@ ion-modal form .value-primary .currency-prefix {
 ion-modal form .cash-card {
   background: var(--app-surface-glass);
   border: 1px solid var(--app-surface-border);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 12px 14px;
   margin-bottom: 14px;
 }
@@ -153,11 +252,11 @@ ion-modal form .cash-card {
 ion-modal form .installment-note {
   margin: 0 0 14px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid var(--app-surface-border);
   background: var(--app-surface-glass);
   color: var(--app-text-secondary);
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   line-height: 1.35;
 }
 
@@ -175,7 +274,7 @@ ion-modal form .cash-card-row {
 }
 
 ion-modal form .cash-card-label {
-  font-size: 0.8rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
 }
 
@@ -190,7 +289,7 @@ ion-modal form .cash-card-footer {
 
 ion-modal form .cash-card-footer .cash-card-value {
   color: var(--ion-color-success);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 ion-modal form .field-row {
@@ -234,11 +333,12 @@ ion-modal form ion-button[type="submit"] {
   position: sticky;
   bottom: 0;
   z-index: 2;
-  margin-top: 20px;
+  margin-top: var(--sp-5);
   min-height: 48px;
   font-weight: 600;
-  --border-radius: 12px;
-  --box-shadow: 0 8px 20px rgba(var(--ion-color-primary-rgb), 0.35);
+  --border-radius: var(--r-sm);
+  // Sombra neutra (não verde): o botão fica grudado no fim e flutua sobre o conteúdo que rola.
+  --box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
 }
 
 /**
@@ -306,7 +406,7 @@ ion-input .currency-prefix {
   background: transparent;
   color: var(--app-text-secondary);
   padding: 6px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -333,6 +433,17 @@ ion-input .currency-prefix {
   }
 }
 
+// Lugar reservado de uma ação que a linha não tem (anexo, antecipar): as ações seguintes ficam sempre
+// na mesma coluna em todas as linhas. Nos cartões do celular não reserva nada.
+.icon-slot {
+  display: inline-block;
+  width: calc(1.1rem + 12px);
+}
+
+.entry-actions .icon-slot {
+  display: none;
+}
+
 // Barra de filtros no topo de uma tela de listagem (operações-bolsa/devedores -- dados.page.scss
 // tem seu próprio .top-controls, layout diferente: segmento + espaço entre os dois lados).
 .top-controls {
@@ -343,8 +454,29 @@ ion-input .currency-prefix {
 
   ion-select {
     max-width: 220px;
-    border-radius: 8px;
   }
+}
+
+// Campos fora dos modais (filtros e buscas das listagens, período da Home): um estilo só, o mesmo
+// dos campos dos modais -- fundo de superfície, borda suave, raio de 8px, 44px de altura. Antes o
+// contorno padrão do Ionic era claro e alto (56px) e a busca tinha outro raio.
+// (ion-input não usa shadow DOM: o Ionic aplica --border-color com duas classes, por isso o
+// .sc-ion-input-md-h a mais aqui.)
+ion-select.select-fill-outline,
+ion-input.input-fill-outline.sc-ion-input-md-h {
+  --background: var(--app-surface);
+  --border-color: var(--app-field-border);
+  --border-radius: var(--r-sm);
+  --highlight-color-focused: var(--ion-color-primary);
+  --placeholder-color: var(--app-text-secondary);
+  --placeholder-opacity: 1;
+  min-height: 44px;
+  font-size: var(--fs-sm);
+}
+
+ion-select.select-fill-outline:hover,
+ion-input.input-fill-outline.sc-ion-input-md-h:hover {
+  --border-color: rgba(148, 163, 184, 0.4);
 }
 
 @media (max-width: 480px) {
@@ -376,7 +508,7 @@ ion-input .currency-prefix {
 .table-card table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
 }
 
 .table-card thead th {
@@ -385,15 +517,15 @@ ion-input .currency-prefix {
   background: var(--app-surface);
   color: var(--app-text-secondary);
   text-align: left;
-  font-weight: 600;
-  font-size: 0.8rem;
-  padding: 12px 16px;
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  padding: 10px 16px;
   border-bottom: 1px solid var(--app-surface-border);
   z-index: 1;
 }
 
 .table-card tbody td {
-  padding: 10px 16px;
+  padding: 11px 16px;
   border-bottom: 1px solid var(--app-surface-border);
   color: var(--app-text-primary);
   white-space: nowrap;
@@ -434,9 +566,9 @@ ion-input .currency-prefix {
   background: var(--app-surface-glass);
   color: var(--app-text-primary);
   padding: 10px 20px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
   font-weight: 500;
 
   &:hover {
@@ -516,7 +648,7 @@ app-sort-select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 1rem;
+  font-size: var(--fs-md);
   font-weight: 600;
   color: var(--app-text-primary);
 
@@ -528,8 +660,8 @@ app-sort-select {
 
 .entry-value {
   flex-shrink: 0;
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: var(--fs-md);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--app-text-primary);
 
@@ -552,7 +684,7 @@ app-sort-select {
 
 .entry-meta-text {
   min-width: 0;
-  font-size: 0.8rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
   font-variant-numeric: tabular-nums;
 
@@ -572,7 +704,7 @@ app-sort-select {
   margin: 0;
   padding-top: 4px;
   border-top: 1px solid var(--app-surface-border);
-  font-size: 0.82rem;
+  font-size: var(--fs-sm);
   color: var(--app-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -584,7 +716,7 @@ app-sort-select {
   flex-shrink: 0;
   padding: 1px 8px;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--app-text-secondary);
   border: 1px solid var(--app-surface-border);
@@ -643,7 +775,7 @@ ion-popover.select-popover {
 
   &::part(content) {
     border: 1px solid var(--app-surface-border);
-    border-radius: 14px;
+    border-radius: var(--r-md);
   }
 
   ion-list {
@@ -661,9 +793,9 @@ ion-popover.select-popover {
     --min-height: 42px;
     --padding-start: 12px;
     --inner-padding-end: 12px;
-    --border-radius: 10px;
+    --border-radius: var(--r-sm);
     margin: 2px 0;
-    font-size: 0.95rem;
+    font-size: var(--fs-md);
   }
 
   ion-item.item-radio-checked {
@@ -706,7 +838,7 @@ ion-popover.launch-date-popover {
 
   &::part(content) {
     border: 1px solid var(--app-surface-border);
-    border-radius: 14px;
+    border-radius: var(--r-md);
   }
 
   ion-datetime {
@@ -741,13 +873,13 @@ ion-toast.undo-toast {
   --border-color: var(--app-surface-border);
   --border-style: solid;
   --border-width: 1px;
-  --border-radius: 12px;
+  --border-radius: var(--r-md);
   --box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   font-weight: 500;
 
   &::part(button) {
     color: var(--ion-color-primary);
-    font-weight: 700;
+    font-weight: 600;
   }
 }
 
@@ -775,6 +907,6 @@ ion-popover.forecast-popover {
 
   &::part(content) {
     border: 1px solid var(--app-surface-border);
-    border-radius: 14px;
+    border-radius: var(--r-md);
   }
 }

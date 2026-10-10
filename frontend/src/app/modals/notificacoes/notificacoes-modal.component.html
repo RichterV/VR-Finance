@@ -19,10 +19,18 @@
     <div class="notif-list">
       @for (n of notificacoes.items(); track n.id) {
         <button type="button" class="notif" [class.unread]="!n.lida" (click)="open(n)">
-          <span class="notif-icon"><ion-icon name="stats-chart-outline"></ion-icon></span>
+          <span class="notif-icon">
+            <ion-icon [name]="n.tipo === 'relatorio_anual' ? 'document-text-outline' : 'stats-chart-outline'"></ion-icon>
+          </span>
           <span class="notif-text">
             <span class="notif-title">{{ n.titulo }}</span>
-            <span class="notif-sub">Gerado em {{ n.created_at | date: 'dd/MM/yyyy' }}</span>
+            <span class="notif-sub">
+              @if (n.tipo === 'relatorio_anual') {
+                Toque para gerar o PDF com o resumo de {{ n.ano }}
+              } @else {
+                Gerado em {{ n.created_at | date: 'dd/MM/yyyy' }}
+              }
+            </span>
           </span>
           @if (!n.lida) {
             <span class="unread-dot" aria-label="Não lida"></span>
@@ -36,7 +44,7 @@
     <div class="empty">
       <ion-icon name="notifications-off-outline"></ion-icon>
       <p class="empty-title">Nenhuma notificação ainda</p>
-      <p>No começo de cada mês aparece aqui um resumo do mês anterior: o que subiu, o que caiu e o que mudou.</p>
+      <p>No começo de cada mês aparece aqui um resumo do mês anterior: o que subiu, o que caiu e o que mudou. Na virada do ano, um aviso de que o relatório do ano está pronto.</p>
     </div>
   }
 </ion-content>

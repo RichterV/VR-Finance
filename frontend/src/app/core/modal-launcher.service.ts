@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 import { ModalController } from '@ionic/angular';
 
 import { isDesktopViewport, slideInFromRight, slideOutToRight, SIDE_MODAL_CSS_CLASS } from '../modals/side-modal.animations';
-import { Notificacao } from '../services/notificacoes.service';
+import { Empresa } from '../services/empresa.service';
+import { NotificacaoResumoMensal } from '../services/notificacoes.service';
 
 /**
  * Abre os modais da Home de qualquer lugar -- header da Home, botão flutuante (+) e menu lateral do
@@ -46,9 +47,20 @@ export class ModalLauncherService {
     return this.present(PerfilModalComponent);
   }
 
-  async resumoMensal(notificacao: Notificacao, valoresOcultos: boolean) {
+  async resumoMensal(notificacao: NotificacaoResumoMensal, valoresOcultos: boolean) {
     const { ResumoMensalModalComponent } = await import('../modals/resumo-mensal/resumo-mensal-modal.component');
     return this.present(ResumoMensalModalComponent, { notificacao, valoresOcultos });
+  }
+
+  /** Relatório anual de receitas e gastos (Exportar Dados > Relatórios e aviso da virada do ano). */
+  async relatorioAnual(ano: number | null = null) {
+    const { RelatorioAnualModalComponent } = await import('../modals/relatorio-anual/relatorio-anual-modal.component');
+    return this.present(RelatorioAnualModalComponent, { ano });
+  }
+
+  async declaracaoAnualMei(empresa: Empresa) {
+    const { DeclaracaoAnualModalComponent } = await import('../modals/declaracao-anual/declaracao-anual-modal.component');
+    return this.present(DeclaracaoAnualModalComponent, { empresa });
   }
 
   async notificacoes(valoresOcultos: boolean) {

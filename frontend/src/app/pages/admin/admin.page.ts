@@ -13,7 +13,7 @@ import {
   ToastController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { create, personAddOutline, swapHorizontalOutline, trash } from 'ionicons/icons';
+import { createOutline, personAddOutline, swapHorizontalOutline, trashOutline } from 'ionicons/icons';
 
 import { AuthService, CurrentUser } from '../../core/auth.service';
 import { ModuleKey, OPTIONAL_MODULES } from '../../core/modules';
@@ -56,7 +56,7 @@ export class AdminPage implements OnInit {
     private readonly alertCtrl: AlertController,
     private readonly toastCtrl: ToastController,
   ) {
-    addIcons({ create, trash, personAddOutline, swapHorizontalOutline });
+    addIcons({ createOutline, trashOutline, personAddOutline, swapHorizontalOutline });
   }
 
   ngOnInit(): void {

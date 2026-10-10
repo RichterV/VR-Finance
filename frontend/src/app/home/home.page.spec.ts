@@ -38,4 +38,15 @@ describe('HomePage', () => {
     component.toggleLimitarAteMesSelecionado();
     expect(component.corte()).toBeUndefined();
   });
+
+  it('says up to when the sections are counting, only while the cutoff is on', () => {
+    component.mes.set(10);
+    component.anoMensal.set(2026);
+    expect(component.corteSubtitulo()).toBe('(até outubro/2026)');
+    expect(component.anualSubtitulo()).toBe('(2026, até outubro)');
+    component.toggleLimitarAteMesSelecionado();
+    expect(component.corteSubtitulo()).toBe('');
+    expect(component.anualSubtitulo()).toBe('(2026)');
+    expect(component.inflacaoSubtitulo()).toBe('(últimos 12 meses)');
+  });
 });

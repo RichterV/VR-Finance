@@ -2,18 +2,28 @@
 // (diferente de `%placeholder` + `@extend`, que só funciona dentro do mesmo arquivo compilado --
 // os estilos de componente do Angular são compilados um a um, cada um isolado do global.scss).
 
+// Cartão da página: superfície opaca + borda suave, sem sombra nem blur (desde a revisão visual de
+// 2026-10-09 -- sombra fica só pro que flutua, ver --app-shadow-float). O tom e a borda bastam pra
+// separar o cartão do fundo.
 @mixin app-card {
-  background: var(--app-surface-glass);
-  backdrop-filter: blur(12px);
+  background: var(--app-surface);
   border: 1px solid var(--app-surface-border);
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  border-radius: var(--r-md);
 }
 
 // Variante compacta -- card aninhado dentro de outro (linha de usuário no Perfil, tabela
-// secundária dentro de um resultado de Ferramentas), sem o blur/raio grande do card de página.
+// secundária dentro de um resultado de Ferramentas) ou item de lista no celular.
 @mixin app-card-compact {
-  background: var(--app-surface-glass);
+  background: var(--app-surface);
   border: 1px solid var(--app-surface-border);
-  border-radius: 12px;
+  border-radius: var(--r-md);
+}
+
+// Cartão de destaque (Disponível pra gastar, inflação do mês): em vez de um bloco inteiro de cor,
+// superfície neutra com uma faixa de 3px na lateral; a cor vai pro número (.stat-value).
+@mixin app-card-accent($color) {
+  background: var(--app-surface);
+  border: 1px solid var(--app-surface-border);
+  border-left: 3px solid $color;
+  border-radius: var(--r-md);
 }

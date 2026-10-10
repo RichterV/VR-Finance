@@ -7,7 +7,7 @@
   }
   @default {
     @if (resumo.data(); as ra) {
-      <div class="stats-grid">
+      <div class="key-grid key-grid--6">
         <div class="stat-card">
           <span class="stat-label">Receita total</span>
           <span class="stat-value">{{ currency(ra.total_receita) }}</span>
@@ -17,44 +17,43 @@
           <span class="stat-value">{{ currency(ra.total_gastos) }}</span>
         </div>
         <div class="stat-card">
+          <span class="stat-label">Caixa real</span>
+          <span class="stat-value">{{ currency(ra.total_caixa_real) }}</span>
+        </div>
+        <div class="stat-card">
           <span class="stat-label">Essenciais</span>
-          <span class="stat-value"
-            >{{ currency(ra.total_essenciais) }}
-            <span class="stat-percent">{{ percentParen(ra.total_essenciais, ra.total_gastos) }}</span></span
-          >
+          <span class="stat-value">{{ currency(ra.total_essenciais) }}</span>
+          <span class="stat-percent">{{ percentOf(ra.total_essenciais, ra.total_gastos) }} dos gastos</span>
         </div>
         <div class="stat-card">
           <span class="stat-label">Não essenciais</span>
-          <span class="stat-value"
-            >{{ currency(ra.total_nao_essenciais) }}
-            <span class="stat-percent">{{ percentParen(ra.total_nao_essenciais, ra.total_gastos) }}</span></span
-          >
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Qtd. de gastos</span>
-          <span class="stat-value">{{ count(ra.quantidade_gastos) }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Qtd. de receitas</span>
-          <span class="stat-value">{{ count(ra.quantidade_receitas) }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Média mensal de gastos</span>
-          <span class="stat-value">{{ currency(ra.media_gastos_mensal) }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Média mensal de receitas</span>
-          <span class="stat-value">{{ currency(ra.media_receitas_mensal) }}</span>
+          <span class="stat-value">{{ currency(ra.total_nao_essenciais) }}</span>
+          <span class="stat-percent">{{ percentOf(ra.total_nao_essenciais, ra.total_gastos) }} dos gastos</span>
         </div>
         <div class="stat-card">
           <span class="stat-label">Caixa pretendido</span>
           <span class="stat-value">{{ currency(ra.total_caixa_pretendido) }}</span>
         </div>
-        <div class="stat-card">
-          <span class="stat-label">Caixa real</span>
-          <span class="stat-value">{{ currency(ra.total_caixa_real) }}</span>
-        </div>
       </div>
+
+      <dl class="metric-list">
+        <div>
+          <dt>Média mensal de gastos</dt>
+          <dd>{{ currency(ra.media_gastos_mensal) }}</dd>
+        </div>
+        <div>
+          <dt>Média mensal de receitas</dt>
+          <dd>{{ currency(ra.media_receitas_mensal) }}</dd>
+        </div>
+        <div>
+          <dt>Gastos lançados</dt>
+          <dd>{{ count(ra.quantidade_gastos) }}</dd>
+        </div>
+        <div>
+          <dt>Receitas lançadas</dt>
+          <dd>{{ count(ra.quantidade_receitas) }}</dd>
+        </div>
+      </dl>
 
       <div class="charts-grid">
         <div class="chart-card">

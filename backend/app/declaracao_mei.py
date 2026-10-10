@@ -10,16 +10,23 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Optional
 
-from fpdf import FPDF
 from sqlalchemy.orm import Session
 
 from app import models
 from app.empresa import limite_do_ano, situacao_limite
-
-MESES = [
-    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
-]
+from app.pdf_relatorio import (
+    COR_DESTAQUE,
+    COR_FUNDO_DESTAQUE,
+    COR_SECUNDARIA,
+    COR_TEXTO,
+    MESES,
+    brl,
+    caixa_avisos,
+    novo_pdf,
+    par,
+    tabela,
+    titulo_secao,
+)
 
 SITUACAO_TEXTO = {
     "ok": "Dentro do limite do MEI.",
@@ -52,11 +59,6 @@ class DeclaracaoAnual:
     situacao: str
     em_andamento: bool
     avisos: list[str] = field(default_factory=list)
-
-
-def brl(valor: float) -> str:
-    texto = f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    return f"R$ {texto}"
 
 
 def formatar_cnpj(cnpj: str) -> str:
@@ -161,94 +163,12 @@ def montar_declaracao(
 
 # --- PDF ---
 
-COR_TEXTO = (17, 24, 39)
-COR_SECUNDARIA = (100, 116, 139)
-COR_BORDA = (203, 213, 225)
-COR_DESTAQUE = (22, 163, 74)
-COR_FUNDO_DESTAQUE = (240, 253, 244)
-COR_AVISO = (180, 83, 9)
-COR_FUNDO_AVISO = (255, 251, 235)
-COR_CABECALHO = (241, 245, 249)
-
-
-class _Pdf(FPDF):
-    rodape = ""
-
-    def footer(self) -> None:
-        self.set_y(-12)
-        self.set_font("Helvetica", size=7.5)
-        self.set_text_color(*COR_SECUNDARIA)
-        self.cell(0, 5, self.rodape, align="L")
-        self.set_x(self.l_margin)
-        self.cell(0, 5, f"Página {self.page_no()} de {{nb}}", align="R")
-
-
-def _titulo_secao(pdf: _Pdf, texto: str) -> None:
-    if pdf.get_y() > pdf.h - 45:
-        pdf.add_page()
-    pdf.ln(5)
-    pdf.set_font("Helvetica", "B", 11.5)
-    pdf.set_text_color(*COR_TEXTO)
-    pdf.cell(0, 7, texto, new_x="LMARGIN", new_y="NEXT")
-    pdf.set_draw_color(*COR_BORDA)
-    pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
-    pdf.ln(2)
-
-
-def _cortar(pdf: _Pdf, texto: str, largura: float) -> str:
-    if pdf.get_string_width(texto) <= largura - 2:
-        return texto
-    while texto and pdf.get_string_width(texto + "...") > largura - 2:
-        texto = texto[:-1]
-    return texto.rstrip() + "..."
-
-
-def _tabela(pdf: _Pdf, colunas: list[tuple[str, float, str]], linhas: list[list[str]], total: Optional[list[str]] = None) -> None:
-    """colunas = (título, largura em mm, alinhamento 'L'|'R'|'C')."""
-
-    def cabecalho() -> None:
-        pdf.set_font("Helvetica", "B", 8.5)
-        pdf.set_fill_color(*COR_CABECALHO)
-        pdf.set_text_color(*COR_SECUNDARIA)
-        for titulo, largura, alinhamento in colunas:
-            pdf.cell(largura, 6.5, titulo, border="B", align=alinhamento, fill=True)
-        pdf.ln()
-
-    cabecalho()
-    pdf.set_text_color(*COR_TEXTO)
-    for linha in linhas:
-        if pdf.get_y() > pdf.h - 22:
-            pdf.add_page()
-            cabecalho()
-            pdf.set_text_color(*COR_TEXTO)
-        pdf.set_font("Helvetica", size=8.5)
-        for (_, largura, alinhamento), valor in zip(colunas, linha):
-            pdf.cell(largura, 6, _cortar(pdf, valor, largura), border="B", align=alinhamento)
-        pdf.ln()
-    if total:
-        pdf.set_font("Helvetica", "B", 8.5)
-        for (_, largura, alinhamento), valor in zip(colunas, total):
-            pdf.cell(largura, 6.5, valor, align=alinhamento)
-        pdf.ln()
-
-
-def _par(pdf: _Pdf, rotulo: str, valor: str, largura_rotulo: float = 48) -> None:
-    pdf.set_font("Helvetica", size=9)
-    pdf.set_text_color(*COR_SECUNDARIA)
-    pdf.cell(largura_rotulo, 6, rotulo)
-    pdf.set_font("Helvetica", "B", 9.5)
-    pdf.set_text_color(*COR_TEXTO)
-    pdf.cell(0, 6, valor, new_x="LMARGIN", new_y="NEXT")
-
 
 def gerar_pdf(dados: DeclaracaoAnual, empregado: bool, gerado_em: datetime) -> bytes:
-    pdf = _Pdf(format="A4")
-    pdf.set_margins(15, 15, 15)
-    pdf.set_auto_page_break(True, margin=18)
-    pdf.set_title(f"Declaração anual do MEI {dados.ano}")
-    pdf.set_creator("VR Finance")
-    pdf.rodape = f"VR Finance - gerado em {gerado_em:%d/%m/%Y %H:%M}. Documento de apoio: não substitui a declaração oficial."
-    pdf.add_page()
+    pdf = novo_pdf(
+        f"Declaração anual do MEI {dados.ano}",
+        f"VR Finance - gerado em {gerado_em:%d/%m/%Y %H:%M}. Documento de apoio: não substitui a declaração oficial.",
+    )
     largura_util = pdf.w - pdf.l_margin - pdf.r_margin
 
     # Cabeçalho
@@ -268,14 +188,14 @@ def gerar_pdf(dados: DeclaracaoAnual, empregado: bool, gerado_em: datetime) -> b
 
     # 1. Contribuinte
     empresa = dados.empresa
-    _titulo_secao(pdf, "1. Informações do contribuinte")
-    _par(pdf, "Nome empresarial", empresa.nome)
-    _par(pdf, "CNPJ", formatar_cnpj(empresa.cnpj))
-    _par(pdf, "Data de abertura", f"{empresa.data_abertura:%d/%m/%Y}")
-    _par(pdf, "Período abrangido", f"{dados.periodo_inicio:%d/%m/%Y} a {dados.periodo_fim:%d/%m/%Y}")
+    titulo_secao(pdf, "1. Informações do contribuinte")
+    par(pdf, "Nome empresarial", empresa.nome)
+    par(pdf, "CNPJ", formatar_cnpj(empresa.cnpj))
+    par(pdf, "Data de abertura", f"{empresa.data_abertura:%d/%m/%Y}")
+    par(pdf, "Período abrangido", f"{dados.periodo_inicio:%d/%m/%Y} a {dados.periodo_fim:%d/%m/%Y}")
 
     # 2. Campos da declaração (destaque)
-    _titulo_secao(pdf, "2. Informações socioeconômicas e fiscais (o que digitar na declaração)")
+    titulo_secao(pdf, "2. Informações socioeconômicas e fiscais (o que digitar na declaração)")
     campos = [
         ("Receita bruta de comércio, indústria, transportes intermunicipais e interestaduais e fornecimento de refeições", brl(0)),
         ("Receita bruta de serviços prestados de qualquer natureza, exceto transportes intermunicipais e interestaduais", brl(dados.receita_servicos)),
@@ -284,9 +204,10 @@ def gerar_pdf(dados: DeclaracaoAnual, empregado: bool, gerado_em: datetime) -> b
     ]
     topo = pdf.get_y()
     pdf.set_fill_color(*COR_FUNDO_DESTAQUE)
-    pdf.set_draw_color(*COR_DESTAQUE)
     altura = 4 + 11 * len(campos)
-    pdf.rect(pdf.l_margin, topo, largura_util, altura, style="DF")
+    pdf.rect(pdf.l_margin, topo, largura_util, altura, style="F", round_corners=True, corner_radius=2.5)
+    pdf.set_fill_color(*COR_DESTAQUE)
+    pdf.rect(pdf.l_margin, topo, 1.2, altura, style="F")
     pdf.set_y(topo + 2)
     largura_valor = 38
     for i, (rotulo, valor) in enumerate(campos):
@@ -318,28 +239,23 @@ def gerar_pdf(dados: DeclaracaoAnual, empregado: bool, gerado_em: datetime) -> b
 
     # Avisos
     if dados.avisos:
-        _titulo_secao(pdf, "Avisos")
-        pdf.set_fill_color(*COR_FUNDO_AVISO)
-        pdf.set_text_color(*COR_AVISO)
-        pdf.set_font("Helvetica", size=9)
-        for aviso in dados.avisos:
-            pdf.multi_cell(0, 5, f"- {aviso}", fill=True, align="L", new_x="LMARGIN", new_y="NEXT")
-            pdf.ln(1)
+        titulo_secao(pdf, "Avisos")
+        caixa_avisos(pdf, dados.avisos)
 
     # 3. Limite
-    _titulo_secao(pdf, "3. Limite de faturamento do MEI")
+    titulo_secao(pdf, "3. Limite de faturamento do MEI")
     rotulo_limite = brl(dados.limite)
     if dados.ano == empresa.data_abertura.year:
         meses = 12 - empresa.data_abertura.month + 1
         rotulo_limite += f" (ano de abertura: R$ 6.750,00 x {meses} {'mês' if meses == 1 else 'meses'})"
-    _par(pdf, "Limite do ano", rotulo_limite)
+    par(pdf, "Limite do ano", rotulo_limite)
     pct = f"{dados.pct_limite:.1f}".replace(".", ",")
-    _par(pdf, "Receita bruta total", f"{brl(dados.receita_servicos)} ({pct}% do limite)")
-    _par(pdf, "Situação", SITUACAO_TEXTO[dados.situacao] if dados.situacao in ("ok", "atencao") else "Limite excedido (ver avisos)")
+    par(pdf, "Receita bruta total", f"{brl(dados.receita_servicos)} ({pct}% do limite)")
+    par(pdf, "Situação", SITUACAO_TEXTO[dados.situacao] if dados.situacao in ("ok", "atencao") else "Limite excedido (ver avisos)")
 
     # 4. Mês a mês
-    _titulo_secao(pdf, "4. Faturamento mês a mês (competência)")
-    _tabela(
+    titulo_secao(pdf, "4. Faturamento mês a mês (competência)")
+    tabela(
         pdf,
         [("Mês", 80, "L"), ("Notas", 30, "C"), ("Valor", largura_util - 110, "R")],
         [[f"{MESES[mes - 1]}/{dados.ano}", str(qtd_mes), brl(valor)] for mes, qtd_mes, valor in dados.por_mes],
@@ -351,9 +267,9 @@ def gerar_pdf(dados: DeclaracaoAnual, empregado: bool, gerado_em: datetime) -> b
         pdf.cell(0, 5, f"Outras receitas sem nota (informadas na geração, sem mês): {brl(dados.outras_receitas)}", new_x="LMARGIN", new_y="NEXT")
 
     # 5. Notas incluídas
-    _titulo_secao(pdf, "5. Notas fiscais incluídas")
+    titulo_secao(pdf, "5. Notas fiscais incluídas")
     if dados.notas:
-        _tabela(
+        tabela(
             pdf,
             [("Nº", 16, "L"), ("Emissão", 24, "L"), ("Competência", 26, "L"), ("Tomador", largura_util - 98, "L"), ("Valor", 32, "R")],
             [
@@ -369,8 +285,8 @@ def gerar_pdf(dados: DeclaracaoAnual, empregado: bool, gerado_em: datetime) -> b
 
     # 6. Substituídas
     if dados.substituidas:
-        _titulo_secao(pdf, "6. Notas substituídas (não entram no total)")
-        _tabela(
+        titulo_secao(pdf, "6. Notas substituídas (não entram no total)")
+        tabela(
             pdf,
             [("Nº", 16, "L"), ("Emissão", 24, "L"), ("Competência", 26, "L"), ("Substituída pela", largura_util - 98, "L"), ("Valor", 32, "R")],
             [

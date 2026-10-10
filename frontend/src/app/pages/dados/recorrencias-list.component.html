@@ -73,7 +73,7 @@
                 <td><span class="status-chip" [class]="'status-' + rec.status">{{ statusLabel[rec.status] }}</span></td>
                 <td class="actions-col">
                   <button aria-label="Editar" title="Editar" class="icon-btn" [disabled]="busyId() === rec.id" (click)="editar(rec)">
-                    <ion-icon name="create"></ion-icon>
+                    <ion-icon name="create-outline"></ion-icon>
                   </button>
                   @if (rec.status !== 'encerrada') {
                     <button
@@ -87,7 +87,7 @@
                     </button>
                   }
                   <button aria-label="Excluir" title="Excluir" class="icon-btn danger" [disabled]="busyId() === rec.id" (click)="excluir(rec)">
-                    <ion-icon name="trash"></ion-icon>
+                    <ion-icon name="trash-outline"></ion-icon>
                   </button>
                 </td>
               </tr>
@@ -120,7 +120,7 @@
             </span>
             <span class="entry-actions">
               <button aria-label="Editar" title="Editar" class="icon-btn" [disabled]="busyId() === rec.id" (click)="editar(rec)">
-                <ion-icon name="create"></ion-icon>
+                <ion-icon name="create-outline"></ion-icon>
               </button>
               @if (rec.status !== 'encerrada') {
                 <button
@@ -134,7 +134,7 @@
                 </button>
               }
               <button aria-label="Excluir" title="Excluir" class="icon-btn danger" [disabled]="busyId() === rec.id" (click)="excluir(rec)">
-                <ion-icon name="trash"></ion-icon>
+                <ion-icon name="trash-outline"></ion-icon>
               </button>
             </span>
           </div>

@@ -8,6 +8,11 @@
   gap: 40px;
 }
 
+// O checkbox de corte fica logo abaixo do período do Resumo mensal, com o mesmo respiro.
+#resumo-mensal > .cutoff-toggle {
+  margin-top: calc(-1 * var(--sp-2));
+}
+
 // Sino do header: contador sobreposto ao ícone, no canto superior direito.
 .bell-btn {
   position: relative;
@@ -23,41 +28,32 @@
   border-radius: 999px;
   background: var(--ion-color-primary);
   color: var(--ion-color-primary-contrast);
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: var(--fs-xs);
+  font-weight: 600;
   line-height: 17px;
   text-align: center;
   box-shadow: 0 0 0 2px var(--ion-background-color);
   pointer-events: none;
 }
 
-// Card "Seu resumo de <mês> chegou" -- some quando o resumo é aberto ou dispensado.
+// Faixa "Seu resumo de <mês> chegou" -- some quando o resumo é aberto ou dispensado. Uma linha só,
+// com fundo verde bem suave (antes era um cartão alto com ícone em gradiente e botão verde sólido).
 .digest-banner {
-  @include ds.app-card;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 18px;
-  margin-top: -16px;
-  border-color: rgba(var(--ion-color-primary-rgb), 0.35);
-  background:
-    radial-gradient(circle at 0% 50%, rgba(var(--ion-color-primary-rgb), 0.16), transparent 55%),
-    var(--app-surface-glass);
+  gap: var(--sp-3);
+  padding: 10px var(--sp-2) 10px var(--sp-4);
+  margin-top: calc(-1 * var(--sp-4));
+  border-radius: var(--r-md);
+  background: var(--app-tint-positive);
   animation: digest-in 0.35s ease-out;
 }
 
 .digest-icon {
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
   display: flex;
-  align-items: center;
-  justify-content: center;
   font-size: 1.3rem;
-  color: var(--ion-color-primary-contrast);
-  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
-  box-shadow: 0 6px 16px rgba(var(--ion-color-primary-rgb), 0.3);
+  color: var(--app-positive);
 }
 
 .digest-text {
@@ -69,12 +65,12 @@
 }
 
 .digest-title {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--app-text-primary);
 }
 
 .digest-teaser {
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   color: var(--app-text-secondary);
 }
 
@@ -84,8 +80,8 @@
   align-items: center;
   gap: 2px;
 
-  ion-button:not(.digest-dismiss) {
-    --border-radius: 10px;
+  .digest-open {
+    --color: var(--app-positive);
     font-weight: 600;
     margin: 0;
   }
@@ -98,24 +94,21 @@
 
 @media (max-width: 576px) {
   .digest-banner {
-    flex-wrap: wrap;
-    position: relative;
-    padding-right: 44px;
+    align-items: flex-start;
+    padding-left: var(--sp-3);
+  }
+
+  .digest-icon {
+    padding-top: 2px;
+  }
+
+  .digest-teaser {
+    font-size: var(--fs-xs);
   }
 
   .digest-actions {
-    width: 100%;
-    padding-left: 60px;
-
-    ion-button:not(.digest-dismiss) {
-      flex: 1;
-    }
-
-    .digest-dismiss {
-      position: absolute;
-      top: 6px;
-      right: 4px;
-    }
+    flex-direction: column-reverse;
+    align-items: flex-end;
   }
 }
 
@@ -130,38 +123,30 @@
   }
 }
 
-.dashboard-header {
-  .subtitle {
-    margin: 4px 0 0;
-    color: var(--app-text-secondary);
-  }
+.dashboard-header h1 {
+  font-size: var(--fs-xl);
 }
 
 .period-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
 
   ion-select {
     max-width: 110px;
-    border-radius: 8px;
-    --background: var(--app-surface);
-    --border-color: var(--app-surface-border);
-    --color: var(--app-text-primary);
-    --placeholder-color: var(--app-text-secondary);
   }
 
   ion-select.select-mes {
-    max-width: 180px;
+    max-width: 160px;
   }
 
-  // Mesma altura/raio dos ion-select ao lado (56px, padrão dos campos outline do app).
   .btn-detalhes {
-    height: 56px;
+    height: 44px;
     margin: 0;
     flex-shrink: 0;
     white-space: nowrap;
-    --border-radius: 8px;
+    --color: var(--ion-color-primary);
+    font-weight: 600;
   }
 }
 
@@ -184,12 +169,15 @@
 
     .btn-detalhes {
       flex: 0 0 auto;
-      width: 56px;
+      width: 44px;
       --padding-start: 0;
       --padding-end: 0;
+      --background: var(--app-surface);
+      border: 1px solid var(--app-field-border);
+      border-radius: var(--r-sm);
 
       ion-icon {
-        font-size: 1.3rem;
+        font-size: 1.25rem;
       }
 
       .btn-text {
@@ -205,11 +193,11 @@
 
 @media (max-width: 480px) {
   .dashboard {
-    gap: 28px;
+    gap: var(--sp-6);
   }
 
   .dashboard-header h1 {
-    font-size: 1.3rem;
+    font-size: var(--fs-lg);
   }
 }
 
@@ -236,13 +224,13 @@
   transform: translateY(-50%);
   white-space: nowrap;
   padding: 4px 10px;
-  border-radius: 8px;
-  background: var(--app-surface);
+  border-radius: var(--r-sm);
+  background: var(--app-surface-raised);
   border: 1px solid var(--app-surface-border);
   color: var(--app-text-primary);
-  font-size: 0.82rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--app-shadow-float);
 }
 
 .fab-action ion-fab-button {

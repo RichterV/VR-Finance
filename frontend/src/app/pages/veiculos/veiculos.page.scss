@@ -16,7 +16,7 @@
 
   ion-select {
     max-width: 200px;
-    border-radius: 8px;
+    border-radius: var(--r-sm);
   }
 }
 
@@ -39,13 +39,13 @@
 }
 
 .stat-label {
-  font-size: 0.82rem;
+  font-size: var(--fs-sm);
   color: var(--app-text-secondary);
 }
 
 .stat-value {
-  font-size: 1.4rem;
-  font-weight: 700;
+  font-size: var(--fs-lg);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--app-text-primary);
 }
@@ -54,7 +54,7 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  font-size: 0.8rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
   margin-top: 4px;
 }
@@ -84,7 +84,7 @@
   h2 .count {
     font-weight: 400;
     color: var(--app-text-secondary);
-    font-size: 0.9rem;
+    font-size: var(--fs-sm);
   }
 }
 
@@ -102,7 +102,7 @@
   .busca-filter {
     max-width: 280px;
     flex: 1;
-    border-radius: 8px;
+    border-radius: var(--r-sm);
   }
 }
 
@@ -125,7 +125,7 @@ td.description {
   }
 
   .stat-value {
-    font-size: 1.2rem;
+    font-size: var(--fs-lg);
   }
 
   .chart-wrap {
@@ -156,7 +156,7 @@ td.description {
 
   .busca-filter {
     max-width: none;
-    border-radius: 8px;
+    border-radius: var(--r-sm);
   }
 }
 

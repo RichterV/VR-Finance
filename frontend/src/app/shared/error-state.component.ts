@@ -28,7 +28,7 @@ import { cloudOfflineOutline, refreshOutline } from 'ionicons/icons';
         flex-wrap: wrap;
         gap: 14px;
         padding: 18px 20px;
-        border-radius: 16px;
+        border-radius: var(--r-md);
         border: 1px solid rgba(var(--ion-color-danger-rgb), 0.4);
         background: rgba(var(--ion-color-danger-rgb), 0.08);
       }
@@ -45,15 +45,15 @@ import { cloudOfflineOutline, refreshOutline } from 'ionicons/icons';
         gap: 2px;
       }
       strong {
-        font-size: 0.92rem;
+        font-size: var(--fs-sm);
         color: var(--app-text-primary);
       }
       span {
-        font-size: 0.82rem;
+        font-size: var(--fs-sm);
         color: var(--app-text-secondary);
       }
       ion-button {
-        --border-radius: 10px;
+        --border-radius: var(--r-sm);
         margin: 0;
         font-weight: 600;
       }

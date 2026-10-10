@@ -58,13 +58,13 @@
             </div>
 
             <div class="user-card-actions">
-              <ion-button fill="outline" size="small" (click)="abrirUsuario(u)">
-                <ion-icon slot="start" name="create"></ion-icon>
+              <ion-button fill="clear" size="small" (click)="abrirUsuario(u)">
+                <ion-icon slot="start" name="create-outline"></ion-icon>
                 Editar
               </ion-button>
               @if (u.role !== 'master') {
-                <ion-button fill="outline" size="small" color="danger" (click)="excluirUsuario(u)">
-                  <ion-icon slot="start" name="trash"></ion-icon>
+                <ion-button fill="clear" size="small" color="danger" (click)="excluirUsuario(u)">
+                  <ion-icon slot="start" name="trash-outline"></ion-icon>
                   Excluir
                 </ion-button>
               }
@@ -79,7 +79,7 @@
             <ion-icon slot="start" name="person-add-outline"></ion-icon>
             Adicionar usuário
           </ion-button>
-          <ion-button expand="block" fill="outline" (click)="switchToTeste()">
+          <ion-button expand="block" fill="clear" (click)="switchToTeste()">
             <ion-icon slot="start" name="swap-horizontal-outline"></ion-icon>
             Mudar pra conta teste
           </ion-button>
@@ -125,11 +125,11 @@
                   </td>
                   <td class="actions-col">
                     <button aria-label="Editar" class="icon-btn" title="Editar" (click)="abrirUsuario(u)">
-                      <ion-icon name="create"></ion-icon>
+                      <ion-icon name="create-outline"></ion-icon>
                     </button>
                     @if (u.role !== 'master') {
                       <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirUsuario(u)">
-                        <ion-icon name="trash"></ion-icon>
+                        <ion-icon name="trash-outline"></ion-icon>
                       </button>
                     }
                   </td>

@@ -11,7 +11,7 @@ $mobile-max: 767px;
 }
 
 h2 .count {
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   font-weight: 400;
   color: var(--app-text-secondary);
 }
@@ -25,7 +25,7 @@ h2 .count {
 .chip {
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   white-space: nowrap;
   color: var(--ion-color-primary);
   border: 1px solid color-mix(in srgb, var(--ion-color-primary) 45%, transparent);
@@ -102,13 +102,13 @@ h2 .count {
   min-width: 0;
 
   strong {
-    font-size: 1.05rem;
+    font-size: var(--fs-md);
     color: var(--app-text-primary);
   }
 }
 
 .user-card-username {
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   color: var(--app-text-secondary);
 }
 
@@ -116,7 +116,7 @@ h2 .count {
   flex-shrink: 0;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--app-text-secondary);
   border: 1px solid var(--app-surface-border);
@@ -134,9 +134,7 @@ h2 .count {
 }
 
 .user-card-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
 }
 

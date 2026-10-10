@@ -4,8 +4,6 @@ import {
   IonButton,
   IonButtons,
   IonContent,
-  IonFab,
-  IonFabButton,
   IonHeader,
   IonIcon,
   IonItem,
@@ -19,7 +17,7 @@ import {
   ModalController,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { add, close, create, trash } from 'ionicons/icons';
+import { add, close, createOutline, trashOutline } from 'ionicons/icons';
 
 import { AuthService } from '../../core/auth.service';
 import { HomeRefreshService } from '../../core/home-refresh.service';
@@ -43,8 +41,6 @@ import { UndoDeleteService } from '../../shared/undo-delete.service';
     IonLabel,
     IonList,
     IonItem,
-    IonFab,
-    IonFabButton,
     IonToggle,
   ],
 })
@@ -62,7 +58,7 @@ export class ItensModalComponent implements OnInit, OnDestroy {
     private readonly homeRefresh: HomeRefreshService,
     private readonly auth: AuthService,
   ) {
-    addIcons({ add, create, trash, close });
+    addIcons({ add, createOutline, trashOutline, close });
   }
 
   ngOnInit(): void {

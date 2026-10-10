@@ -1,11 +1,11 @@
 .rec-note {
   margin: 0 4px 12px;
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   color: var(--app-text-secondary);
 }
 
 .rec-hint {
   margin: 4px 4px 12px;
-  font-size: 0.8rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
 }

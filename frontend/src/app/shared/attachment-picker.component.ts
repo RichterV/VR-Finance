@@ -122,7 +122,7 @@ interface DisplayItem {
       }
       .picker-label {
         display: block;
-        font-size: 0.8rem;
+        font-size: var(--fs-xs);
         color: var(--app-text-secondary);
         margin-bottom: 8px;
       }
@@ -137,11 +137,11 @@ interface DisplayItem {
         gap: 6px;
         min-height: 44px;
         padding: 8px 18px;
-        border-radius: 22px;
+        border-radius: var(--r-pill);
         border: 1px dashed var(--app-surface-border);
         background: var(--app-surface-glass);
         color: var(--ion-color-primary);
-        font-size: 0.9rem;
+        font-size: var(--fs-sm);
         font-weight: 500;
         cursor: pointer;
         transition: border-color 0.15s ease, background 0.15s ease;
@@ -173,7 +173,7 @@ interface DisplayItem {
       }
       .attachment-error {
         margin: 8px 0 0;
-        font-size: 0.85rem;
+        font-size: var(--fs-sm);
       }
       .attachment-list {
         list-style: none;
@@ -188,10 +188,10 @@ interface DisplayItem {
         align-items: center;
         gap: 8px;
         padding: 6px 10px;
-        border-radius: 10px;
+        border-radius: var(--r-sm);
         background: var(--app-surface-glass);
         border: 1px solid var(--app-surface-border);
-        font-size: 0.85rem;
+        font-size: var(--fs-sm);
         color: var(--app-text-secondary);
       }
       .attachment-list ion-icon:first-child {
@@ -215,7 +215,7 @@ interface DisplayItem {
         color: var(--app-text-secondary);
         padding: 8px;
         margin: -8px;
-        border-radius: 8px;
+        border-radius: var(--r-sm);
         cursor: pointer;
         display: inline-flex;
         align-items: center;

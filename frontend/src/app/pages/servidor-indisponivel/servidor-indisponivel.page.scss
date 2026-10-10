@@ -19,19 +19,19 @@
 }
 
 .offline-wrap h1 {
-  font-size: 1.4rem;
-  font-weight: 700;
+  font-size: var(--fs-lg);
+  font-weight: 600;
 }
 
 .offline-subtitle {
   margin: 0;
   max-width: 340px;
   color: var(--app-text-secondary);
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
 }
 
 .offline-wrap ion-button {
-  --border-radius: 12px;
+  --border-radius: var(--r-md);
   font-weight: 600;
   margin-top: 8px;
   min-width: 200px;

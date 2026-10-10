@@ -38,7 +38,7 @@ os endpoints do router de uma vez. Vale na hora: o usuário é relido do banco a
 | `operacoes_bolsa` | `/operacoes-bolsa/*`, anexos com `entity_type=operacao_bolsa` |
 | `devedores` | `/devedores/*`, anexos com `entity_type=devedor` |
 | `empresa` | `/empresa/*`, anexos com `entity_type=nota_fiscal` ou `empresa` |
-| `exportar_dados` | `/export/*` (e cada módulo exportado também exige o próprio módulo) |
+| `exportar_dados` | `/export/*` (e cada módulo exportado também exige o próprio módulo), `/relatorios/*` |
 | `analise_inflacionaria` | `GET /resumo/inflacao`; `PUT /dropdown-options/{id}` com `include_in_inflation` |
 | `ferramentas` | — (só frontend, não tem backend) |
 
@@ -139,7 +139,7 @@ Central de notificações — hoje só o resumo da virada do mês (ver
 
 | método | rota | descrição |
 |---|---|---|
-| GET | `/notificacoes?limit=` | notificações do usuário, mais nova primeiro (`limit` default 12, máx. 100), com o `payload` do resumo e `lida`. Antes de listar, apaga resumos fora da janela dos últimos 12 meses e gera o do mês anterior se ainda não existir |
+| GET | `/notificacoes?limit=` | notificações do usuário, mais nova primeiro (`limit` default 12, máx. 100), com `tipo` (`resumo_mensal` \| `relatorio_anual`), o `payload` do resumo (`null` no aviso de relatório anual) e `lida`. Antes de listar, apaga resumos fora da janela dos últimos 12 meses, gera o do mês anterior se ainda não existir e, na virada do ano, o aviso de relatório anual (ver [Relatórios em PDF](#relatorios-em-pdf)) |
 | PUT | `/notificacoes/{id}/lida` | marca uma como lida (404 se não for do usuário) |
 | PUT | `/notificacoes/lidas` | marca todas como lidas (204) |
 
@@ -253,6 +253,20 @@ cronológica (mais antigo primeiro), sem paginação. `veiculos` gera dois CSVs 
 original>`); anexo de grupo parcelado aparece em todas as linhas do grupo, mas só uma cópia física
 entra no zip. O zip é montado num arquivo temporário (anexos lidos do disco em blocos) e apagado
 depois do envio.
+
+### Relatórios em PDF
+
+Ficam na aba **Relatórios** de Exportar Dados; a pessoa escolhe o ano antes de gerar. A declaração do
+MEI continua em `GET /empresa/declaracao-anual` (exige o módulo `empresa`, ver acima).
+
+| método | rota | descrição |
+|---|---|---|
+| GET | `/relatorios/anual/anos` | anos com gasto ou receita até hoje, mais recente primeiro (sempre inclui o atual) |
+| GET | `/relatorios/anual?ano=` | PDF do relatório anual de receitas e gastos: resumo com variação vs. o mesmo período do ano anterior e destaques em frases, mês a mês (gráfico + tabela), essencial x não essencial, categorias (top 10 + tabela com variação), maiores gastos pontuais, parcelas e contas fixas, receitas por fonte, ritmo (média por mês/dia, dia da semana), inflação pessoal (só com `analise_inflacionaria`) e glossário. No ano em andamento os números param **hoje**, e o que já está lançado com data futura aparece à parte. 400 se o ano ainda não começou. **Não grava nada** |
+
+Na virada do ano, `GET /notificacoes` cria (uma vez) o aviso `relatorio_anual` do ano que passou —
+só pra quem tem `exportar_dados` e teve lançamento naquele ano, a partir do relatório de 2026. O
+aviso não leva dados (`payload: null`).
 
 ## Backup
 

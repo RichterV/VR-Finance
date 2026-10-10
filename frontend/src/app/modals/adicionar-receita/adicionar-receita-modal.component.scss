@@ -8,7 +8,7 @@
 
 .default-btn {
   font: inherit;
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--ion-color-primary);
   background: transparent;
@@ -29,6 +29,6 @@
 }
 
 .default-hint {
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
 }

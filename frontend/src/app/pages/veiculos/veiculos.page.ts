@@ -18,7 +18,7 @@ import {
 } from '@ionic/angular';
 import { BaseChartDirective } from 'ng2-charts';
 import { addIcons } from 'ionicons';
-import { addCircleOutline, attachOutline, buildOutline, carSportOutline, create, trash } from 'ionicons/icons';
+import { addCircleOutline, attachOutline, buildOutline, carSportOutline, createOutline, trashOutline } from 'ionicons/icons';
 import { firstValueFrom, forkJoin } from 'rxjs';
 
 import { SERVICE_TYPE_LABELS } from '../../modals/adicionar-servico/adicionar-servico-modal.component';
@@ -125,7 +125,7 @@ export class VeiculosPage {
     private readonly modalCtrl: ModalController,
     private readonly popoverCtrl: PopoverController,
   ) {
-    addIcons({ addCircleOutline, carSportOutline, buildOutline, create, trash, attachOutline });
+    addIcons({ addCircleOutline, carSportOutline, buildOutline, createOutline, trashOutline, attachOutline });
     const currentYear = new Date().getFullYear();
     this.anos = Array.from({ length: 6 }, (_, i) => currentYear - i);
   }

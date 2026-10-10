@@ -2,7 +2,7 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, computed, inject, OnInit, output, signal } from '@angular/core';
 import { AlertController, IonIcon, ModalController, ToastController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { create, pauseOutline, playOutline, repeatOutline, trash } from 'ionicons/icons';
+import { createOutline, pauseOutline, playOutline, repeatOutline, trashOutline } from 'ionicons/icons';
 import { Observable } from 'rxjs';
 
 import { HomeRefreshService } from '../../core/home-refresh.service';
@@ -56,7 +56,7 @@ export class RecorrenciasListComponent implements OnInit {
   });
 
   constructor() {
-    addIcons({ create, trash, pauseOutline, playOutline, repeatOutline });
+    addIcons({ createOutline, trashOutline, pauseOutline, playOutline, repeatOutline });
   }
 
   ngOnInit(): void {

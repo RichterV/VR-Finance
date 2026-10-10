@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.deps import get_current_user, get_db
-from app.resumo_mensal import ensure_monthly_digest, parse_payload
+from app.relatorio_anual import ensure_annual_report_notice
+from app.resumo_mensal import TIPO_RESUMO_MENSAL, ensure_monthly_digest, parse_payload
 
 router = APIRouter(prefix="/notificacoes", tags=["notificacoes"])
 
@@ -19,7 +20,7 @@ def _to_out(n: models.Notificacao) -> schemas.NotificacaoOut:
         titulo=n.titulo,
         lida=n.lida_em is not None,
         created_at=n.created_at,
-        payload=parse_payload(n.payload),
+        payload=parse_payload(n.payload) if n.tipo == TIPO_RESUMO_MENSAL else None,
     )
 
 
@@ -35,6 +36,7 @@ def list_notificacoes(
 ):
     # Também é quem dispara a geração do resumo do mês (sem cron -- ver app/resumo_mensal.py).
     ensure_monthly_digest(db, current_user)
+    ensure_annual_report_notice(db, current_user)
     rows = (
         db.query(models.Notificacao)
         .filter(models.Notificacao.user_id == current_user.id)

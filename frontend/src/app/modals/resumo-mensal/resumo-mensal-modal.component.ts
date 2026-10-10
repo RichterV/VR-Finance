@@ -18,7 +18,7 @@ import {
 } from 'ionicons/icons';
 
 import { MESES_COMPLETOS } from '../../shared/months';
-import { IndicadorMensal, Notificacao, NotificacoesService, VariacaoCategoria } from '../../services/notificacoes.service';
+import { IndicadorMensal, NotificacaoResumoMensal, NotificacoesService, VariacaoCategoria } from '../../services/notificacoes.service';
 import { PrioDotComponent } from '../../shared/prio-dot.component';
 
 interface Kpi {
@@ -37,7 +37,7 @@ interface Kpi {
   imports: [PrioDotComponent, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent],
 })
 export class ResumoMensalModalComponent implements OnInit {
-  @Input({ required: true }) notificacao!: Notificacao;
+  @Input({ required: true }) notificacao!: NotificacaoResumoMensal;
   /** Mesmo modo privacidade do olho da Home -- esconde só os R$, os % continuam visíveis. */
   @Input() valoresOcultos = false;
 

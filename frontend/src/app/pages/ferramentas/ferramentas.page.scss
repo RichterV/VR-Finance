@@ -13,12 +13,12 @@ ion-segment-button {
   min-height: 44px;
   font-weight: 500;
   text-transform: none;
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
 }
 
 .tool-hint {
   color: var(--app-text-secondary);
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   margin: 0;
 
   &.small {
@@ -66,7 +66,7 @@ ion-segment-button {
 
 .form-error {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
 }
 
 .result-row {
@@ -74,7 +74,7 @@ ion-segment-button {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
   color: var(--app-text-secondary);
 
   strong {
@@ -83,38 +83,38 @@ ion-segment-button {
   }
 
   &.highlight {
-    font-size: 1.05rem;
+    font-size: var(--fs-md);
 
     strong {
-      font-size: 1.2rem;
+      font-size: var(--fs-lg);
     }
   }
 
   &.secondary {
-    font-size: 0.8rem;
+    font-size: var(--fs-xs);
     opacity: 0.85;
   }
 }
 
 .conclusao-banner {
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 14px 16px;
-  font-weight: 700;
-  text-align: center;
+  font-weight: 600;
+  text-align: left;
   background: var(--app-surface-glass);
   border: 1px solid var(--app-surface-border);
   color: var(--app-text-primary);
 
+  // Conclusão com faixa lateral + texto colorido (antes um bloco inteiro em degradê). Os dois tons de
+  // verde continuam distintos: esmeralda (success) = "vale à vista", verde da marca = "a prazo".
   &.vista {
-    background: linear-gradient(135deg, var(--ion-color-success), var(--ion-color-success-shade));
-    color: var(--ion-color-success-contrast);
-    border: none;
+    border-left: 3px solid var(--ion-color-success);
+    color: var(--ion-color-success);
   }
 
   &.prazo {
-    background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
-    color: var(--ion-color-primary-contrast);
-    border: none;
+    border-left: 3px solid var(--ion-color-primary);
+    color: var(--app-positive);
   }
 }
 
@@ -127,9 +127,9 @@ ion-segment-button {
   background: transparent;
   color: var(--app-text-primary);
   padding: 8px 14px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   font-weight: 500;
 
   &:hover {
@@ -152,7 +152,7 @@ ion-segment-button {
 .mini-table-card table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
 }
 
 thead th {
@@ -162,7 +162,7 @@ thead th {
   color: var(--app-text-secondary);
   text-align: left;
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   padding: 10px 14px;
   border-bottom: 1px solid var(--app-surface-border);
   z-index: 1;

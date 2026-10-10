@@ -98,7 +98,7 @@ import { toIsoDate } from './launch-date';
     `
       .recurrence-hint {
         margin: 4px 4px 12px;
-        font-size: 0.8rem;
+        font-size: var(--fs-xs);
         color: var(--app-text-secondary);
       }
 

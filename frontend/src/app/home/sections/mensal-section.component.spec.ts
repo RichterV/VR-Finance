@@ -43,4 +43,20 @@ describe('MensalSectionComponent', () => {
     fixture.detectChanges();
     expect(el.textContent).toContain('Disponível pra gastar');
   });
+
+  it('shows how the available amount is computed (receita − gastos − caixa pretendido)', () => {
+    const el = setup(2020, 1);
+    fixture.componentRef.setInput('valoresOcultos', false);
+    fixture.detectChanges();
+    const texto = (sel: string) =>
+      Array.from(el.querySelectorAll(sel)).map((n) => n.textContent!.replace(/\s+/g, ' ').trim());
+    expect(texto('.hero-eq dt')).toEqual(['Receita', '− Gastos', '− Caixa pretendido']);
+    expect(texto('.hero-eq dd')).toEqual(['R$ 2.000,00', 'R$ 1.000,00', 'R$ 600,00']);
+  });
+
+  it('keeps counts and averages in the compact list, not in separate cards', () => {
+    const el = setup(2020, 1);
+    expect(el.querySelectorAll('.metric-list dt').length).toBe(4);
+    expect(el.querySelectorAll('.key-grid .stat-card').length).toBe(4);
+  });
 });

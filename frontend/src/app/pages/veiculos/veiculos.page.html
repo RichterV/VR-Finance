@@ -104,10 +104,10 @@
                 <td>{{ vehicle.year }}</td>
                 <td class="actions-col">
                   <button aria-label="Editar" class="icon-btn" (click)="editarVeiculo(vehicle)">
-                    <ion-icon name="create"></ion-icon>
+                    <ion-icon name="create-outline"></ion-icon>
                   </button>
                   <button aria-label="Excluir" class="icon-btn danger" (click)="excluirVeiculo(vehicle)">
-                    <ion-icon name="trash"></ion-icon>
+                    <ion-icon name="trash-outline"></ion-icon>
                   </button>
                 </td>
               </tr>
@@ -127,10 +127,10 @@
               <span class="entry-meta-text">{{ vehicle.year }}</span>
               <span class="entry-actions">
                 <button aria-label="Editar" class="icon-btn" title="Editar" (click)="editarVeiculo(vehicle)">
-                  <ion-icon name="create"></ion-icon>
+                  <ion-icon name="create-outline"></ion-icon>
                 </button>
                 <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirVeiculo(vehicle)">
-                  <ion-icon name="trash"></ion-icon>
+                  <ion-icon name="trash-outline"></ion-icon>
                 </button>
               </span>
             </div>
@@ -198,12 +198,14 @@
                       <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexosServico($event, servico)">
                         <ion-icon name="attach-outline"></ion-icon>
                       </button>
+                    } @else {
+                      <span class="icon-slot" aria-hidden="true"></span>
                     }
                     <button aria-label="Editar" class="icon-btn" (click)="editarServico(servico)">
-                      <ion-icon name="create"></ion-icon>
+                      <ion-icon name="create-outline"></ion-icon>
                     </button>
                     <button aria-label="Excluir" class="icon-btn danger" (click)="excluirServico(servico)">
-                      <ion-icon name="trash"></ion-icon>
+                      <ion-icon name="trash-outline"></ion-icon>
                     </button>
                   </td>
                 </tr>
@@ -238,12 +240,14 @@
                   <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexosServico($event, servico)">
                     <ion-icon name="attach-outline"></ion-icon>
                   </button>
+                } @else {
+                  <span class="icon-slot" aria-hidden="true"></span>
                 }
                 <button aria-label="Editar" class="icon-btn" title="Editar" (click)="editarServico(servico)">
-                  <ion-icon name="create"></ion-icon>
+                  <ion-icon name="create-outline"></ion-icon>
                 </button>
                 <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirServico(servico)">
-                  <ion-icon name="trash"></ion-icon>
+                  <ion-icon name="trash-outline"></ion-icon>
                 </button>
               </span>
             </div>

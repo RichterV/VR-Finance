@@ -12,33 +12,30 @@
 // --- Cabeçalho ---------------------------------------------------------------------------------
 .hero {
   padding: 22px 22px 20px;
-  border-radius: 18px;
-  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.28);
-  background:
-    radial-gradient(circle at 100% 0%, rgba(var(--ion-color-primary-rgb), 0.22), transparent 60%),
-    var(--app-surface-glass);
+  border-radius: var(--r-md);
+  border: 1px solid var(--app-surface-border);
+  border-left: 3px solid var(--ion-color-primary);
+  background: var(--app-surface);
 
   .eyebrow {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.75rem;
+    font-size: var(--fs-xs);
     font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ion-color-primary);
+    color: var(--app-positive);
   }
 
   h1 {
     margin: 8px 0 4px;
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: var(--fs-xl);
+    font-weight: 600;
     color: var(--app-text-primary);
   }
 
   p {
     margin: 0;
-    font-size: 0.85rem;
+    font-size: var(--fs-sm);
     color: var(--app-text-secondary);
   }
 }
@@ -60,13 +57,13 @@
 }
 
 .kpi-label {
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
 }
 
 .kpi-value {
-  font-size: 1.12rem;
-  font-weight: 700;
+  font-size: var(--fs-lg);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--app-text-primary);
   white-space: nowrap;
@@ -78,7 +75,7 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 
@@ -113,14 +110,14 @@
 }
 
 .card-title {
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--app-text-primary);
 }
 
 .card-caption {
   margin: 10px 2px 0;
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   line-height: 1.45;
   color: var(--app-text-secondary);
 }
@@ -134,7 +131,7 @@
   align-items: center;
   gap: 8px;
   margin: 4px 2px 10px;
-  font-size: 0.95rem;
+  font-size: var(--fs-md);
   font-weight: 600;
   color: var(--app-text-primary);
 
@@ -164,8 +161,8 @@
 }
 
 .savings-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--fs-xl);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--ion-color-success);
 
@@ -184,7 +181,7 @@
 .savings-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--ion-color-primary-shade), var(--ion-color-primary));
+  background: var(--ion-color-primary);
   transition: width 0.4s ease;
 }
 
@@ -204,7 +201,7 @@
   justify-content: space-between;
   gap: 6px 12px;
   margin-top: 10px;
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
 
   span {
@@ -235,14 +232,14 @@
 
   strong {
     display: block;
-    font-size: 0.9rem;
+    font-size: var(--fs-sm);
     color: var(--app-text-primary);
   }
 
   p,
   span {
     margin: 2px 0 0;
-    font-size: 0.8rem;
+    font-size: var(--fs-xs);
     color: var(--app-text-secondary);
   }
 }
@@ -302,7 +299,7 @@
 .cat-name {
   flex: 1;
   min-width: 0;
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--app-text-primary);
   overflow: hidden;
@@ -311,8 +308,8 @@
 }
 
 .cat-value {
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-size: var(--fs-sm);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--app-text-primary);
 }
@@ -342,7 +339,7 @@
 }
 
 .cat-meta {
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
   font-variant-numeric: tabular-nums;
 
@@ -356,7 +353,7 @@
   flex-wrap: wrap;
   gap: 6px 16px;
   margin: -6px 2px 0;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
 
   span {
@@ -396,7 +393,7 @@
 }
 
 .row-title {
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--app-text-primary);
   overflow: hidden;
@@ -405,7 +402,7 @@
 }
 
 .row-sub {
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   color: var(--app-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -414,8 +411,8 @@
 
 .row-value {
   flex-shrink: 0;
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-size: var(--fs-sm);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -435,11 +432,11 @@
   border-radius: 999px;
   border: 1px solid var(--app-surface-border);
   background: var(--app-surface-glass);
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   color: var(--app-text-primary);
 
   b {
-    font-weight: 700;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
 }

@@ -33,17 +33,15 @@
         <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
         <span class="btn-text">Adicionar receita</span>
       </ion-button>
+      <!-- Só os dois lançamentos têm texto; o resto é ícone com dica (title), pra não competir com eles. -->
       <ion-button routerLink="/dados" aria-label="Visualizar dados" title="Visualizar dados">
-        <ion-icon slot="start" name="bar-chart-outline" aria-hidden="true"></ion-icon>
-        <span class="btn-text">Visualizar dados</span>
+        <ion-icon slot="icon-only" name="bar-chart-outline" aria-hidden="true"></ion-icon>
       </ion-button>
-      <ion-button class="desktop-only" aria-label="Categorias" (click)="modals.categorias()">
-        <ion-icon slot="start" name="pricetags-outline" aria-hidden="true"></ion-icon>
-        <span class="btn-text">Categorias</span>
+      <ion-button class="desktop-only" aria-label="Categorias" title="Categorias" (click)="modals.categorias()">
+        <ion-icon slot="icon-only" name="pricetags-outline" aria-hidden="true"></ion-icon>
       </ion-button>
-      <ion-button class="desktop-only" aria-label="Perfil" (click)="modals.perfil()">
-        <ion-icon slot="start" name="person-outline" aria-hidden="true"></ion-icon>
-        <span class="btn-text">Perfil</span>
+      <ion-button class="desktop-only" aria-label="Perfil" title="Perfil" (click)="modals.perfil()">
+        <ion-icon slot="icon-only" name="person-outline" aria-hidden="true"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
@@ -59,7 +57,6 @@
       @if (auth.currentUser(); as user) {
         <h1>Olá, {{ user.first_name }}</h1>
       }
-      <p class="subtitle">Aqui está o resumo das suas finanças</p>
     </header>
 
     @if (notificacoes.resumoPendente(); as resumo) {
@@ -70,7 +67,7 @@
           <span class="digest-teaser">{{ teaserResumo(resumo) }}</span>
         </div>
         <div class="digest-actions">
-          <ion-button size="small" (click)="abrirResumo(resumo)">Ver resumo</ion-button>
+          <ion-button size="small" fill="clear" class="digest-open" (click)="abrirResumo(resumo)">Ver resumo</ion-button>
           <ion-button
             size="small"
             fill="clear"
@@ -119,7 +116,7 @@
           </ion-select>
           <ion-button
             class="btn-detalhes"
-            fill="outline"
+            fill="clear"
             title="Ver detalhes"
             aria-label="Ver detalhes do mês"
             (click)="abrirDetalhesMes()"
@@ -128,8 +125,8 @@
             <span class="btn-text">Ver detalhes</span>
           </ion-button>
         </div>
-        <ng-container *ngTemplateOutlet="cutoff"></ng-container>
       </div>
+      <ng-container *ngTemplateOutlet="cutoff"></ng-container>
       <app-mensal-section
         [ano]="anoMensal()"
         [mes]="mes()"
@@ -141,8 +138,7 @@
 
     <section class="dashboard-section" id="indicadores">
       <div class="section-header">
-        <h2>Indicadores</h2>
-        <ng-container *ngTemplateOutlet="cutoff"></ng-container>
+        <h2>Indicadores <span class="section-subtitle">{{ corteSubtitulo() }}</span></h2>
       </div>
       <app-indicadores-section
         [corte]="corte()"
@@ -154,8 +150,7 @@
 
     <section class="dashboard-section" id="resumo-anual">
       <div class="section-header">
-        <h2>Resumo anual <span class="section-subtitle">({{ anoMensal() }})</span></h2>
-        <ng-container *ngTemplateOutlet="cutoff"></ng-container>
+        <h2>Resumo anual <span class="section-subtitle">{{ anualSubtitulo() }}</span></h2>
       </div>
       <app-anual-section
         [ano]="anoMensal()"
@@ -168,8 +163,7 @@
 
     <section class="dashboard-section" id="relatorio-geral">
       <div class="section-header">
-        <h2>Relatório geral</h2>
-        <ng-container *ngTemplateOutlet="cutoff"></ng-container>
+        <h2>Relatório geral <span class="section-subtitle">{{ corteSubtitulo() }}</span></h2>
       </div>
       <app-geral-section
         [corte]="corte()"
@@ -182,8 +176,7 @@
     @if (inflacaoHabilitada()) {
       <section class="dashboard-section" id="analise-inflacionaria">
         <div class="section-header">
-          <h2>Análise inflacionária <span class="section-subtitle">(últimos 12 meses)</span></h2>
-          <ng-container *ngTemplateOutlet="cutoff"></ng-container>
+          <h2>Análise inflacionária <span class="section-subtitle">{{ inflacaoSubtitulo() }}</span></h2>
         </div>
         <app-inflacao-section
           [corte]="corte()"
@@ -217,9 +210,15 @@
   </ion-fab>
 </ion-content>
 
+<!-- Um controle só (antes repetido em cada seção): vale pra Indicadores, Anual, Geral e Inflação,
+     que mostram no subtítulo até quando estão contando. -->
 <ng-template #cutoff>
-  <label class="cutoff-toggle" (click)="$event.preventDefault(); toggleLimitarAteMesSelecionado()">
+  <label
+    class="cutoff-toggle"
+    title="Indicadores, Resumo anual, Relatório geral e Análise inflacionária ignoram o que vem depois deste mês (ex: parcelas futuras)"
+    (click)="$event.preventDefault(); toggleLimitarAteMesSelecionado()"
+  >
     <ion-checkbox [checked]="limitarAteMesSelecionado()" aria-label="Mostrar apenas até o mês selecionado"></ion-checkbox>
-    <span aria-hidden="true">Mostrar apenas até o mês selecionado</span>
+    <span aria-hidden="true">Mostrar apenas até {{ mesAnoRotulo() }}</span>
   </label>
 </ng-template>

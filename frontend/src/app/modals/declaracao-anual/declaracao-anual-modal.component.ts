@@ -24,33 +24,11 @@ import { firstValueFrom } from 'rxjs';
 import { Empresa, EmpresaService } from '../../services/empresa.service';
 import { CurrencyInputDirective } from '../../shared/currency-input.directive';
 import { DownloadFileService } from '../../shared/download-file.service';
-import { httpErrorMessage } from '../../shared/http-error';
+import { httpBlobErrorMessage } from '../../shared/http-error';
 
 /** Ano padrão: o que se declara agora (o anterior), se a empresa já existia nele. */
 export function anoPadraoDeclaracao(aberturaAno: number, hoje = new Date()): number {
   return Math.max(hoje.getFullYear() - 1, aberturaAno);
-}
-
-function readBlobText(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ''));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsText(blob);
-  });
-}
-
-/** Com responseType 'blob', o `detail` do backend chega dentro de um Blob -- converte pra JSON. */
-async function blobErrorToJson(err: unknown): Promise<unknown> {
-  const httpErr = err as { status?: number; error?: unknown } | null;
-  if (httpErr?.error instanceof Blob) {
-    try {
-      return { status: httpErr.status, error: JSON.parse(await readBlobText(httpErr.error)) };
-    } catch {
-      return { status: httpErr.status };
-    }
-  }
-  return err;
 }
 
 /**
@@ -81,7 +59,7 @@ async function blobErrorToJson(err: unknown): Promise<unknown> {
     `
       .form-hint {
         margin: 4px 4px 12px;
-        font-size: 0.8rem;
+        font-size: var(--fs-xs);
         color: var(--app-text-secondary);
       }
     `,
@@ -131,7 +109,7 @@ export class DeclaracaoAnualModalComponent implements OnInit {
       await toast.present();
       await this.modalCtrl.dismiss(null, 'done');
     } catch (err) {
-      this.errorMessage.set(httpErrorMessage(await blobErrorToJson(err), 'Erro ao gerar a declaração.'));
+      this.errorMessage.set(await httpBlobErrorMessage(err, 'Erro ao gerar a declaração.'));
     } finally {
       this.gerando.set(false);
     }

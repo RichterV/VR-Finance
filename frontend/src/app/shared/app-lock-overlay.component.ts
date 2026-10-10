@@ -46,9 +46,7 @@ import { AuthService } from '../core/auth.service';
         position: fixed;
         inset: 0;
         z-index: 100000;
-        background:
-          radial-gradient(circle at 50% 0%, rgba(var(--ion-color-primary-rgb), 0.18), transparent 60%),
-          var(--ion-background-color);
+        background: var(--ion-background-color);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -69,25 +67,22 @@ import { AuthService } from '../core/auth.service';
       .brand-icon {
         width: 56px;
         height: 56px;
-        border-radius: 16px;
+        border-radius: var(--r-md);
         background: var(--ion-color-primary);
         color: var(--ion-color-primary-contrast);
         font-size: 28px;
-        font-weight: 700;
+        font-weight: 600;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 12px 28px rgba(var(--ion-color-primary-rgb), 0.35);
       }
 
       .lock-card {
         width: 100%;
-        background: var(--app-surface-glass);
-        backdrop-filter: blur(12px);
+        background: var(--app-surface);
         border: 1px solid var(--app-surface-border);
-        border-radius: 20px;
+        border-radius: var(--r-md);
         padding: 28px 24px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -114,27 +109,27 @@ import { AuthService } from '../core/auth.service';
 
       h2 {
         margin: 0;
-        font-size: 1.15rem;
-        font-weight: 700;
+        font-size: var(--fs-lg);
+        font-weight: 600;
         color: var(--app-text-primary);
       }
 
       .lock-user {
         margin: 6px 0 0;
         color: var(--app-text-secondary);
-        font-size: 0.9rem;
+        font-size: var(--fs-sm);
       }
 
       .lock-error {
         margin: 14px 0 0;
         color: var(--ion-color-danger);
-        font-size: 0.85rem;
+        font-size: var(--fs-sm);
       }
 
       ion-button {
         width: 100%;
         margin-top: 22px;
-        --border-radius: 12px;
+        --border-radius: var(--r-md);
         font-weight: 600;
       }
 
@@ -142,7 +137,7 @@ import { AuthService } from '../core/auth.service';
         background: none;
         border: none;
         color: var(--app-text-secondary);
-        font-size: 0.85rem;
+        font-size: var(--fs-sm);
         margin-top: 14px;
         cursor: pointer;
         text-decoration: underline;
