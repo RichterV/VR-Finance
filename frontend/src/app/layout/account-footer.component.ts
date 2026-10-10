@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { IonIcon } from '@ionic/angular';
 
 import { CurrentUser } from '../core/auth.service';
+import { UserAvatarComponent } from '../shared/user-avatar.component';
 
 /**
  * Rodapé do menu lateral com o que é da conta e da configuração -- separado da lista de módulos,
@@ -12,11 +13,12 @@ import { CurrentUser } from '../core/auth.service';
  */
 @Component({
   selector: 'app-account-footer',
-  imports: [RouterLink, RouterLinkActive, IonIcon],
+  imports: [RouterLink, RouterLinkActive, IonIcon, UserAvatarComponent],
   template: `
     @if (user(); as u) {
       <button type="button" class="account-card" (click)="perfil.emit()" title="Abrir o Perfil">
-        <span class="avatar" aria-hidden="true">{{ iniciais() }}</span>
+        <!-- Foto de perfil, ou as iniciais enquanto não houver foto. -->
+        <app-user-avatar [version]="u.avatar_version" [initials]="iniciais()" [size]="34"></app-user-avatar>
         <span class="account-text">
           <span class="account-name">{{ nomeCompleto() }}</span>
           <span class="account-sub">{{ u.username }} · {{ u.role === 'master' ? 'Master' : 'Usuário' }}</span>
@@ -68,20 +70,6 @@ import { CurrentUser } from '../core/auth.service';
         &:hover {
           background: var(--app-surface-hover);
         }
-      }
-
-      .avatar {
-        flex-shrink: 0;
-        width: 34px;
-        height: 34px;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        background: rgba(var(--ion-color-primary-rgb), 0.15);
-        color: var(--ion-color-primary);
-        font-size: var(--fs-xs);
-        font-weight: 600;
-        letter-spacing: 0.02em;
       }
 
       .account-text {

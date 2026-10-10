@@ -25,6 +25,8 @@ export interface CurrentUser {
   last_login_at: string | null;
   /** Última atividade no app (requisição autenticada ou login), ISO 8601 com offset; null se nunca usou. */
   last_activity_at: string | null;
+  /** Foto de perfil: muda a cada foto nova (chave de cache em AvatarService); null/ausente = sem foto. */
+  avatar_version?: number | null;
 }
 
 export interface UserPayload {
@@ -152,6 +154,21 @@ export class AuthService {
       .put<CurrentUser>(`${environment.apiUrl}/auth/me/default-cash-percentage`, {
         default_cash_percentage: percentage,
       })
+      .pipe(tap((user) => this.currentUserSignal.set(user)));
+  }
+
+  /** Envia a foto de perfil (já reduzida no aparelho, ver shared/avatar-photo.ts). */
+  uploadAvatar(photo: Blob, filename = 'foto.jpg'): Observable<CurrentUser> {
+    const form = new FormData();
+    form.append('file', photo, filename);
+    return this.http
+      .put<CurrentUser>(`${environment.apiUrl}/auth/me/avatar`, form)
+      .pipe(tap((user) => this.currentUserSignal.set(user)));
+  }
+
+  removeAvatar(): Observable<CurrentUser> {
+    return this.http
+      .delete<CurrentUser>(`${environment.apiUrl}/auth/me/avatar`)
       .pipe(tap((user) => this.currentUserSignal.set(user)));
   }
 

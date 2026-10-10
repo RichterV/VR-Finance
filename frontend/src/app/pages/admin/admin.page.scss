@@ -161,3 +161,17 @@ h2 .count {
   gap: 4px;
   margin-top: 8px;
 }
+
+// Foto de perfil pequena ao lado do nome (só de quem tem foto).
+.name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.user-card-who {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}

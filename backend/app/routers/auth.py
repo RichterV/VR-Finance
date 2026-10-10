@@ -1,14 +1,16 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app import models, schemas
+from app.avatars import MAX_AVATAR_BYTES, AvatarError, avatar_path, normalize_avatar, save_avatar_file
 from app.deps import get_current_user, get_current_user_allow_password_change, get_db, require_master
 from app.login_guard import login_guard
-from app.routers.attachments import delete_all_attachments_for_user
+from app.routers.attachments import delete_all_attachments_for_user, schedule_unlink_after_commit
 from app.security import create_access_token, hash_password, verify_password, verify_password_dummy
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -104,6 +106,70 @@ def update_theme(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+# --- Foto de perfil -------------------------------------------------------------------------------
+# A imagem é normalizada em app/avatars.py (quadrada, 512px, JPEG sem metadados). O arquivo antigo só
+# sai do disco depois do commit; se o commit falhar, o novo é apagado.
+
+
+@router.put("/me/avatar", response_model=schemas.UserOut)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    data = await file.read(MAX_AVATAR_BYTES + 1)
+    try:
+        jpeg = normalize_avatar(data)
+    except AvatarError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    novo = save_avatar_file(jpeg)
+    antigo = current_user.avatar_filename
+    current_user.avatar_filename = novo
+    current_user.avatar_updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    if antigo:
+        schedule_unlink_after_commit(db, avatar_path(antigo))
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        avatar_path(novo).unlink(missing_ok=True)
+        raise
+    db.refresh(current_user)
+    return current_user
+
+
+@router.delete("/me/avatar", response_model=schemas.UserOut)
+def delete_avatar(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.avatar_filename:
+        schedule_unlink_after_commit(db, avatar_path(current_user.avatar_filename))
+    current_user.avatar_filename = None
+    current_user.avatar_updated_at = None
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+def _avatar_response(user: models.User) -> FileResponse:
+    path = avatar_path(user.avatar_filename) if user.avatar_filename else None
+    if not path or not path.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sem foto de perfil")
+    # Privado (só quem está logado); a "versão" na URL do front muda a cada foto nova.
+    return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "private, max-age=86400"})
+
+
+@router.get("/me/avatar")
+def get_my_avatar(current_user: models.User = Depends(get_current_user_allow_password_change)):
+    return _avatar_response(current_user)
+
+
+@router.get("/users/{user_id}/avatar")
+def get_user_avatar(user_id: int, db: Session = Depends(get_db), _master: models.User = Depends(require_master)):
+    return _avatar_response(_get_editable_user(db, user_id))
 
 
 @router.put("/me/password", response_model=schemas.PasswordChangeOut)
@@ -217,5 +283,7 @@ def delete_user(
     db.query(models.NotaFiscal).filter(models.NotaFiscal.user_id == user_id).delete(synchronize_session=False)
     db.query(models.Empresa).filter(models.Empresa.user_id == user_id).delete(synchronize_session=False)
     delete_all_attachments_for_user(db, user_id)
+    if user.avatar_filename:
+        schedule_unlink_after_commit(db, avatar_path(user.avatar_filename))
     db.delete(user)
     db.commit()

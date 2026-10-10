@@ -710,6 +710,14 @@ criar_build_app() {
     fi
     mv -f "$apk_origem" "$apk_destino"
 
+    # O app instalado ja usa o icone (vem do res/ do Android); isto e so pro ARQUIVO .apk no PC: o
+    # gerenciador de arquivos (Nemo) mostra um icone generico de pacote, e o metadado custom-icon do
+    # gio troca pelo icone do app. Funciona no disco NTFS do projeto; sem gio, segue sem ele.
+    local icone_apk="$SCRIPT_DIR/frontend/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png"
+    if command -v gio >/dev/null 2>&1 && [ -f "$icone_apk" ]; then
+        gio set "$apk_destino" metadata::custom-icon "file://$icone_apk" 2>/dev/null || true
+    fi
+
     echo
     echo "============================================"
     echo "APK gerado em:"

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import Boolean, Column, Date, DateTime, Float, ForeignKey, Index, Integer, String, UniqueConstraint
@@ -31,9 +31,20 @@ class User(Base):
     last_activity_at = Column(DateTime, nullable=True)
     # Incrementado a cada troca/reset de senha -- invalida todo token emitido antes (claim "tv").
     token_version = Column(Integer, nullable=False, default=0)
+    # Foto de perfil (app/avatars.py): nome do arquivo em <upload_dir>/avatars/ (uuid4 + .jpg, nunca o
+    # nome enviado) e quando foi trocada (UTC) -- vira a "versão" que o front usa pra não mostrar a antiga.
+    avatar_filename = Column(String, nullable=True)
+    avatar_updated_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     module_rows = relationship("UserModule", cascade="all, delete-orphan")
+
+    @property
+    def avatar_version(self) -> int | None:
+        """Muda a cada foto nova (segundos desde 1970); None = sem foto."""
+        if not self.avatar_filename or not self.avatar_updated_at:
+            return None
+        return int(self.avatar_updated_at.replace(tzinfo=timezone.utc).timestamp())
 
     @property
     def modules(self) -> list[str]:

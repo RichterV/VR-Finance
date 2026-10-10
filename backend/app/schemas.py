@@ -75,6 +75,8 @@ class UserOut(BaseModel):
     theme: str = "salvia"
     last_login_at: Optional[datetime] = None
     last_activity_at: Optional[datetime] = None
+    # Foto de perfil: muda a cada foto nova (o front usa como chave de cache); None = sem foto.
+    avatar_version: Optional[int] = None
 
     class Config:
         from_attributes = True

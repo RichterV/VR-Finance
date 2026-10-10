@@ -27,9 +27,14 @@
         @for (u of users(); track u.id) {
           <div class="user-card">
             <div class="user-card-header">
-              <div class="user-card-name">
-                <strong>{{ u.first_name }} {{ u.last_name }}</strong>
-                <span class="user-card-username">{{ u.username }}</span>
+              <div class="user-card-who">
+                @if (u.avatar_version) {
+                  <app-user-avatar [userId]="u.id" [version]="u.avatar_version" [size]="32"></app-user-avatar>
+                }
+                <div class="user-card-name">
+                  <strong>{{ u.first_name }} {{ u.last_name }}</strong>
+                  <span class="user-card-username">{{ u.username }}</span>
+                </div>
               </div>
               <span class="role-badge" [class.master]="u.role === 'master'">{{ u.role === 'master' ? 'Master' : 'Usuário' }}</span>
             </div>
@@ -102,7 +107,14 @@
             <tbody>
               @for (u of users(); track u.id) {
                 <tr>
-                  <td>{{ u.first_name }} {{ u.last_name }}</td>
+                  <td>
+                    <span class="name-cell">
+                      @if (u.avatar_version) {
+                        <app-user-avatar [userId]="u.id" [version]="u.avatar_version" [size]="28"></app-user-avatar>
+                      }
+                      {{ u.first_name }} {{ u.last_name }}
+                    </span>
+                  </td>
                   <td>
                     {{ u.username }}
                     @if (u.must_change_password) {

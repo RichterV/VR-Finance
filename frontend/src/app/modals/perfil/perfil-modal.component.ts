@@ -22,10 +22,13 @@ import { close, logOutOutline } from 'ionicons/icons';
 
 import { AppLockService, LOCK_TIMEOUT_OPTIONS } from '../../core/app-lock.service';
 import { AuthService } from '../../core/auth.service';
+import { markExpectedExternalActivity } from '../../core/expected-exit';
 import { ThemeService } from '../../core/theme.service';
+import { prepareAvatarPhoto } from '../../shared/avatar-photo';
 import { httpErrorMessage } from '../../shared/http-error';
 import { CATEGORY_SELECT_POPOVER_OPTIONS } from '../../shared/select-popover';
 import { THEMES, ThemeKey } from '../../shared/themes';
+import { UserAvatarComponent } from '../../shared/user-avatar.component';
 
 function passwordsMatchValidator(newControlName: string, confirmControlName: string) {
   return (group: AbstractControl): ValidationErrors | null => {
@@ -128,9 +131,16 @@ function passwordsMatchValidator(newControlName: string, confirmControlName: str
 
       .account-head {
         display: flex;
+        align-items: center;
+        gap: var(--sp-4);
+        padding: var(--sp-1) 0 var(--sp-2);
+      }
+
+      .account-head-text {
+        display: flex;
         flex-direction: column;
         gap: 2px;
-        padding: var(--sp-1) 0 var(--sp-2);
+        min-width: 0;
 
         strong {
           font-size: var(--fs-lg);
@@ -140,6 +150,17 @@ function passwordsMatchValidator(newControlName: string, confirmControlName: str
         span {
           font-size: var(--fs-sm);
           color: var(--app-text-secondary);
+        }
+      }
+
+      .foto-acoes {
+        display: flex;
+        flex-wrap: wrap;
+        margin-left: -12px;
+
+        ion-button {
+          --padding-start: 12px;
+          --padding-end: 12px;
         }
       }
 
@@ -178,6 +199,7 @@ function passwordsMatchValidator(newControlName: string, confirmControlName: str
     IonSelect,
     IonSelectOption,
     IonText,
+    UserAvatarComponent,
   ],
 })
 export class PerfilModalComponent implements OnInit {
@@ -189,6 +211,17 @@ export class PerfilModalComponent implements OnInit {
   readonly lockTimeout = signal<number | null>(null);
   readonly lockOptions = LOCK_TIMEOUT_OPTIONS;
   readonly selectPopoverOptions = CATEGORY_SELECT_POPOVER_OPTIONS;
+
+  /** Foto de perfil: enviando/removendo e a mensagem de erro do servidor (ex: formato não suportado). */
+  readonly fotoBusy = signal(false);
+  readonly fotoErro = signal<string | null>(null);
+  readonly iniciais = computed(() => {
+    const u = this.auth.currentUser();
+    if (!u) return '';
+    const partes = [u.first_name, u.last_name].filter(Boolean);
+    const letras = partes.length ? partes.map((p) => p[0]) : [u.username[0]];
+    return letras.join('').slice(0, 2).toUpperCase();
+  });
 
   readonly passwordSaving = signal(false);
   readonly passwordError = signal<string | null>(null);
@@ -222,6 +255,52 @@ export class PerfilModalComponent implements OnInit {
     private readonly appLock: AppLockService,
   ) {
     addIcons({ close, logOutOutline });
+  }
+
+  escolherFoto(input: HTMLInputElement): void {
+    // Câmera/galeria tiram o app do primeiro plano: sem isto, o bloqueio por digital pediria a
+    // digital na volta (core/expected-exit.ts).
+    markExpectedExternalActivity();
+    input.value = '';
+    input.click();
+  }
+
+  async onFotoEscolhida(event: Event): Promise<void> {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.fotoErro.set(null);
+    this.fotoBusy.set(true);
+    const foto = await prepareAvatarPhoto(file);
+    this.auth.uploadAvatar(foto, foto === file ? file.name : 'foto.jpg').subscribe({
+      next: () => {
+        this.fotoBusy.set(false);
+        void this.toast('Foto atualizada.');
+      },
+      error: (err) => {
+        this.fotoBusy.set(false);
+        this.fotoErro.set(httpErrorMessage(err, 'Não foi possível salvar a foto. Tente de novo.'));
+      },
+    });
+  }
+
+  removerFoto(): void {
+    this.fotoErro.set(null);
+    this.fotoBusy.set(true);
+    this.auth.removeAvatar().subscribe({
+      next: () => {
+        this.fotoBusy.set(false);
+        void this.toast('Foto removida.');
+      },
+      error: (err) => {
+        this.fotoBusy.set(false);
+        this.fotoErro.set(httpErrorMessage(err, 'Não foi possível remover a foto. Tente de novo.'));
+      },
+    });
+  }
+
+  private async toast(message: string): Promise<void> {
+    const toast = await this.toastCtrl.create({ message, duration: 2000, color: 'success' });
+    await toast.present();
   }
 
   escolherTema(tema: ThemeKey): void {

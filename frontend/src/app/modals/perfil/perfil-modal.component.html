@@ -12,9 +12,27 @@
 <ion-content [fullscreen]="true" class="ion-padding">
   @if (auth.currentUser(); as user) {
     <div class="account-head">
-      <strong>{{ user.first_name }} {{ user.last_name }}</strong>
-      <span>{{ user.username }} · {{ user.role === 'master' ? 'Master' : 'Usuário' }}</span>
+      <app-user-avatar [version]="user.avatar_version" [initials]="iniciais()" [size]="72" alt="Sua foto de perfil"></app-user-avatar>
+      <div class="account-head-text">
+        <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+        <span>{{ user.username }} · {{ user.role === 'master' ? 'Master' : 'Usuário' }}</span>
+        <div class="foto-acoes">
+          <ion-button size="small" fill="clear" [disabled]="fotoBusy()" (click)="escolherFoto(fotoInput)">
+            {{ fotoBusy() ? 'Enviando...' : user.avatar_version ? 'Trocar foto' : 'Adicionar foto' }}
+          </ion-button>
+          @if (user.avatar_version) {
+            <ion-button size="small" fill="clear" color="medium" [disabled]="fotoBusy()" (click)="removerFoto()">Remover</ion-button>
+          }
+        </div>
+      </div>
+      <!-- image/* sem capture: no celular o Android oferece câmera e galeria no mesmo seletor. -->
+      <input #fotoInput type="file" accept="image/*" hidden (change)="onFotoEscolhida($event)" />
     </div>
+    @if (fotoErro()) {
+      <ion-text color="danger">
+        <p>{{ fotoErro() }}</p>
+      </ion-text>
+    }
   }
 
   <h2 class="perfil-section">Meus dados</h2>

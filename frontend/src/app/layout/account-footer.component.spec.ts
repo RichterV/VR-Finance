@@ -1,3 +1,4 @@
+import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
@@ -23,7 +24,7 @@ function user(overrides: Partial<CurrentUser> = {}): CurrentUser {
 
 describe('AccountFooterComponent', () => {
   function setup(u: CurrentUser | null) {
-    TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([])] });
+    TestBed.configureTestingModule({ providers: [provideIonicAngular(), provideRouter([]), provideHttpClient()] });
     const fixture = TestBed.createComponent(AccountFooterComponent);
     fixture.componentRef.setInput('user', u);
     fixture.detectChanges();
@@ -32,7 +33,7 @@ describe('AccountFooterComponent', () => {
 
   it('shows the full name, initials and role', () => {
     const el: HTMLElement = setup(user()).nativeElement;
-    expect(el.querySelector('.avatar')?.textContent?.trim()).toBe('MS');
+    expect(el.querySelector('.avatar-initials')?.textContent?.trim()).toBe('MS');
     expect(el.querySelector('.account-name')?.textContent).toContain('Maria Souza');
     expect(el.querySelector('.account-sub')?.textContent).toContain('maria · Usuário');
   });

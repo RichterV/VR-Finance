@@ -104,6 +104,25 @@ describe('AuthService', () => {
     expect(service.currentUser()).toEqual(user);
   });
 
+  it('uploadAvatar sends the photo as multipart and updates the current user', () => {
+    const foto = new Blob(['x'], { type: 'image/jpeg' });
+    service.uploadAvatar(foto).subscribe();
+    const req = httpMock.expectOne(`${environment.apiUrl}/auth/me/avatar`);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body instanceof FormData).toBe(true);
+    expect((req.request.body as FormData).get('file')).toBeTruthy();
+    req.flush({ id: 1, username: 'ana', role: 'user', first_name: 'Ana', last_name: 'S', modules: [], avatar_version: 123 });
+    expect(service.currentUser()?.avatar_version).toBe(123);
+  });
+
+  it('removeAvatar sends DELETE and clears the version', () => {
+    service.removeAvatar().subscribe();
+    const req = httpMock.expectOne(`${environment.apiUrl}/auth/me/avatar`);
+    expect(req.request.method).toBe('DELETE');
+    req.flush({ id: 1, username: 'ana', role: 'user', first_name: 'Ana', last_name: 'S', modules: [], avatar_version: null });
+    expect(service.currentUser()?.avatar_version).toBeNull();
+  });
+
   it('createUser/updateUser send the enabled modules, omitting a blank password on update', () => {
     const payload = { username: 'x', first_name: 'A', last_name: 'B', modules: ['ferramentas' as const] };
     service.createUser({ ...payload, password: 'senha123' }).subscribe();

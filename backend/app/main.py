@@ -72,6 +72,12 @@ def _migrate_schema() -> None:
             conn.execute(text("ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'salvia'"))
             conn.commit()
 
+        if "avatar_filename" not in user_cols:
+            # Foto de perfil (app/avatars.py): ninguém tem foto até cadastrar uma.
+            conn.execute(text("ALTER TABLE users ADD COLUMN avatar_filename TEXT"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN avatar_updated_at DATETIME"))
+            conn.commit()
+
         if "last_login_at" not in user_cols:
             # Sem backfill: não há registro de logins anteriores, fica null ("Nunca") até o próximo.
             conn.execute(text("ALTER TABLE users ADD COLUMN last_login_at DATETIME"))

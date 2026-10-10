@@ -19,6 +19,7 @@ import { AuthService, CurrentUser } from '../../core/auth.service';
 import { ModuleKey, OPTIONAL_MODULES } from '../../core/modules';
 import { isDesktopViewport, slideInFromRight, slideOutToRight, SIDE_MODAL_CSS_CLASS } from '../../modals/side-modal.animations';
 import { extractHttpErrorMessage } from '../../shared/attachment-types';
+import { UserAvatarComponent } from '../../shared/user-avatar.component';
 
 const MODULE_LABELS = new Map(OPTIONAL_MODULES.map((m) => [m.key, m.label]));
 
@@ -44,7 +45,7 @@ export function formatLastActivity(iso: string | null): string {
   selector: 'app-admin',
   templateUrl: './admin.page.html',
   styleUrls: ['./admin.page.scss'],
-  imports: [IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonButton, IonIcon, IonContent],
+  imports: [IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonButton, IonIcon, IonContent, UserAvatarComponent],
 })
 export class AdminPage implements OnInit {
   readonly users = signal<CurrentUser[]>([]);

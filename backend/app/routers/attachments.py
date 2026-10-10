@@ -46,6 +46,11 @@ def _schedule_unlink(db: Session, path: Path) -> None:
     db.info.setdefault(_PENDING_UNLINK_KEY, []).append(path)
 
 
+def schedule_unlink_after_commit(db: Session, path: Path) -> None:
+    """Apaga `path` do disco só se o próximo commit da sessão der certo (usado também pela foto de perfil)."""
+    _schedule_unlink(db, path)
+
+
 def safe_filename(name: str | None, fallback: str) -> str:
     """Nome original sem diretórios (nada de "../"), sem caracteres de controle e com tamanho limitado
     -- vai pro Content-Disposition do download e pro nome do arquivo dentro do zip da exportação."""
