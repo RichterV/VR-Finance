@@ -5,7 +5,8 @@ import { CHART_GRID_COLOR, CHART_TEXT_COLOR } from '../../home/dashboard-charts'
 import { VehiclesResumo } from '../../services/veiculos.service';
 import { monthAxisLabels } from '../../shared/month-axis';
 
-const SERIES_COLORS = ['#60a5fa', '#fb923c', '#34d399', '#f472b6', '#a78bfa', '#fbbf24'];
+// Uma cor por veículo, tiradas da mesma paleta dos gráficos da Home (theme/variables.scss, --chart-*).
+const SERIES_COLORS = ['#86a9cc', '#d39a6a', '#7fb59a', '#b39cc8', '#d4bb6a', '#b9d8c4'];
 
 export function buildVeiculosChartData(resumo: VehiclesResumo | null): ChartConfiguration<'line'>['data'] {
   if (!resumo) {

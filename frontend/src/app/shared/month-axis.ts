@@ -36,7 +36,7 @@ export function monthTooltipTitle(labels: readonly unknown[], index: number): st
   return mes;
 }
 
-const DIVIDER_COLOR = 'rgba(148, 163, 184, 0.4)';
+const DIVIDER_COLOR = 'rgba(153, 164, 158, 0.4)';
 
 /** Linha vertical tracejada entre dezembro e janeiro, nos gráficos com `monthAxisLabels`. */
 export const yearDividerPlugin: Plugin = {

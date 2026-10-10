@@ -64,8 +64,8 @@ import { IonSkeletonText } from '@ionic/angular';
         gap: 12px;
       }
       ion-skeleton-text {
-        --background: rgba(148, 163, 184, 0.12);
-        --background-rgb: 148, 163, 184;
+        --background: rgba(var(--app-muted-rgb), 0.12);
+        --background-rgb: 153, 164, 158;
         margin: 0;
         border-radius: var(--r-sm);
       }

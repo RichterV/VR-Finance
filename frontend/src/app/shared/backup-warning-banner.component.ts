@@ -61,7 +61,7 @@ export function resetBackupWarningSession(): void {
         gap: 10px;
         padding: 10px 16px;
         background: linear-gradient(90deg, var(--ion-color-warning-shade), var(--ion-color-danger));
-        color: #fff;
+        color: var(--ion-color-danger-contrast);
         font-size: var(--fs-sm);
         font-weight: 600;
         text-align: center;

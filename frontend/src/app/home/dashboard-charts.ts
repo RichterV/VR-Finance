@@ -5,21 +5,23 @@ import { CaixaMes, EvolucaoMes, InflacaoPonto } from '../services/resumo.service
 import { linearTrend } from '../shared/linear-regression';
 import { monthAxisLabels } from '../shared/month-axis';
 
-// Paleta ajustada para contraste sobre fundo Slate Dark (#0f172a).
-export const COLOR_ESSENCIAL = '#60a5fa';
-export const COLOR_ESSENCIAL_TENDENCIA = 'rgba(96, 165, 250, 0.35)';
-export const COLOR_NAO_ESSENCIAL = '#fb923c';
-export const COLOR_NAO_ESSENCIAL_TENDENCIA = 'rgba(251, 146, 60, 0.35)';
-export const COLOR_CAIXA_REAL = '#16a34a';
-export const COLOR_RECEITA = '#fbbf24';
-export const COLOR_CAIXA_PRETENDIDO = '#86efac';
-// Violeta deliberadamente não-verde -- é a linha de razão sobre as 3 colunas verde/dourado/verde-claro
-// do gráfico "Caixa pretendido vs. real"; forçar verde aqui destruiria a diferenciação da série.
-export const COLOR_PROPORCAO = '#a78bfa';
-export const COLOR_INFLACAO = '#f87171';
+// Cores das séries -- paleta "Sálvia suave" (2026-10-10), as mesmas 6 cores em todos os gráficos do
+// app e nos tokens --chart-* de theme/variables.scss. Todas passam de 3:1 sobre o cartão (#1b201e).
+export const COLOR_ESSENCIAL = '#86a9cc';
+export const COLOR_ESSENCIAL_TENDENCIA = 'rgba(134, 169, 204, 0.35)';
+export const COLOR_NAO_ESSENCIAL = '#d39a6a';
+export const COLOR_NAO_ESSENCIAL_TENDENCIA = 'rgba(211, 154, 106, 0.35)';
+export const COLOR_CAIXA_REAL = '#7fb59a';
+export const COLOR_RECEITA = '#d4bb6a';
+export const COLOR_CAIXA_PRETENDIDO = '#b9d8c4';
+// Lilás deliberadamente não-verde -- é a linha de razão sobre as colunas de receita/caixa do gráfico
+// "Caixa pretendido vs. real"; verde aqui destruiria a diferenciação da série.
+export const COLOR_PROPORCAO = '#b39cc8';
+// Gastos/inflação (linha da inflação, mini-gráfico de "Gastos do mês"): o mesmo tom do negativo.
+export const COLOR_INFLACAO = '#d98c84';
 
-export const CHART_TEXT_COLOR = '#94a3b8';
-export const CHART_GRID_COLOR = 'rgba(148, 163, 184, 0.12)';
+export const CHART_TEXT_COLOR = '#99a49e';
+export const CHART_GRID_COLOR = 'rgba(153, 164, 158, 0.12)';
 
 export function formatComma(value: number): string {
   return value.toFixed(1).replace('.', ',');

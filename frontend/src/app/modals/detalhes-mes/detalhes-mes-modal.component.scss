@@ -1,7 +1,9 @@
 @use "../../../theme/mixins" as ds;
 
 // Cards, stat-card e cores do dashboard vêm do global (.dashboard em theme/_dashboard.scss).
+// Números com largura fixa no modal inteiro (valores, %, datas alinham em coluna).
 .detalhes {
+  font-variant-numeric: tabular-nums;
   max-width: 1100px;
   margin: 0 auto;
   display: flex;
@@ -39,7 +41,6 @@ h2 {
 }
 
 .num {
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -120,11 +121,11 @@ h2 {
 
 .seg-gastos { background: var(--ion-color-danger); }
 .seg-caixa { background: var(--ion-color-primary); }
-.seg-livre { background: rgba(148, 163, 184, 0.35); }
-.comp-recorrentes { background: #60a5fa; }
+.seg-livre { background: rgba(var(--app-muted-rgb), 0.35); }
+.comp-recorrentes { background: var(--chart-essencial); }
 .comp-parcelas { background: var(--ion-color-warning); }
 .comp-essenciais { background: var(--ion-color-success); }
-.comp-nao-essenciais { background: #a78bfa; }
+.comp-nao-essenciais { background: var(--chart-razao); }
 
 .dot {
   display: inline-block;
@@ -211,7 +212,7 @@ h2 {
 }
 
 .cat-nome { flex: 1; }
-.cat-valor { font-weight: 600; font-variant-numeric: tabular-nums; }
+.cat-valor { font-weight: 600; }
 
 .cat-bar {
   height: 6px;
@@ -259,7 +260,7 @@ h2 {
     gap: 2px;
   }
 
-  strong { font-size: var(--fs-lg); font-variant-numeric: tabular-nums; }
+  strong { font-size: var(--fs-lg); }
 }
 
 // Lançamentos
@@ -350,7 +351,7 @@ h2 {
   min-height: 40px;
   font-size: var(--fs-sm);
 
-  & + & { border-top: 1px solid rgba(51, 65, 85, 0.5); }
+  & + & { border-top: 1px solid var(--app-surface-border); }
 
   .data { color: var(--app-text-secondary); }
 

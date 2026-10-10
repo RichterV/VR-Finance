@@ -175,7 +175,7 @@
   position: relative;
   height: 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--app-surface-hover);
 }
 
 .savings-fill {
@@ -327,7 +327,7 @@
 }
 
 .bar-media {
-  background: rgba(148, 163, 184, 0.35);
+  background: rgba(var(--app-muted-rgb), 0.35);
 }
 
 .bar-valor.bad {
@@ -374,7 +374,7 @@
 }
 
 .sw-media {
-  background: rgba(148, 163, 184, 0.35);
+  background: rgba(var(--app-muted-rgb), 0.35);
 }
 
 .row,

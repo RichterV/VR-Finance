@@ -19,7 +19,7 @@
   transition: background 0.15s ease;
 
   &:hover:not(:disabled) {
-    background: rgba(34, 197, 94, 0.12);
+    background: var(--app-tint-positive);
   }
 
   &:disabled {

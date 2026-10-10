@@ -324,7 +324,7 @@
     display: block;
     height: 6px;
     border-radius: 3px;
-    background: rgba(148, 163, 184, 0.12);
+    background: rgba(var(--app-muted-rgb), 0.12);
     cursor: pointer;
   }
 

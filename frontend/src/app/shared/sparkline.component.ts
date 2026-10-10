@@ -43,7 +43,7 @@ import { Component, computed, input } from '@angular/core';
 })
 export class SparklineComponent {
   readonly values = input.required<(number | null)[]>();
-  readonly color = input('#22c55e');
+  readonly color = input('#7fb59a');
 
   readonly width = 100;
   readonly height = 28;

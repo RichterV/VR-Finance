@@ -476,7 +476,7 @@ ion-input.input-fill-outline.sc-ion-input-md-h {
 
 ion-select.select-fill-outline:hover,
 ion-input.input-fill-outline.sc-ion-input-md-h:hover {
-  --border-color: rgba(148, 163, 184, 0.4);
+  --border-color: rgba(var(--app-muted-rgb), 0.4);
 }
 
 @media (max-width: 480px) {
