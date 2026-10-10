@@ -18,7 +18,7 @@
           >
           <span class="kpi-context">Do que entrou, quanto sobrou — média dos últimos 3 meses</span>
           @if (!valoresOcultos()) {
-            <app-sparkline [values]="poupancaSerie()" [color]="colors.poupanca"></app-sparkline>
+            <app-sparkline [values]="poupancaSerie()" [color]="colors().poupanca"></app-sparkline>
           }
         </div>
 
@@ -89,7 +89,7 @@
             }
           </span>
           @if (!valoresOcultos()) {
-            <app-sparkline [values]="essencialSerie()" [color]="colors.essencial"></app-sparkline>
+            <app-sparkline [values]="essencialSerie()" [color]="colors().essencial"></app-sparkline>
           }
         </div>
       </div>

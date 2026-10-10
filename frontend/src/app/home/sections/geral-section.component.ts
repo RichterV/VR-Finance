@@ -6,11 +6,11 @@ import { SectionSkeletonComponent } from '../../shared/section-skeleton.componen
 import { Corte, ResumoGeral, ResumoService } from '../../services/resumo.service';
 import { describePorAno, describePorMes, describeTotaisGerais } from '../chart-descriptions';
 import {
-  GERAL_CHART_OPTIONS,
-  TOTAIS_GERAIS_CHART_OPTIONS,
   buildPorAnoChartData,
   buildPorMesChartData,
   buildTotaisGeraisChartData,
+  geralChartOptions,
+  totaisGeraisChartOptions,
 } from '../relatorio-geral-charts';
 import { SectionLoader } from './section-loader';
 import { maskChartOptions } from './value-mask';
@@ -34,8 +34,8 @@ export class GeralSectionComponent {
   readonly porAnoChartData = computed(() => buildPorAnoChartData(this.resumo.data()?.anos ?? []));
   readonly totaisGeraisChartData = computed(() => buildTotaisGeraisChartData(this.resumo.data()));
   readonly porMesChartData = computed(() => buildPorMesChartData(this.resumo.data()));
-  readonly geralOptions = computed(() => maskChartOptions(GERAL_CHART_OPTIONS, ['y'], this.valoresOcultos()));
-  readonly totaisOptions = computed(() => maskChartOptions(TOTAIS_GERAIS_CHART_OPTIONS, ['y'], this.valoresOcultos()));
+  readonly geralOptions = computed(() => maskChartOptions(geralChartOptions(), ['y'], this.valoresOcultos()));
+  readonly totaisOptions = computed(() => maskChartOptions(totaisGeraisChartOptions(), ['y'], this.valoresOcultos()));
   readonly labels = computed(() => ({
     totais: describeTotaisGerais(this.resumo.data(), this.valoresOcultos()),
     porAno: describePorAno(this.resumo.data(), this.valoresOcultos()),

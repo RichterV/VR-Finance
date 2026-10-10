@@ -1,12 +1,15 @@
 import '../../shared/chart-setup';
 import { ChartConfiguration } from 'chart.js';
 
-import { CHART_GRID_COLOR, CHART_TEXT_COLOR } from '../../home/dashboard-charts';
 import { VehiclesResumo } from '../../services/veiculos.service';
 import { monthAxisLabels } from '../../shared/month-axis';
+import { chartColors } from '../../shared/themes';
 
-// Uma cor por veículo, tiradas da mesma paleta dos gráficos da Home (theme/variables.scss, --chart-*).
-const SERIES_COLORS = ['#86a9cc', '#d39a6a', '#7fb59a', '#b39cc8', '#d4bb6a', '#b9d8c4'];
+// Uma cor por veículo, na ordem da paleta de gráficos do tema ativo (shared/themes.ts).
+function seriesColors(): string[] {
+  const c = chartColors();
+  return [c.essencial, c.naoEssencial, c.caixaReal, c.razao, c.receita, c.caixaPretendido];
+}
 
 export function buildVeiculosChartData(resumo: VehiclesResumo | null): ChartConfiguration<'line'>['data'] {
   if (!resumo) {
@@ -21,7 +24,8 @@ export function buildVeiculosChartData(resumo: VehiclesResumo | null): ChartConf
       }),
     ),
     datasets: resumo.series.map((serie, i) => {
-      const color = SERIES_COLORS[i % SERIES_COLORS.length];
+      const cores = seriesColors();
+      const color = cores[i % cores.length];
       return {
         label: serie.vehicle_name,
         data: serie.valores,
@@ -37,18 +41,21 @@ export function buildVeiculosChartData(resumo: VehiclesResumo | null): ChartConf
   };
 }
 
-export const VEICULOS_CHART_OPTIONS: ChartConfiguration<'line'>['options'] = {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: { mode: 'index', intersect: false },
-  scales: {
-    x: { grid: { display: false }, ticks: { color: CHART_TEXT_COLOR } },
-    y: { grid: { color: CHART_GRID_COLOR }, ticks: { color: CHART_TEXT_COLOR } },
-  },
-  plugins: {
-    legend: {
-      position: 'top',
-      labels: { usePointStyle: true, color: CHART_TEXT_COLOR },
+export function veiculosChartOptions(): ChartConfiguration<'line'>['options'] {
+  const c = chartColors();
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: c.texto } },
+      y: { grid: { color: c.grade }, ticks: { color: c.texto } },
     },
-  },
-};
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: { usePointStyle: true, color: c.texto },
+      },
+    },
+  };
+}

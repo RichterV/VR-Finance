@@ -32,7 +32,7 @@ import { MESES_COMPLETOS } from '../../shared/months';
 import { DEFAULT_SORT_KEY, SortOption, SortState, sortItems, toggleSortState, UNSORTED } from '../../shared/sortable';
 import { SortSelectComponent } from '../../shared/sort-select.component';
 import { SortThComponent } from '../../shared/sort-th.component';
-import { buildVeiculosChartData, VEICULOS_CHART_OPTIONS } from './veiculos-chart';
+import { buildVeiculosChartData, veiculosChartOptions } from './veiculos-chart';
 import { UndoDeleteService } from '../../shared/undo-delete.service';
 
 function formatBRL(value: number): string {
@@ -115,7 +115,8 @@ export class VeiculosPage {
     const nomes = resumo?.veiculos.map((v) => v.vehicle_name).join(', ') ?? '';
     return `Gráfico de linhas: gasto mensal com manutenção por veículo nos últimos ${resumo?.meses.length ?? 12} meses${nomes ? ` (${nomes})` : ''}.`;
   });
-  readonly chartOptions = VEICULOS_CHART_OPTIONS;
+  // computed: as cores dos eixos/legenda seguem o tema ativo
+  readonly chartOptions = computed(() => veiculosChartOptions());
 
   constructor(
     private readonly veiculosService: VeiculosService,

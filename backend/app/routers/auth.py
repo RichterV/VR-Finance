@@ -94,6 +94,18 @@ def update_default_cash_percentage(
     return current_user
 
 
+@router.put("/me/theme", response_model=schemas.UserOut)
+def update_theme(
+    payload: schemas.ThemeUpdate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    current_user.theme = payload.theme
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
 @router.put("/me/password", response_model=schemas.PasswordChangeOut)
 def change_password(
     request: Request,

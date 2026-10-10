@@ -9,7 +9,7 @@ import { ErrorStateComponent } from '../../shared/error-state.component';
 import { SectionSkeletonComponent } from '../../shared/section-skeleton.component';
 import { Corte, ResumoAnual, ResumoService } from '../../services/resumo.service';
 import { describeCombo, describeEvolucao } from '../chart-descriptions';
-import { COMBO_CHART_OPTIONS, LINE_CHART_OPTIONS, buildComboChartData, buildLineChartData } from '../dashboard-charts';
+import { buildComboChartData, buildLineChartData, comboChartOptions, lineChartOptions } from '../dashboard-charts';
 import { PercentuaisItensComponent } from './percentuais-itens.component';
 import { SectionLoader } from './section-loader';
 import { maskChartOptions, maskCount, maskCurrency, maskPercent } from './value-mask';
@@ -33,9 +33,9 @@ export class AnualSectionComponent {
   readonly resumo = new SectionLoader<ResumoAnual>(inject(DestroyRef), () => this.settled.emit());
 
   readonly lineChartData = computed(() => buildLineChartData(this.resumo.data()?.evolucao_12_meses ?? []));
-  readonly lineChartOptions = computed(() => maskChartOptions(LINE_CHART_OPTIONS, ['y'], this.valoresOcultos()));
+  readonly lineChartOptions = computed(() => maskChartOptions(lineChartOptions(), ['y'], this.valoresOcultos()));
   readonly comboChartData = computed(() => buildComboChartData(this.resumo.data()?.caixa_pretendido_vs_real ?? []));
-  readonly comboChartOptions = computed(() => maskChartOptions(COMBO_CHART_OPTIONS, ['y', 'y1'], this.valoresOcultos()));
+  readonly comboChartOptions = computed(() => maskChartOptions(comboChartOptions(), ['y', 'y1'], this.valoresOcultos()));
   readonly lineChartLabel = computed(() => describeEvolucao(this.resumo.data()?.evolucao_12_meses ?? [], this.valoresOcultos()));
   readonly comboChartLabel = computed(() =>
     describeCombo(this.resumo.data()?.caixa_pretendido_vs_real ?? [], this.valoresOcultos()),

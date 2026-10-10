@@ -11,6 +11,7 @@
 
 @use "./theme/mixins" as ds;
 @use "./theme/dashboard";
+@use "./theme/temas";
 
 /* Core CSS required for Ionic components to work properly */
 @import "@ionic/angular/css/core.css";

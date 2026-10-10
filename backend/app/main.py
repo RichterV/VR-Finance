@@ -67,6 +67,11 @@ def _migrate_schema() -> None:
             conn.execute(text("ALTER TABLE users ADD COLUMN default_cash_percentage REAL NOT NULL DEFAULT 50"))
             conn.commit()
 
+        if "theme" not in user_cols:
+            # Todo mundo começa no tema padrão (Sálvia suave), o que já estava aplicado pra todos.
+            conn.execute(text("ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'salvia'"))
+            conn.commit()
+
         if "last_login_at" not in user_cols:
             # Sem backfill: não há registro de logins anteriores, fica null ("Nunca") até o próximo.
             conn.execute(text("ALTER TABLE users ADD COLUMN last_login_at DATETIME"))

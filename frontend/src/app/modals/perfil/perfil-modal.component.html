@@ -42,6 +42,35 @@
     </ion-button>
   </form>
 
+  <h2 class="perfil-section">Aparência</h2>
+  <div class="tema-grid" role="group" aria-label="Tema do app">
+    @for (t of temas; track t.key) {
+      <button
+        type="button"
+        class="tema"
+        [class.ativo]="theme.current() === t.key"
+        [attr.aria-pressed]="theme.current() === t.key"
+        [title]="t.descricao"
+        (click)="escolherTema(t.key)"
+      >
+        <span class="tema-amostra" aria-hidden="true" [style.background]="t.amostra.fundo">
+          <span class="tema-cartao" [style.background]="t.amostra.cartao">
+            <span class="tema-barra" [style.background]="t.amostra.marca"></span>
+            <span class="tema-ponto" [style.background]="t.amostra.positivo"></span>
+            <span class="tema-ponto" [style.background]="t.amostra.negativo"></span>
+          </span>
+        </span>
+        <span class="tema-nome">{{ t.nome }}</span>
+      </button>
+    }
+  </div>
+  <p class="tema-descricao">{{ temaDescricao() }}</p>
+  @if (temaErro()) {
+    <ion-text color="danger">
+      <p>{{ temaErro() }}</p>
+    </ion-text>
+  }
+
   <h2 class="perfil-section">Trocar senha</h2>
   <form [formGroup]="passwordForm" (ngSubmit)="submitPasswordChange()">
     <ion-item>

@@ -20,6 +20,14 @@
 </head>
 
 <body>
+  <!-- Aplica o último tema do aparelho antes do app carregar (sem piscar o tema padrão). Mesma
+       chave do ThemeService (core/theme.service.ts); um valor inválido só não casa com nenhum tema. -->
+  <script>
+    try {
+      var tema = localStorage.getItem('vrfinance_tema');
+      if (tema) document.documentElement.setAttribute('data-tema', tema);
+    } catch (e) {}
+  </script>
   <app-root></app-root>
 </body>
 

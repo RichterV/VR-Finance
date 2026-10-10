@@ -19,6 +19,8 @@ export interface CurrentUser {
   must_change_password: boolean;
   /** % de caixa pré-selecionado em "Adicionar receita" (0–100). */
   default_cash_percentage: number;
+  /** Tema visual escolhido no Perfil (chave de shared/themes.ts); ausente = tema padrão. */
+  theme?: string;
   /** Último login bem-sucedido (ISO 8601 com offset), null se nunca logou. */
   last_login_at: string | null;
   /** Última atividade no app (requisição autenticada ou login), ISO 8601 com offset; null se nunca usou. */
@@ -128,6 +130,20 @@ export class AuthService {
           if (oldUsername) void renameSavedCredentials(oldUsername, res.user.username);
         }),
       );
+  }
+
+  /**
+   * Salva o tema do usuário logado. Não usa a resposta pra atualizar o usuário: o ThemeService já
+   * aplicou e anotou a escolha na hora (com toques seguidos, uma resposta atrasada voltaria o tema).
+   */
+  updateTheme(theme: string): Observable<CurrentUser> {
+    return this.http.put<CurrentUser>(`${environment.apiUrl}/auth/me/theme`, { theme });
+  }
+
+  /** Atualiza campos do usuário em memória (sem ir ao servidor). */
+  patchCurrentUser(changes: Partial<CurrentUser>): void {
+    const user = this.currentUserSignal();
+    if (user) this.currentUserSignal.set({ ...user, ...changes });
   }
 
   /** Salva o % de caixa que "Adicionar receita" passa a usar como ponto de partida. */

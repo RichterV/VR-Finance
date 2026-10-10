@@ -7,7 +7,7 @@ import { ErrorStateComponent } from '../../shared/error-state.component';
 import { SectionSkeletonComponent } from '../../shared/section-skeleton.component';
 import { Corte, ResumoInflacao, ResumoService } from '../../services/resumo.service';
 import { describeInflacao } from '../chart-descriptions';
-import { INFLACAO_CHART_OPTIONS, buildInflacaoChartData } from '../dashboard-charts';
+import { buildInflacaoChartData, inflacaoChartOptions } from '../dashboard-charts';
 import { SectionLoader } from './section-loader';
 import { maskChartOptions } from './value-mask';
 
@@ -43,7 +43,7 @@ export class InflacaoSectionComponent {
     return this.janela() === 'mensal' ? resumo.headline_mom_pct : resumo.headline_yoy_pct;
   });
   readonly chartData = computed(() => buildInflacaoChartData(this.pontos()));
-  readonly chartOptions = computed(() => maskChartOptions(INFLACAO_CHART_OPTIONS, ['y', 'y1'], this.valoresOcultos()));
+  readonly chartOptions = computed(() => maskChartOptions(inflacaoChartOptions(), ['y', 'y1'], this.valoresOcultos()));
   readonly chartLabel = computed(() => describeInflacao(this.pontos(), this.janela(), this.valoresOcultos()));
 
   constructor() {

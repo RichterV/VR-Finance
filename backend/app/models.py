@@ -21,6 +21,8 @@ class User(Base):
     must_change_password = Column(Boolean, nullable=False, default=False)
     # % de caixa que já vem selecionado em "Adicionar receita" (botão "Usar como padrão")
     default_cash_percentage = Column(Float, nullable=False, default=50)
+    # Tema visual escolhido no Perfil (uma das chaves de schemas.ThemeKey) -- cada usuário tem o seu
+    theme = Column(String, nullable=False, default="salvia")
     # Último POST /auth/login bem-sucedido (UTC, sem tzinfo -- mesmo padrão de created_at). Null =
     # nunca logou desde que a coluna existe. "Mudar pra conta teste" não conta como login.
     last_login_at = Column(DateTime, nullable=True)

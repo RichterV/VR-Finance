@@ -15,7 +15,7 @@ import { addIcons } from 'ionicons';
 import { close } from 'ionicons/icons';
 import { BaseChartDirective } from 'ng2-charts';
 
-import { buildComboChartData, buildLineChartData, COMBO_CHART_OPTIONS, LINE_CHART_OPTIONS } from '../../home/dashboard-charts';
+import { buildComboChartData, buildLineChartData, comboChartOptions, lineChartOptions } from '../../home/dashboard-charts';
 import { CaixaMes, EvolucaoMes, ResumoService } from '../../services/resumo.service';
 import { describeCombo, describeEvolucao } from '../../home/chart-descriptions';
 
@@ -50,12 +50,13 @@ export class ChartExpandModalComponent implements OnInit {
   private readonly caixaPretendidoVsReal = signal<CaixaMes[]>([]);
 
   readonly lineChartData = computed(() => buildLineChartData(this.evolucao()));
-  readonly lineChartOptions = LINE_CHART_OPTIONS;
+  // computed: as cores dos eixos/legenda seguem o tema ativo
+  readonly lineChartOptions = computed(() => lineChartOptions());
 
   readonly comboChartData = computed(() => buildComboChartData(this.caixaPretendidoVsReal()));
   readonly lineChartLabel = computed(() => describeEvolucao(this.evolucao(), false));
   readonly comboChartLabel = computed(() => describeCombo(this.caixaPretendidoVsReal(), false));
-  readonly comboChartOptions = COMBO_CHART_OPTIONS;
+  readonly comboChartOptions = computed(() => comboChartOptions());
 
   constructor(
     private readonly resumoService: ResumoService,

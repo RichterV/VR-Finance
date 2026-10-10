@@ -8,7 +8,7 @@ import { MESES_ABREV } from '../../shared/months';
 import { SectionSkeletonComponent } from '../../shared/section-skeleton.component';
 import { SparklineComponent } from '../../shared/sparkline.component';
 import { Corte, Indicadores, ResumoService } from '../../services/resumo.service';
-import { COLOR_CAIXA_REAL, COLOR_ESSENCIAL } from '../dashboard-charts';
+import { chartColors } from '../../shared/themes';
 import { SectionLoader } from './section-loader';
 import { maskCurrency } from './value-mask';
 
@@ -30,7 +30,11 @@ export class IndicadoresSectionComponent {
   private readonly resumoService = inject(ResumoService);
   readonly indicadores = new SectionLoader<Indicadores>(inject(DestroyRef), () => this.settled.emit());
 
-  readonly colors = { poupanca: COLOR_CAIXA_REAL, essencial: COLOR_ESSENCIAL };
+  /** Cores das mini-tendências, do tema ativo (computed: acompanha a troca de tema). */
+  readonly colors = computed(() => {
+    const c = chartColors();
+    return { poupanca: c.caixaReal, essencial: c.essencial };
+  });
 
   readonly poupancaSerie = computed(() => this.indicadores.data()?.poupanca.serie.map((p) => p.valor) ?? []);
   readonly essencialSerie = computed(() => this.indicadores.data()?.essencial.serie.map((p) => p.valor) ?? []);

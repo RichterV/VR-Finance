@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { IonApp, IonRouterOutlet } from '@ionic/angular';
 
+import { ThemeService } from './core/theme.service';
 import { AppLockOverlayComponent } from './shared/app-lock-overlay.component';
 
 @Component({
@@ -9,5 +10,6 @@ import { AppLockOverlayComponent } from './shared/app-lock-overlay.component';
   imports: [IonApp, IonRouterOutlet, AppLockOverlayComponent],
 })
 export class AppComponent {
-  constructor() {}
+  // Instanciado já na abertura: aplica o tema e passa a seguir o do usuário logado.
+  private readonly theme = inject(ThemeService);
 }

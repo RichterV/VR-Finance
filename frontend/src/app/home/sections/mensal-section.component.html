@@ -27,14 +27,14 @@
             <span class="stat-label">Gastos do mês</span>
             <span class="stat-value">{{ currency(rm.total_gastos) }}</span>
             @if (!valoresOcultos()) {
-              <app-sparkline [values]="series().gastos" [color]="colors.gastos"></app-sparkline>
+              <app-sparkline [values]="series().gastos" [color]="colors().gastos"></app-sparkline>
             }
           </div>
           <div class="stat-card">
             <span class="stat-label">Caixa real</span>
             <span class="stat-value">{{ currency(rm.total_caixa_real) }}</span>
             @if (!valoresOcultos()) {
-              <app-sparkline [values]="series().caixa" [color]="colors.caixa"></app-sparkline>
+              <app-sparkline [values]="series().caixa" [color]="colors().caixa"></app-sparkline>
             }
           </div>
           <div class="stat-card">
@@ -42,7 +42,7 @@
             <span class="stat-value">{{ currency(rm.total_essenciais) }}</span>
             <span class="stat-percent">{{ percentOf(rm.total_essenciais, rm.total_gastos) }} dos gastos</span>
             @if (!valoresOcultos()) {
-              <app-sparkline [values]="series().essencial" [color]="colors.essencial"></app-sparkline>
+              <app-sparkline [values]="series().essencial" [color]="colors().essencial"></app-sparkline>
             }
           </div>
           <div class="stat-card">
@@ -50,7 +50,7 @@
             <span class="stat-value">{{ currency(rm.total_nao_essenciais) }}</span>
             <span class="stat-percent">{{ percentOf(rm.total_nao_essenciais, rm.total_gastos) }} dos gastos</span>
             @if (!valoresOcultos()) {
-              <app-sparkline [values]="series().naoEssencial" [color]="colors.naoEssencial"></app-sparkline>
+              <app-sparkline [values]="series().naoEssencial" [color]="colors().naoEssencial"></app-sparkline>
             }
           </div>
         </div>

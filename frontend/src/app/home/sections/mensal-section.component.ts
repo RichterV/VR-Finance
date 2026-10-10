@@ -4,7 +4,7 @@ import { ErrorStateComponent } from '../../shared/error-state.component';
 import { SectionSkeletonComponent } from '../../shared/section-skeleton.component';
 import { SparklineComponent } from '../../shared/sparkline.component';
 import { ResumoAnual, ResumoMensal, ResumoService } from '../../services/resumo.service';
-import { COLOR_CAIXA_REAL, COLOR_ESSENCIAL, COLOR_INFLACAO, COLOR_NAO_ESSENCIAL } from '../dashboard-charts';
+import { chartColors } from '../../shared/themes';
 import { PercentuaisItensComponent } from './percentuais-itens.component';
 import { SectionLoader } from './section-loader';
 import { maskCount, maskCurrency, maskPercent } from './value-mask';
@@ -33,7 +33,11 @@ export class MensalSectionComponent {
   readonly resumo = new SectionLoader<ResumoMensal>(this.destroyRef, () => this.settled.emit());
   private readonly tendencia = new SectionLoader<ResumoAnual>(this.destroyRef);
 
-  readonly colors = { gastos: COLOR_INFLACAO, essencial: COLOR_ESSENCIAL, naoEssencial: COLOR_NAO_ESSENCIAL, caixa: COLOR_CAIXA_REAL };
+  /** Cores das mini-tendências, do tema ativo (computed: acompanha a troca de tema). */
+  readonly colors = computed(() => {
+    const c = chartColors();
+    return { gastos: c.gastos, essencial: c.essencial, naoEssencial: c.naoEssencial, caixa: c.caixaReal };
+  });
 
   readonly series = computed(() => {
     const evolucao = this.tendencia.data()?.evolucao_12_meses ?? [];

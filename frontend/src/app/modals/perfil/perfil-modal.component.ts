@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import {
   IonButton,
@@ -22,8 +22,10 @@ import { close, logOutOutline } from 'ionicons/icons';
 
 import { AppLockService, LOCK_TIMEOUT_OPTIONS } from '../../core/app-lock.service';
 import { AuthService } from '../../core/auth.service';
+import { ThemeService } from '../../core/theme.service';
 import { httpErrorMessage } from '../../shared/http-error';
 import { CATEGORY_SELECT_POPOVER_OPTIONS } from '../../shared/select-popover';
+import { THEMES, ThemeKey } from '../../shared/themes';
 
 function passwordsMatchValidator(newControlName: string, confirmControlName: string) {
   return (group: AbstractControl): ValidationErrors | null => {
@@ -42,6 +44,88 @@ function passwordsMatchValidator(newControlName: string, confirmControlName: str
   templateUrl: './perfil-modal.component.html',
   styles: [
     `
+      .tema-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--sp-2);
+      }
+
+      .tema {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 6px 6px 8px;
+        border: 1px solid var(--app-surface-border);
+        border-radius: var(--r-md);
+        background: transparent;
+        color: var(--app-text-primary);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+
+        &:hover {
+          background: var(--app-surface-hover);
+        }
+
+        &:focus-visible {
+          outline: 2px solid var(--ion-color-primary);
+          outline-offset: 2px;
+        }
+
+        &.ativo {
+          border-color: var(--ion-color-primary);
+          box-shadow: inset 0 0 0 1px var(--ion-color-primary);
+        }
+      }
+
+      /* Miniatura: fundo do tema com um "cartão" contendo a cor da marca, positivo e negativo. */
+      .tema-amostra {
+        display: flex;
+        align-items: flex-end;
+        height: 48px;
+        padding: 7px;
+        border-radius: var(--r-sm);
+        box-sizing: border-box;
+      }
+
+      .tema-cartao {
+        flex: 1;
+        height: 24px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0 6px;
+      }
+
+      .tema-barra {
+        width: 20px;
+        height: 6px;
+        border-radius: 3px;
+      }
+
+      .tema-ponto {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+      }
+
+      .tema-ponto:first-of-type {
+        margin-left: auto;
+      }
+
+      .tema-nome {
+        font-size: var(--fs-xs);
+        line-height: 1.3;
+        padding: 0 2px;
+      }
+
+      .tema-descricao {
+        margin: var(--sp-2) 0 0;
+        font-size: var(--fs-sm);
+        color: var(--app-text-secondary);
+      }
+
       .account-head {
         display: flex;
         flex-direction: column;
@@ -109,6 +193,12 @@ export class PerfilModalComponent implements OnInit {
   readonly passwordSaving = signal(false);
   readonly passwordError = signal<string | null>(null);
 
+  /** Aparência: tocar num tema aplica na hora e salva (por usuário, no backend). */
+  readonly theme = inject(ThemeService);
+  readonly temas = THEMES;
+  readonly temaErro = signal<string | null>(null);
+  readonly temaDescricao = computed(() => THEMES.find((t) => t.key === this.theme.current())?.descricao ?? '');
+
   readonly profileForm = this.fb.nonNullable.group({
     username: this.fb.nonNullable.control('', Validators.required),
     firstName: this.fb.nonNullable.control('', Validators.required),
@@ -132,6 +222,14 @@ export class PerfilModalComponent implements OnInit {
     private readonly appLock: AppLockService,
   ) {
     addIcons({ close, logOutOutline });
+  }
+
+  escolherTema(tema: ThemeKey): void {
+    if (tema === this.theme.current()) return;
+    this.temaErro.set(null);
+    this.theme.choose(tema).subscribe({
+      error: (err) => this.temaErro.set(httpErrorMessage(err, 'Não foi possível salvar o tema. Tente de novo.')),
+    });
   }
 
   ngOnInit(): void {

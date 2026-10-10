@@ -81,6 +81,22 @@ def test_update_default_cash_percentage_rejects_out_of_range(client, auth_header
         assert response.status_code == 422
 
 
+def test_theme_defaults_to_salvia_and_is_per_user(client, auth_headers, master_headers):
+    assert client.get("/auth/me", headers=auth_headers).json()["theme"] == "salvia"
+    response = client.put("/auth/me/theme", headers=auth_headers, json={"theme": "nordico"})
+    assert response.status_code == 200
+    assert response.json()["theme"] == "nordico"
+    assert client.get("/auth/me", headers=auth_headers).json()["theme"] == "nordico"
+    # Por usuário: o tema de um não muda o de outro
+    assert client.get("/auth/me", headers=master_headers).json()["theme"] == "salvia"
+
+
+def test_update_theme_rejects_unknown_theme(client, auth_headers):
+    response = client.put("/auth/me/theme", headers=auth_headers, json={"theme": "rosa-choque"})
+    assert response.status_code == 422
+    assert client.get("/auth/me", headers=auth_headers).json()["theme"] == "salvia"
+
+
 def test_create_user_requires_master(client, auth_headers):
     response = client.post(
         "/auth/users",

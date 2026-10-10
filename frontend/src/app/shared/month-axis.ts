@@ -1,6 +1,7 @@
 import { Chart, Plugin, TooltipItem } from 'chart.js';
 
 import { MESES_ABREV } from './months';
+import { chartColors } from './themes';
 
 /** Rótulo do eixo X de um gráfico mensal: "Fev", ou ["Jan", "2025"] quando o ano aparece. */
 export type MonthLabel = string | [string, string];
@@ -36,7 +37,6 @@ export function monthTooltipTitle(labels: readonly unknown[], index: number): st
   return mes;
 }
 
-const DIVIDER_COLOR = 'rgba(153, 164, 158, 0.4)';
 
 /** Linha vertical tracejada entre dezembro e janeiro, nos gráficos com `monthAxisLabels`. */
 export const yearDividerPlugin: Plugin = {
@@ -48,7 +48,7 @@ export const yearDividerPlugin: Plugin = {
     const { top, bottom } = chart.chartArea;
     const ctx = chart.ctx;
     ctx.save();
-    ctx.strokeStyle = DIVIDER_COLOR;
+    ctx.strokeStyle = chartColors().divisor;
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
     for (const i of boundaries) {

@@ -38,6 +38,26 @@ ModuleKey = Literal[
 
 # --- Auth ---
 
+# Temas visuais (escolhidos no Perfil). Espelhado em frontend/src/app/shared/themes.ts.
+ThemeKey = Literal[
+    "atual",
+    "grafite",
+    "petroleo",
+    "musgo",
+    "indigo",
+    "cafe",
+    "ambar",
+    "oceano",
+    "lavanda",
+    "oled",
+    "salvia",
+    "cobre",
+    "floresta",
+    "nordico",
+    "sepia",
+]
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -52,6 +72,7 @@ class UserOut(BaseModel):
     modules: list[str]
     must_change_password: bool
     default_cash_percentage: float
+    theme: str = "salvia"
     last_login_at: Optional[datetime] = None
     last_activity_at: Optional[datetime] = None
 
@@ -103,6 +124,12 @@ class CashPercentageDefault(BaseModel):
     """% de caixa pré-selecionado em "Adicionar receita" (PUT /auth/me/default-cash-percentage)."""
 
     default_cash_percentage: float = Field(ge=0, le=100)
+
+
+class ThemeUpdate(BaseModel):
+    """Tema visual do usuário logado (PUT /auth/me/theme)."""
+
+    theme: ThemeKey
 
 
 class PasswordChange(BaseModel):
