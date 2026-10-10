@@ -20,11 +20,14 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
-  <div class="expanded-chart-wrap">
-    @if (chartType === 'line') {
-      <canvas baseChart role="img" [attr.aria-label]="lineChartLabel()" [type]="'line'" [data]="lineChartData()" [options]="lineChartOptions()"></canvas>
-    } @else {
-      <canvas baseChart role="img" [attr.aria-label]="comboChartLabel()" [type]="'bar'" [data]="comboChartData()" [options]="comboChartOptions()"></canvas>
+  @if (chartType === 'line') {
+    @if (lineHeadline()) {
+      <p class="expanded-headline">{{ lineHeadline() }}</p>
     }
-  </div>
+    <div class="expanded-chart-wrap">
+      <canvas baseChart role="img" [attr.aria-label]="lineChartLabel()" [type]="'line'" [data]="lineChartData()" [options]="lineChartOptions()"></canvas>
+    </div>
+  } @else {
+    <app-caixa-meta-chart class="expanded-chart-wrap" [rows]="caixaRows()" [expanded]="true"></app-caixa-meta-chart>
+  }
 </ion-content>

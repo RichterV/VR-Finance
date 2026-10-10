@@ -74,8 +74,15 @@
           <dd>{{ currency(rm.media_receitas_lancamento) }}</dd>
         </div>
       </dl>
-
-      <app-percentuais-itens [itens]="rm.percentuais_itens" [valoresOcultos]="valoresOcultos()"></app-percentuais-itens>
     }
   }
 }
+
+<!-- Categorias do mês (7) ao lado dos Indicadores (5, projetados pela Home). Fora do @switch: os
+     Indicadores carregam sozinhos e aparecem mesmo se o resumo do mês falhar. -->
+<div class="mensal-bottom">
+  @if (resumo.state() !== 'loading' && resumo.state() !== 'error' && resumo.data(); as rm) {
+    <app-percentuais-itens [itens]="rm.percentuais_itens" [valoresOcultos]="valoresOcultos()"></app-percentuais-itens>
+  }
+  <ng-content></ng-content>
+</div>

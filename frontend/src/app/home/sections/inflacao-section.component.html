@@ -28,7 +28,7 @@
 
         <div class="chart-card">
           <div class="chart-card-header inflacao-header">
-            <h3>Inflação vs. Caixa real / Gastos ({{ janela() === 'mensal' ? 'mês a mês' : 'ano a ano' }})</h3>
+            <h3>Inflação da cesta ({{ janela() === 'mensal' ? 'mês a mês' : 'ano a ano' }})</h3>
             <div class="inflacao-headline">
               <span class="stat-label">{{ janela() === 'mensal' ? 'Inflação no último mês' : 'Inflação no último mês (vs. mesmo mês do ano anterior)' }}</span>
               <span
@@ -46,8 +46,14 @@
               </span>
             </div>
           </div>
-          <div class="chart-wrap">
-            <canvas baseChart role="img" [attr.aria-label]="chartLabel()" [type]="'line'" [data]="chartData()" [options]="chartOptions()"></canvas>
+          <!-- Dois painéis com o mesmo eixo de meses (antes: duas linhas em dois eixos Y). -->
+          <p class="panel-caption">Inflação da cesta: barra colorida = ficou mais cara; cinza = mais barata</p>
+          <div class="chart-wrap chart-wrap--panel-main">
+            <canvas baseChart role="img" [attr.aria-label]="chartLabel()" [type]="'bar'" [data]="chartData()" [options]="chartOptions()"></canvas>
+          </div>
+          <p class="panel-caption">Caixa real ÷ gastos (%)</p>
+          <div class="chart-wrap chart-wrap--panel-sub">
+            <canvas baseChart role="img" aria-label="Caixa real sobre gastos de cada mês" [type]="'line'" [data]="razaoData()" [options]="razaoOptions()"></canvas>
           </div>
         </div>
       } @else {

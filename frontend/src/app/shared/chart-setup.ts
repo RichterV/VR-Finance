@@ -11,6 +11,7 @@ import {
   Tooltip,
 } from 'chart.js';
 
+import { directLabelsPlugin, zeroLinePlugin } from './chart-plugins';
 import { defaultTooltipTitle, yearDividerPlugin } from './month-axis';
 
 /**
@@ -24,6 +25,8 @@ Chart.register(LineController, BarController, LineElement, BarElement, PointElem
 // Gráficos mensais (rótulos de monthAxisLabels): divisória na virada do ano e "Fev/2025" no tooltip.
 // Nos demais gráficos os dois não mudam nada (sem rótulo com ano, não há divisória; o título fica igual).
 Chart.register(yearDividerPlugin);
+// Rótulo escrito no gráfico (`plugins.directLabels`) e linha do zero (`plugins.zeroLine`) -- ver chart-plugins.ts.
+Chart.register(directLabelsPlugin, zeroLinePlugin);
 Chart.defaults.plugins.tooltip.callbacks.title = defaultTooltipTitle;
 
 // Padrões visuais de todos os gráficos do app:

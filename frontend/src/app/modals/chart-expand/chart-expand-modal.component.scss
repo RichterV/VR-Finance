@@ -4,3 +4,14 @@
   max-width: 1400px;
   margin: 0 auto;
 }
+
+app-caixa-meta-chart.expanded-chart-wrap {
+  display: flex;
+}
+
+.expanded-headline {
+  max-width: 1400px;
+  margin: 0 auto var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--app-text-secondary);
+}

@@ -8,6 +8,27 @@
   gap: 40px;
 }
 
+// Indicadores dentro da faixa do mês: título no mesmo tamanho dos cartões ao lado.
+.indicadores-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+  scroll-margin-top: var(--sp-4);
+}
+
+.block-title {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 600;
+
+  .section-subtitle {
+    font-weight: 400;
+    color: var(--app-text-secondary);
+    font-size: var(--fs-sm);
+  }
+}
+
 // O checkbox de corte fica logo abaixo do período do Resumo mensal, com o mesmo respiro.
 #resumo-mensal > .cutoff-toggle {
   margin-top: calc(-1 * var(--sp-2));

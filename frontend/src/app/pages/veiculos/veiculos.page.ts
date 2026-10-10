@@ -113,7 +113,7 @@ export class VeiculosPage {
   readonly chartLabel = computed(() => {
     const resumo = this.resumo();
     const nomes = resumo?.veiculos.map((v) => v.vehicle_name).join(', ') ?? '';
-    return `Gráfico de linhas: gasto mensal com manutenção por veículo nos últimos ${resumo?.meses.length ?? 12} meses${nomes ? ` (${nomes})` : ''}.`;
+    return `Gráfico de colunas: gasto mensal com manutenção por veículo nos últimos ${resumo?.meses.length ?? 12} meses${nomes ? ` (${nomes})` : ''}.`;
   });
   // computed: as cores dos eixos/legenda seguem o tema ativo
   readonly chartOptions = computed(() => veiculosChartOptions());

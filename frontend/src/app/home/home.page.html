@@ -133,19 +133,18 @@
         [valoresOcultos]="valoresOcultos()"
         [reload]="reloadToken()"
         (settled)="onSectionSettled()"
-      ></app-mensal-section>
-    </section>
-
-    <section class="dashboard-section" id="indicadores">
-      <div class="section-header">
-        <h2>Indicadores <span class="section-subtitle">{{ corteSubtitulo() }}</span></h2>
-      </div>
-      <app-indicadores-section
-        [corte]="corte()"
-        [valoresOcultos]="valoresOcultos()"
-        [reload]="reloadToken()"
-        (settled)="onSectionSettled()"
-      ></app-indicadores-section>
+      >
+        <!-- Indicadores ao lado das categorias do mês (antes, uma seção própria embaixo). -->
+        <div class="indicadores-block" id="indicadores">
+          <h3 class="block-title">Indicadores <span class="section-subtitle">{{ corteSubtitulo() }}</span></h3>
+          <app-indicadores-section
+            [corte]="corte()"
+            [valoresOcultos]="valoresOcultos()"
+            [reload]="reloadToken()"
+            (settled)="onSectionSettled()"
+          ></app-indicadores-section>
+        </div>
+      </app-mensal-section>
     </section>
 
     <section class="dashboard-section" id="resumo-anual">

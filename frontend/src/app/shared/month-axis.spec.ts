@@ -1,4 +1,4 @@
-import { monthAxisLabels, monthTooltipTitle, yearBoundaries } from './month-axis';
+import { monthAxisLabels, monthTicks, monthTooltipTitle, yearBoundaries } from './month-axis';
 
 describe('monthAxisLabels', () => {
   it('shows the year only on the first point and where the year changes', () => {
@@ -38,5 +38,39 @@ describe('monthTooltipTitle', () => {
 
   it('keeps the plain label when there is no year', () => {
     expect(monthTooltipTitle(['Essenciais', 'Receita'], 1)).toBe('Receita');
+  });
+});
+
+describe('monthTicks', () => {
+  const meses = (n: number) =>
+    monthAxisLabels(Array.from({ length: n }, (_, i) => ({ ano: 2023 + Math.floor((i + 10) / 12), mes: ((i + 10) % 12) + 1 })));
+
+  it('leaves short windows to the automatic skipping', () => {
+    expect(monthTicks(meses(12))).toEqual({});
+  });
+
+  it('always shows the labels that carry the year on long windows', () => {
+    const labels = meses(36);
+    const ticks = monthTicks(labels) as { autoSkip: boolean; callback: (v: unknown, i: number) => unknown };
+    expect(ticks.autoSkip).toBe(false);
+    labels.forEach((label, i) => {
+      if (Array.isArray(label) && i > 0) expect(ticks.callback(null, i)).toEqual(label);
+    });
+  });
+
+  it('drops the first label when a January is right next to it', () => {
+    const labels = meses(36); // começa em novembro: janeiro é o índice 2
+    const t = monthTicks(labels, true) as { callback: (v: unknown, i: number) => unknown };
+    expect(t.callback(null, 0)).toBe('');
+    expect(t.callback(null, 2)).toEqual(labels[2]);
+  });
+
+  it('shows fewer months between years on narrow screens', () => {
+    const labels = meses(36);
+    const count = (narrow: boolean) => {
+      const t = monthTicks(labels, narrow) as { callback: (v: unknown, i: number) => unknown };
+      return labels.filter((_, i) => t.callback(null, i) !== '').length;
+    };
+    expect(count(true)).toBeLessThan(count(false));
   });
 });

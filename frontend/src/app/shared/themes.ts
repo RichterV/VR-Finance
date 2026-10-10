@@ -340,6 +340,16 @@ export function chartColors(): ChartPalette {
   return (BY_KEY.get(activeTheme()) ?? BY_KEY.get(DEFAULT_THEME)!).chart;
 }
 
+/**
+ * Cores da interface do tema ativo pra usar dentro do gráfico: texto principal (rótulo direto,
+ * traço da meta), tons de número bom/ruim e a cor do cartão (folga de 2px entre segmentos). Vêm das
+ * amostras do seletor, que espelham --app-text-primary / --app-positive / --app-negative / o cartão.
+ */
+export function themeInk(): { texto: string; positivo: string; negativo: string; cartao: string } {
+  const t = BY_KEY.get(activeTheme()) ?? BY_KEY.get(DEFAULT_THEME)!;
+  return { texto: t.amostra.texto, positivo: t.amostra.positivo, negativo: t.amostra.negativo, cartao: t.amostra.cartao };
+}
+
 /** '#86a9cc' -> 'rgba(134, 169, 204, 0.35)' (linhas de tendência). */
 export function withAlpha(hex: string, alpha: number): string {
   const n = parseInt(hex.slice(1), 16);

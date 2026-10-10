@@ -7,7 +7,7 @@ import { ErrorStateComponent } from '../../shared/error-state.component';
 import { SectionSkeletonComponent } from '../../shared/section-skeleton.component';
 import { Corte, ResumoInflacao, ResumoService } from '../../services/resumo.service';
 import { describeInflacao } from '../chart-descriptions';
-import { buildInflacaoChartData, inflacaoChartOptions } from '../dashboard-charts';
+import { buildInflacaoChartData, buildInflacaoRazaoData, inflacaoPanelOptions } from '../dashboard-charts';
 import { SectionLoader } from './section-loader';
 import { maskChartOptions } from './value-mask';
 
@@ -43,7 +43,9 @@ export class InflacaoSectionComponent {
     return this.janela() === 'mensal' ? resumo.headline_mom_pct : resumo.headline_yoy_pct;
   });
   readonly chartData = computed(() => buildInflacaoChartData(this.pontos()));
-  readonly chartOptions = computed(() => maskChartOptions(inflacaoChartOptions(), ['y', 'y1'], this.valoresOcultos()));
+  readonly chartOptions = computed(() => maskChartOptions(inflacaoPanelOptions('inflacao', this.pontos()), ['y'], this.valoresOcultos()));
+  readonly razaoData = computed(() => buildInflacaoRazaoData(this.pontos()));
+  readonly razaoOptions = computed(() => maskChartOptions(inflacaoPanelOptions<'line'>('razao', this.pontos()), ['y'], this.valoresOcultos()));
   readonly chartLabel = computed(() => describeInflacao(this.pontos(), this.janela(), this.valoresOcultos()));
 
   constructor() {

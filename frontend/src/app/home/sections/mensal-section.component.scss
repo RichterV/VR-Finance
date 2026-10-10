@@ -7,3 +7,19 @@
 app-sparkline {
   margin-top: 4px;
 }
+
+.mensal-bottom {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: var(--sp-3);
+  align-items: start;
+
+  // Sem categorias no mês, os Indicadores ocupam a linha toda.
+  &:has(> :only-child) {
+    grid-template-columns: 1fr;
+  }
+
+  @media (max-width: 1023px) {
+    grid-template-columns: 1fr;
+  }
+}

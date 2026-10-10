@@ -1,21 +1,20 @@
-import { Component, DestroyRef, computed, effect, inject, input, output, untracked } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
 
 import { ErrorStateComponent } from '../../shared/error-state.component';
+import { isNarrowScreen } from '../../shared/chart-plugins';
 import { SectionSkeletonComponent } from '../../shared/section-skeleton.component';
 import { Corte, ResumoGeral, ResumoService } from '../../services/resumo.service';
 import { describePorAno, describePorMes, describeTotaisGerais } from '../chart-descriptions';
-import {
-  buildPorAnoChartData,
-  buildPorMesChartData,
-  buildTotaisGeraisChartData,
-  geralChartOptions,
-  totaisGeraisChartOptions,
-} from '../relatorio-geral-charts';
+import { buildFluxo, buildPorAnoChartData, buildPorMesChartData, historicoChartOptions } from '../relatorio-geral-charts';
 import { SectionLoader } from './section-loader';
-import { maskChartOptions } from './value-mask';
+import { maskChartOptions, maskCurrency, maskPercent } from './value-mask';
 
-/** Relatório geral: totais de todo o histórico, por ano e por mês do calendário. */
+/**
+ * Relatório geral: a receita de todo o histórico dividida em gastos e caixa real (faixa), e os
+ * mesmos números por ano e por mês do calendário. No celular, "Por mês" vira barras horizontais
+ * (12 linhas em vez de 12 grupos de colunas espremidos).
+ */
 @Component({
   selector: 'app-geral-section',
   templateUrl: './geral-section.component.html',
@@ -29,13 +28,29 @@ export class GeralSectionComponent {
   readonly settled = output<void>();
 
   private readonly resumoService = inject(ResumoService);
-  readonly resumo = new SectionLoader<ResumoGeral>(inject(DestroyRef), () => this.settled.emit());
+  private readonly destroyRef = inject(DestroyRef);
+  readonly resumo = new SectionLoader<ResumoGeral>(this.destroyRef, () => this.settled.emit());
 
+  /** Tela estreita (< 768px), acompanhando a rotação/redimensionamento. */
+  readonly narrow = signal(isNarrowScreen());
+
+  readonly fluxo = computed(() => buildFluxo(this.resumo.data()));
   readonly porAnoChartData = computed(() => buildPorAnoChartData(this.resumo.data()?.anos ?? []));
-  readonly totaisGeraisChartData = computed(() => buildTotaisGeraisChartData(this.resumo.data()));
-  readonly porMesChartData = computed(() => buildPorMesChartData(this.resumo.data()));
-  readonly geralOptions = computed(() => maskChartOptions(geralChartOptions(), ['y'], this.valoresOcultos()));
-  readonly totaisOptions = computed(() => maskChartOptions(totaisGeraisChartOptions(), ['y'], this.valoresOcultos()));
+  readonly porMesChartData = computed(() => buildPorMesChartData(this.resumo.data(), this.narrow()));
+  readonly porAnoOptions = computed(() =>
+    maskChartOptions(
+      historicoChartOptions(this.resumo.data()?.anos ?? [], { compacto: this.narrow() }),
+      ['y'],
+      this.valoresOcultos(),
+    ),
+  );
+  readonly porMesOptions = computed(() =>
+    maskChartOptions(
+      historicoChartOptions(this.resumo.data()?.por_mes ?? [], { horizontal: this.narrow() }),
+      [this.narrow() ? 'x' : 'y'],
+      this.valoresOcultos(),
+    ),
+  );
   readonly labels = computed(() => ({
     totais: describeTotaisGerais(this.resumo.data(), this.valoresOcultos()),
     porAno: describePorAno(this.resumo.data(), this.valoresOcultos()),
@@ -48,9 +63,23 @@ export class GeralSectionComponent {
       this.reload();
       untracked(() => this.carregar(corte));
     });
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      const mq = window.matchMedia('(max-width: 767px)');
+      const onChange = () => this.narrow.set(mq.matches);
+      mq.addEventListener?.('change', onChange);
+      this.destroyRef.onDestroy(() => mq.removeEventListener?.('change', onChange));
+    }
   }
 
   carregar(corte = this.corte()): void {
     this.resumo.load(this.resumoService.geral(corte));
+  }
+
+  currency(valor: number): string {
+    return maskCurrency(valor, this.valoresOcultos());
+  }
+
+  percent(valor: number): string {
+    return maskPercent(valor, this.valoresOcultos());
   }
 }

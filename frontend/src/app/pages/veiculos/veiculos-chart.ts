@@ -11,7 +11,9 @@ function seriesColors(): string[] {
   return [c.essencial, c.naoEssencial, c.caixaReal, c.razao, c.receita, c.caixaPretendido];
 }
 
-export function buildVeiculosChartData(resumo: VehiclesResumo | null): ChartConfiguration<'line'>['data'] {
+// Colunas, não linhas: serviço é um evento esporádico (a maioria dos meses é zero), e a linha curva
+// entre um serviço e outro sugeria um gasto contínuo que não existe.
+export function buildVeiculosChartData(resumo: VehiclesResumo | null): ChartConfiguration<'bar'>['data'] {
   if (!resumo) {
     return { labels: [], datasets: [] };
   }
@@ -29,19 +31,17 @@ export function buildVeiculosChartData(resumo: VehiclesResumo | null): ChartConf
       return {
         label: serie.vehicle_name,
         data: serie.valores,
-        borderColor: color,
         backgroundColor: color,
-        pointStyle: 'circle',
-        pointRadius: 4,
-        borderWidth: 2,
-        tension: 0.4,
-        fill: false,
+        borderRadius: 3,
+        borderSkipped: false,
+        barPercentage: 0.8,
+        categoryPercentage: 0.8,
       };
     }),
   };
 }
 
-export function veiculosChartOptions(): ChartConfiguration<'line'>['options'] {
+export function veiculosChartOptions(): ChartConfiguration<'bar'>['options'] {
   const c = chartColors();
   return {
     responsive: true,
@@ -49,7 +49,7 @@ export function veiculosChartOptions(): ChartConfiguration<'line'>['options'] {
     interaction: { mode: 'index', intersect: false },
     scales: {
       x: { grid: { display: false }, ticks: { color: c.texto } },
-      y: { grid: { color: c.grade }, ticks: { color: c.texto } },
+      y: { beginAtZero: true, grid: { color: c.grade }, border: { display: false }, ticks: { color: c.texto } },
     },
     plugins: {
       legend: {

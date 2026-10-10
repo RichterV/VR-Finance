@@ -15,9 +15,10 @@ import { addIcons } from 'ionicons';
 import { close } from 'ionicons/icons';
 import { BaseChartDirective } from 'ng2-charts';
 
-import { buildComboChartData, buildLineChartData, comboChartOptions, lineChartOptions } from '../../home/dashboard-charts';
+import { CaixaMetaChartComponent } from '../../home/caixa-meta-chart.component';
+import { buildLineChartData, evolucaoHeadline, lineChartOptions } from '../../home/dashboard-charts';
 import { CaixaMes, EvolucaoMes, ResumoService } from '../../services/resumo.service';
-import { describeCombo, describeEvolucao } from '../../home/chart-descriptions';
+import { describeEvolucao } from '../../home/chart-descriptions';
 
 const JANELAS = [12, 24, 36];
 
@@ -36,6 +37,7 @@ const JANELAS = [12, 24, 36];
     IonSelect,
     IonSelectOption,
     BaseChartDirective,
+    CaixaMetaChartComponent,
   ],
 })
 export class ChartExpandModalComponent implements OnInit {
@@ -50,13 +52,11 @@ export class ChartExpandModalComponent implements OnInit {
   private readonly caixaPretendidoVsReal = signal<CaixaMes[]>([]);
 
   readonly lineChartData = computed(() => buildLineChartData(this.evolucao()));
-  // computed: as cores dos eixos/legenda seguem o tema ativo
-  readonly lineChartOptions = computed(() => lineChartOptions());
-
-  readonly comboChartData = computed(() => buildComboChartData(this.caixaPretendidoVsReal()));
+  // computed: as cores dos eixos/legenda seguem o tema ativo; os ticks dependem da janela (12/24/36)
+  readonly lineChartOptions = computed(() => lineChartOptions(this.evolucao()));
   readonly lineChartLabel = computed(() => describeEvolucao(this.evolucao(), false));
-  readonly comboChartLabel = computed(() => describeCombo(this.caixaPretendidoVsReal(), false));
-  readonly comboChartOptions = computed(() => comboChartOptions());
+  readonly lineHeadline = computed(() => evolucaoHeadline(this.evolucao(), false));
+  readonly caixaRows = this.caixaPretendidoVsReal.asReadonly();
 
   constructor(
     private readonly resumoService: ResumoService,

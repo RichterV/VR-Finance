@@ -109,6 +109,7 @@ h2 {
 .uso-bar,
 .comp-bar {
   display: flex;
+  gap: 2px;
   height: 10px;
   border-radius: 999px;
   overflow: hidden;
@@ -122,10 +123,13 @@ h2 {
 .seg-gastos { background: var(--ion-color-danger); }
 .seg-caixa { background: var(--ion-color-primary); }
 .seg-livre { background: rgba(var(--app-muted-rgb), 0.35); }
-.comp-recorrentes { background: var(--chart-essencial); }
-.comp-parcelas { background: var(--ion-color-warning); }
-.comp-essenciais { background: var(--ion-color-success); }
-.comp-nao-essenciais { background: var(--chart-razao); }
+// Composição: avulsos com as cores de Essenciais/Não essenciais dos gráficos; recorrentes e parcelas
+// em dois cinzas (≥ 3:1 sobre o cartão). Antes: o azul do "essencial" marcava Recorrentes, o amarelo
+// de aviso marcava Parcelas e o verde de "positivo" marcava Avulsos essenciais.
+.comp-recorrentes { background: rgb(var(--app-muted-rgb)); }
+.comp-parcelas { background: rgba(var(--app-muted-rgb), 0.62); }
+.comp-essenciais { background: var(--chart-essencial); }
+.comp-nao-essenciais { background: var(--chart-nao-essencial); }
 
 .dot {
   display: inline-block;

@@ -2,13 +2,17 @@ import { Component, computed, input } from '@angular/core';
 
 /**
  * Mini-gráfico de tendência (SVG inline, sem chart.js) pros cards do dashboard. Decorativo
- * (aria-hidden): o valor do card já é o texto. Pontos null viram buraco na linha.
+ * (aria-hidden): o valor do card já é o texto. Pontos null viram buraco na linha. Quando a série
+ * cruza o zero (ex: caixa real negativo em algum mês), uma linha fraca marca o zero.
  */
 @Component({
   selector: 'app-sparkline',
   template: `
     @if (path()) {
       <svg [attr.viewBox]="'0 0 ' + width + ' ' + height" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        @if (zeroY() !== null) {
+          <line class="zero" x1="0" [attr.y1]="zeroY()" [attr.x2]="width" [attr.y2]="zeroY()" />
+        }
         <path class="area" [attr.d]="area()" [attr.fill]="color()" />
         <path class="line" [attr.d]="path()" [attr.stroke]="color()" />
         @if (last(); as p) {
@@ -38,6 +42,11 @@ import { Component, computed, input } from '@angular/core';
       .area {
         opacity: 0.12;
       }
+      .zero {
+        stroke: rgba(var(--app-muted-rgb), 0.45);
+        stroke-width: 1;
+        vector-effect: non-scaling-stroke;
+      }
     `,
   ],
 })
@@ -59,6 +68,16 @@ export class SparklineComponent {
     return values.map((v, i) =>
       v === null ? null : { x: i * step, y: this.height - 2 - ((v - min) / span) * (this.height - 4) },
     );
+  });
+
+  /** Altura do zero no SVG, só quando a série tem valores dos dois lados dele. */
+  readonly zeroY = computed(() => {
+    const valid = this.values().filter((v): v is number => v !== null);
+    if (valid.length < 2) return null;
+    const min = Math.min(...valid);
+    const max = Math.max(...valid);
+    if (!(min < 0 && max > 0)) return null;
+    return this.height - 2 - ((0 - min) / (max - min)) * (this.height - 4);
   });
 
   readonly path = computed(() => {

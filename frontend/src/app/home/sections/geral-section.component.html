@@ -7,31 +7,69 @@
   }
   @default {
     @if (resumo.data(); as rg) {
-      <div class="charts-grid">
-        <div class="chart-card">
-          <div class="chart-card-header">
-            <h3>Totais gerais</h3>
-          </div>
-          <div class="chart-wrap">
-            <canvas baseChart role="img" [attr.aria-label]="labels().totais" [type]="'bar'" [data]="totaisGeraisChartData()" [options]="totaisOptions()"></canvas>
-          </div>
+      <!-- Totais de todo o histórico: a receita dividida no que foi gasto e no que sobrou. -->
+      <div class="chart-card fluxo-card">
+        <div class="chart-card-header">
+          <h3>Para onde foi a receita (todo o histórico)</h3>
         </div>
-        <div class="chart-card">
-          <div class="chart-card-header">
-            <h3>Gastos, receita e caixa por ano</h3>
+        @if (fluxo().length) {
+          <div class="fluxo-bar" role="img" [attr.aria-label]="labels().totais">
+            @if (valoresOcultos()) {
+              <span class="fluxo-seg fluxo-seg--oculto"></span>
+            } @else {
+              @for (s of fluxo(); track s.chave) {
+                @if (s.valor > 0) {
+                  <span class="fluxo-seg" [style.flex-grow]="s.valor" [style.background]="s.cor" [title]="s.rotulo"></span>
+                }
+              }
+            }
           </div>
-          <div class="chart-wrap">
-            <canvas baseChart role="img" [attr.aria-label]="labels().porAno" [type]="'bar'" [data]="porAnoChartData()" [options]="geralOptions()"></canvas>
-          </div>
-        </div>
+          <dl class="fluxo-legend">
+            <div>
+              <dt>Receita</dt>
+              <dd>{{ currency(rg.total_receita) }}</dd>
+            </div>
+            @for (s of fluxo(); track s.chave) {
+              <div>
+                <dt><i class="fluxo-sw" [style.background]="s.cor" aria-hidden="true"></i>{{ s.rotulo }}</dt>
+                <dd>{{ currency(s.valor) }} <small>{{ percent(s.pct) }}</small></dd>
+              </div>
+            }
+            <div>
+              <dt>Caixa pretendido (meta)</dt>
+              <dd>{{ currency(rg.total_caixa_pretendido) }}</dd>
+            </div>
+          </dl>
+          @if (rg.total_caixa_real < 0) {
+            <p class="chart-legend-note fluxo-note">Os gastos passaram da receita: a faixa mostra só os gastos.</p>
+          }
+        } @else {
+          <p class="empty-state">Nenhuma receita lançada ainda.</p>
+        }
       </div>
 
-      <div class="chart-card chart-card--wide">
-        <div class="chart-card-header">
-          <h3>Gastos, receita e caixa por mês (tendência entre os anos)</h3>
+      <div class="charts-grid charts-grid--historico">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3>Por ano</h3>
+          </div>
+          @if (!valoresOcultos()) {
+            <p class="chart-legend-note">Cada barra é a receita do ano. A parte cinza no topo é o que sobrou: o caixa real.</p>
+          }
+          <div class="chart-wrap">
+            <canvas baseChart role="img" [attr.aria-label]="labels().porAno" [type]="'bar'" [data]="porAnoChartData()" [options]="porAnoOptions()"></canvas>
+          </div>
         </div>
-        <div class="chart-wrap">
-          <canvas baseChart role="img" [attr.aria-label]="labels().porMes" [type]="'bar'" [data]="porMesChartData()" [options]="geralOptions()"></canvas>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3>Por mês do calendário</h3>
+          </div>
+          <p class="chart-legend-note">
+            {{ valoresOcultos() || narrow() ? 'Soma de todos os anos. A parte cinza no topo é o caixa real.' : 'Soma de todos os anos. A parte cinza no topo é o caixa real (número no maior e no menor).' }}
+          </p>
+          <div class="chart-wrap" [class.chart-wrap--meses]="narrow()">
+            <canvas baseChart role="img" [attr.aria-label]="labels().porMes" [type]="'bar'" [data]="porMesChartData()" [options]="porMesOptions()"></canvas>
+          </div>
         </div>
       </div>
 

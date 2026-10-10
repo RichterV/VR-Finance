@@ -45,11 +45,13 @@ Métricas do mês selecionado:
 - Média **por lançamento** (total do mês ÷ quantidade) — num único mês, "média mensal" não faria
   sentido
 - Caixa pretendido (soma de `cash_value` das receitas) e caixa real (receita − gastos)
-- Percentual de cada categoria sobre o total, por prioridade — barras **ordenadas do maior pro
-  menor** e escaladas pelo maior valor do grupo (não por 100%: dificilmente uma categoria isolada
-  chega perto disso, e as barras ficariam quase vazias)
+- "Para onde foi o dinheiro": percentual de cada categoria sobre o total, numa lista só, **ordenada
+  do maior pro menor** e numa escala comum (a barra da maior categoria enche a largura; não por 100%,
+  senão as barras ficariam quase vazias). A cor e o ponto dizem a prioridade. Mostra as 8 maiores, com
+  "Ver as N categorias"
+- Ao lado da lista, os **Indicadores** (ver abaixo)
 - Mini-gráficos (sparklines) de tendência dos últimos 6 meses nos cards de gastos, essenciais, não
-  essenciais e caixa real
+  essenciais e caixa real (com uma linha fraca no zero quando a série cruza o zero)
 
 O primeiro card é **"Disponível pra gastar"**, com destaque em gradiente verde (vermelho se negativo):
 
@@ -116,7 +118,7 @@ em Visualizar dados). Os dados vêm de `GET /resumo/mensal/detalhes` mais as lis
 
 ## Indicadores (`GET /resumo/indicadores?ate_ano=&ate_mes=`)
 
-Seção entre Mensal e Anual. O mês de referência é o do corte (checkbox ligado) ou o mês atual.
+Bloco ao lado das categorias do Resumo mensal. O mês de referência é o do corte (checkbox ligado) ou o mês atual.
 Percentuais ficam sempre visíveis, mesmo com o olho fechado.
 
 | Indicador | Como é calculado |
@@ -148,29 +150,33 @@ Métricas do ano do seletor (calendário jan–dez, limitado ao corte se o check
 - Quantidade de gastos (cada parcela conta como 1 — uma compra em 3x são 3 gastos) e de receitas
 - Média **mensal** de gastos e de receitas (total ÷ número de meses com dados)
 - Caixa pretendido e caixa real do ano
-- Percentuais por categoria, com as mesmas barras ordenadas/escaladas do mensal
+- Categorias do ano: a mesma lista do mensal, começando recolhida ("Categorias no ano")
 
-### Gráfico 1 — Linhas ("Evolução")
+### Gráfico 1 — Linhas ("Gastos essenciais × não essenciais")
 
-Janela rolante de 12 meses terminando no mês atual (ou no do corte): gastos essenciais, não essenciais
-e caixa real. Linhas suavizadas; "Caixa real" tracejada com marcador em X; linhas de tendência
-(regressão linear, `shared/linear-regression.ts`) para essenciais e não essenciais, fora da legenda.
+Janela rolante de 12 meses terminando no mês atual (ou no do corte): gastos essenciais e não
+essenciais, com o eixo a partir do zero e o nome escrito no fim de cada linha. Linhas de tendência
+(regressão linear, `shared/linear-regression.ts`) fora da legenda, e uma frase com a inclinação
+("essenciais subindo R$ 14/mês"). O caixa real fica no Gráfico 2.
 
-### Gráfico 2 — Colunas + linha ("Caixa pretendido vs. real")
+### Gráfico 2 — Painéis empilhados ("Caixa real vs. meta")
 
 Mesma janela do Gráfico 1 — não são os meses do ano selecionado; os dois gráficos sempre olham pra trás
 a partir de hoje (ou do corte), pra ficarem consistentes entre si.
 
-- 3 colunas por mês, eixo esquerdo (R$): Receita, Caixa pretendido, Caixa real (dourado / verde claro /
-  verde escuro), cantos arredondados
-- Linha no eixo secundário direito: `caixa real ÷ gastos` do mês, como **razão** (0,5 / 1,0 / 1,5),
-  não porcentagem — igual à planilha original em Excel. Desenhada por cima das colunas, em violeta
-  (cor fria e não verde, pra não se confundir com as colunas)
+Três painéis com o mesmo eixo de meses, cada um com o próprio eixo Y (nunca dois eixos no mesmo
+gráfico — os zeros ficavam em alturas diferentes):
+
+- **Receita** do mês, num painel baixo
+- **Caixa real** em barra, com o **caixa pretendido** como um traço (a meta) — mais a frase "Caixa
+  real ficou acima da meta em X de N meses"
+- `caixa real ÷ gastos` do mês, como **razão** (0,5 / 1,0 / 1,5), não porcentagem — igual à planilha
+  original em Excel
 
 Os dois gráficos têm um ícone de expandir que abre um modal fullscreen com seletor de janela 12/24/36
 meses (parâmetro `meses`).
 
-Nos gráficos mensais (Evolução, Caixa pretendido vs. real, Análise inflacionária e o de Manutenção
+Nos gráficos mensais (Evolução, Caixa real vs. meta, Análise inflacionária e o de Manutenção
 Veículos), o ano aparece embaixo do mês no primeiro ponto e em cada janeiro, uma linha tracejada marca
 a virada do ano e o tooltip mostra mês/ano ("Fev/2025") — `shared/month-axis.ts`.
 
@@ -178,10 +184,17 @@ a virada do ano e o tooltip mostra mês/ano ("Fev/2025") — `shared/month-axis.
 
 Sem seletor próprio (só o checkbox de corte). Mostra **totais** (não médias) de todo o histórico:
 
-- **Esquerda**: essenciais, não essenciais, receita, caixa pretendido e caixa real como um total único
-- **Direita**: as mesmas categorias quebradas por ano (um grupo de colunas por ano com dados)
-- **Embaixo**, na largura dos dois: totais por **mês do calendário** (jan–dez), somando o mesmo mês de
-  todos os anos — revela sazonalidade (ex: dezembro sempre mais alto)
+- **Para onde foi a receita**: uma faixa dividida em essenciais + não essenciais + caixa real (a soma
+  é a receita), com os totais embaixo, inclusive o caixa pretendido
+- **Por ano**: cada barra é a receita do ano, dividida em essenciais + não essenciais + a sobra
+  (caixa real, em cinza no topo), dentro do contorno da receita. O caixa real vai escrito dentro da
+  sobra quando cabe, senão logo acima, com sinal ("+R$ 5,9 mil"). Num ano em que se gastou mais que a
+  receita, os gastos passam do contorno. O caixa pretendido aparece ao tocar
+- **Por mês do calendário**: o mesmo, por mês (jan–dez) somando todos os anos — revela sazonalidade
+  (ex: dezembro sempre mais alto). No celular, vira barras horizontais
+
+Só essenciais e não essenciais têm cor própria: é o único par de cores que continua distinguível para
+daltônicos em todos os 15 temas.
 
 ## Análise inflacionária (`GET /resumo/inflacao?ate_ano=&ate_mes=`)
 
@@ -195,9 +208,10 @@ mede a variação % dessa soma — o que pondera cada categoria pelo próprio pe
   o histórico — trocar a cesta muda o gráfico retroativamente, de propósito.
 - **Mês a mês / Ano a ano** (`ion-segment`), sobre uma janela rolante de 12 meses que segue o corte.
 - Card de destaque com a variação mais recente (verde/vermelho conforme o sinal).
-- Gráfico de 2 linhas: inflação da cesta (%, eixo esquerdo) e `caixa real ÷ gastos` do mês (%, eixo
-  direito) — dá pra ver se o caixa acompanha a própria inflação. Mês sem gasto na cesta-base vira um
-  buraco no gráfico, não zero (pra não inventar dado).
+- Dois painéis com o mesmo eixo de meses: a inflação da cesta em barras em torno do zero (colorida
+  quando ficou mais cara, cinza quando mais barata) e, embaixo, `caixa real ÷ gastos` do mês (%) — dá
+  pra ver se o caixa acompanha a própria inflação. Mês sem gasto na cesta-base fica sem barra, não
+  zero (pra não inventar dado).
 - Sem nenhuma categoria na cesta: mensagem com atalho pro modal Categorias.
 
 !!! note "Módulo opcional"

@@ -8,17 +8,18 @@ import { ModalLauncherService } from '../../core/modal-launcher.service';
 import { ErrorStateComponent } from '../../shared/error-state.component';
 import { SectionSkeletonComponent } from '../../shared/section-skeleton.component';
 import { Corte, ResumoAnual, ResumoService } from '../../services/resumo.service';
-import { describeCombo, describeEvolucao } from '../chart-descriptions';
-import { buildComboChartData, buildLineChartData, comboChartOptions, lineChartOptions } from '../dashboard-charts';
+import { CaixaMetaChartComponent } from '../caixa-meta-chart.component';
+import { describeEvolucao } from '../chart-descriptions';
+import { buildLineChartData, evolucaoHeadline, lineChartOptions } from '../dashboard-charts';
 import { PercentuaisItensComponent } from './percentuais-itens.component';
 import { SectionLoader } from './section-loader';
 import { maskChartOptions, maskCount, maskCurrency, maskPercent } from './value-mask';
 
-/** Cards do ano + gráficos de Evolução e Caixa pretendido vs. real + barras por categoria. */
+/** Números do ano + gráficos de Evolução e Caixa real vs. meta + categorias do ano (recolhidas). */
 @Component({
   selector: 'app-anual-section',
   templateUrl: './anual-section.component.html',
-  imports: [IonIcon, BaseChartDirective, PercentuaisItensComponent, SectionSkeletonComponent, ErrorStateComponent],
+  imports: [IonIcon, BaseChartDirective, CaixaMetaChartComponent, PercentuaisItensComponent, SectionSkeletonComponent, ErrorStateComponent],
   styles: [':host { display: flex; flex-direction: column; gap: 20px; }'],
 })
 export class AnualSectionComponent {
@@ -33,13 +34,11 @@ export class AnualSectionComponent {
   readonly resumo = new SectionLoader<ResumoAnual>(inject(DestroyRef), () => this.settled.emit());
 
   readonly lineChartData = computed(() => buildLineChartData(this.resumo.data()?.evolucao_12_meses ?? []));
-  readonly lineChartOptions = computed(() => maskChartOptions(lineChartOptions(), ['y'], this.valoresOcultos()));
-  readonly comboChartData = computed(() => buildComboChartData(this.resumo.data()?.caixa_pretendido_vs_real ?? []));
-  readonly comboChartOptions = computed(() => maskChartOptions(comboChartOptions(), ['y', 'y1'], this.valoresOcultos()));
-  readonly lineChartLabel = computed(() => describeEvolucao(this.resumo.data()?.evolucao_12_meses ?? [], this.valoresOcultos()));
-  readonly comboChartLabel = computed(() =>
-    describeCombo(this.resumo.data()?.caixa_pretendido_vs_real ?? [], this.valoresOcultos()),
+  readonly lineChartOptions = computed(() =>
+    maskChartOptions(lineChartOptions(this.resumo.data()?.evolucao_12_meses ?? []), ['y'], this.valoresOcultos()),
   );
+  readonly lineChartLabel = computed(() => describeEvolucao(this.resumo.data()?.evolucao_12_meses ?? [], this.valoresOcultos()));
+  readonly lineHeadline = computed(() => evolucaoHeadline(this.resumo.data()?.evolucao_12_meses ?? [], this.valoresOcultos()));
 
   constructor() {
     addIcons({ expandOutline });

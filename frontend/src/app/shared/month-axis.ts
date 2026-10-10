@@ -17,6 +17,29 @@ export function monthAxisLabels(points: { ano: number; mes: number }[]): MonthLa
   });
 }
 
+/**
+ * Ticks do eixo X pra janelas longas (24/36 meses). O pulo automático do chart.js escondia os
+ * janeiros, e com eles o ano: só o 1º rótulo mostrava o ano. Aqui o rótulo com ano aparece sempre, e
+ * entre eles um mês a cada `passo` (3; 6 em tela estreita), pulando o que ficaria colado num rótulo
+ * com ano. Até 12 meses, o pulo automático dá conta (retorna `{}`).
+ */
+export function monthTicks(labels: readonly MonthLabel[], narrow = false): Record<string, unknown> {
+  if (labels.length <= 12) return {};
+  const passo = narrow ? 6 : 3;
+  const comAno = labels.map((l, i) => (Array.isArray(l) ? i : -1)).filter((i) => i >= 0);
+  const folga = Math.ceil(passo / 2);
+  const mostrar = labels.map((l, i) => {
+    // O 1º rótulo cede o lugar se um janeiro vier colado nele ("Nov 2023" encostava em "Jan 2024").
+    if (Array.isArray(l)) return !(i === 0 && comAno.some((j) => j > 0 && j < folga));
+    if (i % passo !== 0) return false;
+    return comAno.every((j) => Math.abs(j - i) >= folga);
+  });
+  return {
+    autoSkip: false,
+    callback: (_value: unknown, index: number) => (mostrar[index] ? labels[index] : ''),
+  };
+}
+
 /** Índices em que um ano novo começa (sem contar o 1º ponto) -- onde vai a divisória. */
 export function yearBoundaries(labels: readonly unknown[]): number[] {
   const result: number[] = [];

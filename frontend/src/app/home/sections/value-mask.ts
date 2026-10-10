@@ -29,7 +29,10 @@ export function maskWidth(largura: number, oculto: boolean): number {
   return oculto ? 0 : largura;
 }
 
-/** Some com os ticks numéricos dos eixos de valor e desliga o tooltip do gráfico, no modo privacidade. */
+/**
+ * Some com os ticks numéricos dos eixos de valor, desliga o tooltip e apaga os rótulos escritos no
+ * gráfico (`directLabels`), no modo privacidade.
+ */
 export function maskChartOptions<T>(base: T, axisKeys: string[], oculto: boolean): T {
   if (!oculto) return base;
   const options = base as any;
@@ -42,6 +45,10 @@ export function maskChartOptions<T>(base: T, axisKeys: string[], oculto: boolean
   return {
     ...options,
     scales,
-    plugins: { ...options.plugins, tooltip: { ...(options.plugins?.tooltip ?? {}), enabled: false } },
+    plugins: {
+      ...options.plugins,
+      tooltip: { ...(options.plugins?.tooltip ?? {}), enabled: false },
+      directLabels: { items: [] },
+    },
   } as T;
 }

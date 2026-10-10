@@ -16,7 +16,7 @@ describe('buildVeiculosChartData', () => {
     expect(data.labels).toEqual([['Nov', '2025'], 'Dez', ['Jan', '2026']]);
   });
 
-  it('creates one line dataset per vehicle series, named after the vehicle', () => {
+  it('creates one bar dataset per vehicle series, named after the vehicle', () => {
     const resumo: VehiclesResumo = {
       veiculos: [],
       meses: ['2026-01', '2026-02'],
