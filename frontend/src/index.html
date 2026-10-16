@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>VR Finance</title>
+
+  <base href="/" />
+
+  <meta name="color-scheme" content="light dark" />
+  <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="msapplication-tap-highlight" content="no" />
+
+  <link rel="icon" type="image/svg+xml" href="assets/icon/favicon.svg" />
+
+  <!-- add to homescreen for ios -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+</head>
+
+<body>
+  <!-- Aplica o último tema do aparelho antes do app carregar (sem piscar o tema padrão). Mesma
+       chave do ThemeService (core/theme.service.ts); um valor inválido só não casa com nenhum tema. -->
+  <script>
+    try {
+      var tema = localStorage.getItem('vrfinance_tema');
+      if (tema) document.documentElement.setAttribute('data-tema', tema);
+    } catch (e) {}
+  </script>
+  <app-root></app-root>
+</body>
+
+</html>

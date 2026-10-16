@@ -1,0 +1,168 @@
+@use "../../../theme/mixins" as ds;
+
+.veiculos {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.resumo-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  ion-select {
+    max-width: 200px;
+    border-radius: var(--r-sm);
+  }
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.empty-state {
+  color: var(--app-text-secondary);
+}
+
+.stat-card {
+  @include ds.app-card;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-label {
+  font-size: var(--fs-sm);
+  color: var(--app-text-secondary);
+}
+
+.stat-value {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text-primary);
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--fs-xs);
+  color: var(--app-text-secondary);
+  margin-top: 4px;
+}
+
+.chart-card {
+  @include ds.app-card;
+  padding: 24px;
+}
+
+.chart-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 12px;
+}
+
+.chart-wrap {
+  position: relative;
+  height: 280px;
+}
+
+.data-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  h2 .count {
+    font-weight: 400;
+    color: var(--app-text-secondary);
+    font-size: var(--fs-sm);
+  }
+}
+
+.section-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  ion-select {
+    max-width: 220px;
+  }
+
+  .busca-filter {
+    max-width: 280px;
+    flex: 1;
+    border-radius: var(--r-sm);
+  }
+}
+
+td.description {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--app-text-secondary);
+}
+
+@media (max-width: 480px) {
+  .veiculos {
+    gap: 24px;
+  }
+
+  .stat-card,
+  .chart-card {
+    padding: 16px 18px;
+  }
+
+  .stat-value {
+    font-size: var(--fs-lg);
+  }
+
+  .chart-wrap {
+    height: 220px;
+  }
+
+  .section-header ion-select,
+  .section-header .busca-filter,
+  // Mesmo ajuste de /dados: sem nowrap/min-width 0 o texto "Todos os meses" força a quebra de linha.
+  .resumo-filters {
+    flex-wrap: nowrap;
+  }
+
+  .resumo-filters ion-select {
+    max-width: none;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  td.description {
+    max-width: 140px;
+  }
+}
+
+.section-header .list-controls {
+  flex: 1;
+  max-width: 280px;
+
+  .busca-filter {
+    max-width: none;
+    border-radius: var(--r-sm);
+  }
+}
+
+@media (max-width: 767px) {
+  .section-header .list-controls {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}

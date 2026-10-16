@@ -1,0 +1,413 @@
+@use "../../../theme/mixins" as ds;
+
+// Cards, stat-card e cores do dashboard vêm do global (.dashboard em theme/_dashboard.scss).
+// Números com largura fixa no modal inteiro (valores, %, datas alinham em coluna).
+.detalhes {
+  font-variant-numeric: tabular-nums;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.card {
+  @include ds.app-card-compact;
+  padding: 16px 18px;
+}
+
+.bloco {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+h2 {
+  margin: 0;
+  font-size: var(--fs-md);
+
+  .count {
+    font-weight: 400;
+    font-size: var(--fs-sm);
+    color: var(--app-text-secondary);
+  }
+}
+
+.nota,
+.vazio {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--app-text-secondary);
+}
+
+.num {
+  white-space: nowrap;
+}
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.month-title {
+  text-align: center;
+
+  h1 {
+    margin: 0;
+    font-size: var(--fs-lg);
+  }
+}
+
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--app-surface-border);
+  background: var(--app-surface);
+  color: var(--app-text-primary);
+  font-size: var(--fs-lg);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.status-chip {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  color: var(--app-text-secondary);
+  background: var(--app-surface-hover);
+
+  &.atual {
+    color: var(--ion-color-primary);
+    background: rgba(var(--ion-color-primary-rgb), 0.12);
+  }
+}
+
+.delta {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+
+.tom-bom {
+  color: var(--ion-color-success);
+}
+
+.tom-ruim {
+  color: var(--ion-color-danger);
+}
+
+.tom-neutro {
+  color: var(--app-text-secondary);
+}
+
+// Barras empilhadas (uso da receita e composição)
+.uso-bar,
+.comp-bar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--app-surface-hover);
+}
+
+.seg {
+  height: 100%;
+}
+
+.seg-gastos { background: var(--ion-color-danger); }
+.seg-caixa { background: var(--ion-color-primary); }
+.seg-livre { background: rgba(var(--app-muted-rgb), 0.35); }
+// Composição: avulsos com as cores de Essenciais/Não essenciais dos gráficos; recorrentes e parcelas
+// em dois cinzas (≥ 3:1 sobre o cartão). Antes: o azul do "essencial" marcava Recorrentes, o amarelo
+// de aviso marcava Parcelas e o verde de "positivo" marcava Avulsos essenciais.
+.comp-recorrentes { background: rgb(var(--app-muted-rgb)); }
+.comp-parcelas { background: rgba(var(--app-muted-rgb), 0.62); }
+.comp-essenciais { background: var(--chart-essencial); }
+.comp-nao-essenciais { background: var(--chart-nao-essencial); }
+
+.dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.uso-receita {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.uso-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: var(--fs-xs);
+  color: var(--app-text-secondary);
+
+  .excesso {
+    color: var(--ion-color-danger);
+    font-weight: 600;
+  }
+}
+
+.duas-colunas {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.coluna {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+// Para onde foi o dinheiro
+.categorias,
+.comp-legenda,
+.cair-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.categorias {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.categoria {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+
+  &:hover { background: var(--app-surface-hover); }
+
+  &.ativa {
+    border-color: rgba(var(--ion-color-primary-rgb), 0.5);
+    background: rgba(var(--ion-color-primary-rgb), 0.08);
+  }
+}
+
+.cat-topo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+}
+
+.cat-nome { flex: 1; }
+.cat-valor { font-weight: 600; }
+
+.cat-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--app-surface-hover);
+}
+
+.cat-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ion-color-primary);
+}
+
+.cat-meta {
+  font-size: var(--fs-xs);
+  color: var(--app-text-secondary);
+}
+
+.comp-legenda,
+.cair-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--fs-sm);
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    > span:nth-last-child(2) { flex: 1; }
+  }
+
+  small { color: var(--app-text-secondary); }
+}
+
+.cair-totais {
+  display: flex;
+  gap: 24px;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  strong { font-size: var(--fs-lg); }
+}
+
+// Lançamentos
+.lista-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.modo {
+  display: inline-flex;
+  border: 1px solid var(--app-surface-border);
+  border-radius: 999px;
+  overflow: hidden;
+
+  button {
+    padding: 6px 14px;
+    border: none;
+
+    &.ativo {
+      background: rgba(var(--ion-color-primary-rgb), 0.15);
+      color: var(--ion-color-primary);
+      font-weight: 600;
+    }
+  }
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.modo button,
+.chip,
+.limpar,
+.ver-todas {
+  background: none;
+  color: var(--app-text-secondary);
+  font: inherit;
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+
+.chip,
+.limpar {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--app-surface-border);
+}
+
+.chip.ativo {
+  border-color: rgba(var(--ion-color-primary-rgb), 0.6);
+  background: rgba(var(--ion-color-primary-rgb), 0.12);
+  color: var(--ion-color-primary);
+}
+
+.ver-todas {
+  align-self: flex-start;
+  border: none;
+  padding: 0;
+  color: var(--ion-color-primary);
+  font-weight: 600;
+}
+
+.grupo {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 14px;
+}
+
+.grupo-topo {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0 6px;
+  border-bottom: 1px solid var(--app-surface-border);
+}
+
+.grupo-info { color: var(--app-text-secondary); font-size: var(--fs-sm); }
+
+.linha {
+  display: grid;
+  // Anexo depois do valor (antes dele sobrava um vão).
+  grid-template-columns: 48px minmax(0, 1fr) auto 110px 28px;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  font-size: var(--fs-sm);
+
+  & + & { border-top: 1px solid var(--app-surface-border); }
+
+  .data { color: var(--app-text-secondary); }
+
+  .titulo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .cat, .meta { color: var(--app-text-secondary); }
+  .meta { display: flex; align-items: center; gap: 6px; font-size: var(--fs-xs); }
+  .valor { text-align: right; font-weight: 600; }
+  .valor.receita { color: var(--ion-color-success); }
+}
+
+.selo {
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--app-surface-border);
+  font-size: var(--fs-xs);
+}
+
+.marca { color: var(--ion-color-primary); }
+.total-receitas { color: var(--ion-color-success); font-weight: 600; }
+
+@media (max-width: 767px) {
+  .duas-colunas { grid-template-columns: 1fr; }
+
+  // Dois cards por linha; o "Disponível" ocupa a linha toda.
+  // (padding do cartão e tamanho do valor vêm do global, theme/_dashboard.scss)
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stat-card--highlight {
+    grid-column: 1 / -1;
+  }
+
+  .linha {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "titulo valor" "data meta";
+    row-gap: 2px;
+    padding: 8px 0;
+
+    .titulo { grid-area: titulo; }
+    .valor { grid-area: valor; }
+    .data { grid-area: data; }
+    .meta { grid-area: meta; justify-content: flex-end; }
+    .acoes { display: none; }
+  }
+}

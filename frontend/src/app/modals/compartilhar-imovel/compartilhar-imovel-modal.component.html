@@ -1,0 +1,94 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Compartilhar imóvel</ion-title>
+    <ion-buttons slot="end">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <p class="intro">
+    Quem aceitar passa a ver os serviços e anexos de <strong>{{ imovel.name }}</strong> junto com você. O que a pessoa
+    cadastrar fica neste imóvel.
+  </p>
+
+  <form [formGroup]="form" (ngSubmit)="enviar()">
+    <ion-item>
+      <ion-input
+        label="Usuário"
+        labelPlacement="stacked"
+        formControlName="username"
+        placeholder="Nome de usuário exato"
+        autocapitalize="off"
+        autocomplete="off"
+        [spellcheck]="false"
+      ></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-select label="Permissão" labelPlacement="stacked" formControlName="nivel" interface="popover">
+        @for (n of niveis; track n[0]) {
+          <ion-select-option [value]="n[0]">{{ n[1] }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-item>
+    <p class="hint">{{ nivelHints[form.controls.nivel.value] }}.</p>
+
+    @if (errorMessage()) {
+      <ion-text color="danger">
+        <p class="error">{{ errorMessage() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="button" expand="block" (click)="enviar()" [disabled]="sending()">
+      {{ sending() ? 'Enviando...' : 'Enviar convite' }}
+    </ion-button>
+  </form>
+
+  <h2 class="share-section">Com quem está compartilhado</h2>
+  @if (loading()) {
+    <p class="muted">Carregando...</p>
+  } @else {
+    <ul class="share-list">
+      @for (s of compartilhamentos(); track s.id) {
+        <li class="share-row">
+          <div class="share-who">
+            <span class="share-name">{{ s.convidado.nome }}</span>
+            <span class="share-meta">
+              {{ s.convidado.username }} ·
+              @if (s.status === 'pendente') {
+                <span class="pending">Aguardando resposta</span> · expira em {{ s.expira_em | date: 'dd/MM/yyyy' }}
+              } @else {
+                desde {{ s.respondido_em | date: 'dd/MM/yyyy' }}
+              }
+            </span>
+          </div>
+          <div class="share-actions">
+            @if (s.status === 'aceito') {
+              <ion-select
+                aria-label="Permissão"
+                [value]="s.nivel"
+                interface="popover"
+                fill="outline"
+                (ionChange)="mudarNivel(s, $any($event.detail.value))"
+              >
+                @for (n of niveis; track n[0]) {
+                  <ion-select-option [value]="n[0]">{{ n[1] }}</ion-select-option>
+                }
+              </ion-select>
+            } @else {
+              <span class="nivel-text">{{ nivelLabels[s.nivel] }}</span>
+            }
+            <ion-button fill="clear" color="danger" size="small" (click)="encerrar(s)">
+              {{ s.status === 'pendente' ? 'Cancelar' : 'Encerrar' }}
+            </ion-button>
+          </div>
+        </li>
+      } @empty {
+        <li class="share-empty">Ainda não está compartilhado com ninguém.</li>
+      }
+    </ul>
+  }
+</ion-content>

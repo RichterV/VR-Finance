@@ -1,0 +1,223 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button aria-label="Abrir menu"></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Início</ion-title>
+    <ion-buttons slot="end">
+      <ion-button
+        (click)="toggleValores()"
+        [title]="valoresOcultos() ? 'Mostrar valores' : 'Ocultar valores'"
+        [attr.aria-label]="valoresOcultos() ? 'Mostrar valores' : 'Ocultar valores'"
+        [attr.aria-pressed]="!valoresOcultos()"
+      >
+        <ion-icon slot="icon-only" [name]="valoresOcultos() ? 'eye-off-outline' : 'eye-outline'" aria-hidden="true"></ion-icon>
+      </ion-button>
+      <ion-button
+        class="bell-btn"
+        (click)="abrirNotificacoes()"
+        [title]="notificacoes.naoLidas() ? notificacoes.naoLidas() + ' notificação(ões) não lida(s)' : 'Notificações'"
+        [attr.aria-label]="notificacoes.naoLidas() ? 'Notificações, ' + notificacoes.naoLidas() + ' não lida(s)' : 'Notificações'"
+      >
+        <ion-icon slot="icon-only" name="notifications-outline" aria-hidden="true"></ion-icon>
+        @if (notificacoes.naoLidas() > 0) {
+          <span class="bell-badge" aria-hidden="true">{{ notificacoes.naoLidas() }}</span>
+        }
+      </ion-button>
+      <!-- No celular (< 768px) Adicionar gasto/receita vão pro botão flutuante e Categorias/Perfil pro menu lateral. -->
+      <ion-button class="desktop-only" aria-label="Adicionar gasto" (click)="modals.adicionarGasto()">
+        <ion-icon slot="start" name="remove-circle-outline" aria-hidden="true"></ion-icon>
+        <span class="btn-text">Adicionar gasto</span>
+      </ion-button>
+      <ion-button class="desktop-only" aria-label="Adicionar receita" (click)="modals.adicionarReceita()">
+        <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
+        <span class="btn-text">Adicionar receita</span>
+      </ion-button>
+      <!-- Só os dois lançamentos têm texto; o resto é ícone com dica (title), pra não competir com eles. -->
+      <ion-button routerLink="/dados" aria-label="Visualizar dados" title="Visualizar dados">
+        <ion-icon slot="icon-only" name="bar-chart-outline" aria-hidden="true"></ion-icon>
+      </ion-button>
+      <ion-button class="desktop-only" aria-label="Categorias" title="Categorias" (click)="modals.categorias()">
+        <ion-icon slot="icon-only" name="pricetags-outline" aria-hidden="true"></ion-icon>
+      </ion-button>
+      <ion-button class="desktop-only" aria-label="Perfil" title="Perfil" (click)="modals.perfil()">
+        <ion-icon slot="icon-only" name="person-outline" aria-hidden="true"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding home-content">
+  <ion-refresher slot="fixed" (ionRefresh)="onPullToRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div class="dashboard">
+    <header class="dashboard-header">
+      @if (auth.currentUser(); as user) {
+        <h1>Olá, {{ user.first_name }}</h1>
+      }
+    </header>
+
+    @if (notificacoes.resumoPendente(); as resumo) {
+      <div class="digest-banner">
+        <span class="digest-icon" aria-hidden="true"><ion-icon name="stats-chart-outline"></ion-icon></span>
+        <div class="digest-text">
+          <span class="digest-title">Seu resumo de {{ nomeMes(resumo.mes) }} chegou</span>
+          <span class="digest-teaser">{{ teaserResumo(resumo) }}</span>
+        </div>
+        <div class="digest-actions">
+          <ion-button size="small" fill="clear" class="digest-open" (click)="abrirResumo(resumo)">Ver resumo</ion-button>
+          <ion-button
+            size="small"
+            fill="clear"
+            class="digest-dismiss"
+            title="Dispensar"
+            aria-label="Dispensar resumo"
+            (click)="dispensarResumo(resumo)"
+          >
+            <ion-icon slot="icon-only" name="close" aria-hidden="true"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
+    }
+
+    <section class="dashboard-section" id="resumo-mensal">
+      <div class="section-header">
+        <h2>Resumo mensal</h2>
+        <div class="period-controls">
+          <app-reset-period-button
+            [disabled]="periodoMensalIsDefault()"
+            (reset)="resetPeriodoMensal()"
+          ></app-reset-period-button>
+          <ion-select
+            class="select-mes"
+            aria-label="Mês"
+            [value]="mes()"
+            (ionChange)="onMesChange($any($event.detail.value))"
+            interface="popover"
+            [interfaceOptions]="{ size: 'auto' }"
+            fill="outline"
+          >
+            @for (m of meses; track $index) {
+              <ion-select-option [value]="$index + 1">{{ m }}</ion-select-option>
+            }
+          </ion-select>
+          <ion-select
+            aria-label="Ano"
+            [value]="anoMensal()"
+            (ionChange)="onAnoMensalChange($any($event.detail.value))"
+            interface="popover"
+            fill="outline"
+          >
+            @for (a of anos; track a) {
+              <ion-select-option [value]="a">{{ a }}</ion-select-option>
+            }
+          </ion-select>
+          <ion-button
+            class="btn-detalhes"
+            fill="clear"
+            title="Ver detalhes"
+            aria-label="Ver detalhes do mês"
+            (click)="abrirDetalhesMes()"
+          >
+            <ion-icon slot="start" name="document-text-outline" aria-hidden="true"></ion-icon>
+            <span class="btn-text">Ver detalhes</span>
+          </ion-button>
+        </div>
+      </div>
+      <ng-container *ngTemplateOutlet="cutoff"></ng-container>
+      <app-mensal-section
+        [ano]="anoMensal()"
+        [mes]="mes()"
+        [valoresOcultos]="valoresOcultos()"
+        [reload]="reloadToken()"
+        (settled)="onSectionSettled()"
+      >
+        <!-- Indicadores ao lado das categorias do mês (antes, uma seção própria embaixo). -->
+        <div class="indicadores-block" id="indicadores">
+          <h3 class="block-title">Indicadores <span class="section-subtitle">{{ corteSubtitulo() }}</span></h3>
+          <app-indicadores-section
+            [corte]="corte()"
+            [valoresOcultos]="valoresOcultos()"
+            [reload]="reloadToken()"
+            (settled)="onSectionSettled()"
+          ></app-indicadores-section>
+        </div>
+      </app-mensal-section>
+    </section>
+
+    <section class="dashboard-section" id="resumo-anual">
+      <div class="section-header">
+        <h2>Resumo anual <span class="section-subtitle">{{ anualSubtitulo() }}</span></h2>
+      </div>
+      <app-anual-section
+        [ano]="anoMensal()"
+        [corte]="corte()"
+        [valoresOcultos]="valoresOcultos()"
+        [reload]="reloadToken()"
+        (settled)="onSectionSettled()"
+      ></app-anual-section>
+    </section>
+
+    <section class="dashboard-section" id="relatorio-geral">
+      <div class="section-header">
+        <h2>Relatório geral <span class="section-subtitle">{{ corteSubtitulo() }}</span></h2>
+      </div>
+      <app-geral-section
+        [corte]="corte()"
+        [valoresOcultos]="valoresOcultos()"
+        [reload]="reloadToken()"
+        (settled)="onSectionSettled()"
+      ></app-geral-section>
+    </section>
+
+    @if (inflacaoHabilitada()) {
+      <section class="dashboard-section" id="analise-inflacionaria">
+        <div class="section-header">
+          <h2>Análise inflacionária <span class="section-subtitle">{{ inflacaoSubtitulo() }}</span></h2>
+        </div>
+        <app-inflacao-section
+          [corte]="corte()"
+          [valoresOcultos]="valoresOcultos()"
+          [reload]="reloadToken()"
+          (settled)="onSectionSettled()"
+        ></app-inflacao-section>
+      </section>
+    }
+  </div>
+
+  <!-- Botão flutuante (só no celular): lançar gasto ou receita sem abrir o menu. -->
+  <ion-fab slot="fixed" vertical="bottom" horizontal="end" class="mobile-only home-fab">
+    <ion-fab-button aria-label="Novo lançamento">
+      <ion-icon name="add" aria-hidden="true"></ion-icon>
+    </ion-fab-button>
+    <ion-fab-list side="top">
+      <div class="fab-action">
+        <span class="fab-label" aria-hidden="true">Receita</span>
+        <ion-fab-button class="fab-receita" aria-label="Adicionar receita" (click)="modals.adicionarReceita()">
+          <ion-icon name="add-circle-outline" aria-hidden="true"></ion-icon>
+        </ion-fab-button>
+      </div>
+      <div class="fab-action">
+        <span class="fab-label" aria-hidden="true">Gasto</span>
+        <ion-fab-button class="fab-gasto" aria-label="Adicionar gasto" (click)="modals.adicionarGasto()">
+          <ion-icon name="remove-circle-outline" aria-hidden="true"></ion-icon>
+        </ion-fab-button>
+      </div>
+    </ion-fab-list>
+  </ion-fab>
+</ion-content>
+
+<!-- Um controle só (antes repetido em cada seção): vale pra Indicadores, Anual, Geral e Inflação,
+     que mostram no subtítulo até quando estão contando. -->
+<ng-template #cutoff>
+  <label
+    class="cutoff-toggle"
+    title="Indicadores, Resumo anual, Relatório geral e Análise inflacionária ignoram o que vem depois deste mês (ex: parcelas futuras)"
+    (click)="$event.preventDefault(); toggleLimitarAteMesSelecionado()"
+  >
+    <ion-checkbox [checked]="limitarAteMesSelecionado()" aria-label="Mostrar apenas até o mês selecionado"></ion-checkbox>
+    <span aria-hidden="true">Mostrar apenas até {{ mesAnoRotulo() }}</span>
+  </label>
+</ng-template>

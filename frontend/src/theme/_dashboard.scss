@@ -1,0 +1,729 @@
+@use "./mixins" as ds;
+
+// Peças visuais do dashboard da Home (cards de métrica, gráficos, barras de percentual, cabeçalho de
+// seção). Ficam no global, escopadas em .dashboard, porque são usadas pelas várias seções da Home
+// (home/sections/*), cada uma um componente com o próprio .scss isolado. O modal Detalhes do mês
+// também usa .dashboard (stat-card, stats-grid).
+//
+// Hierarquia (revisão visual de 2026-10-09): um destaque, poucos cartões principais e o resto numa
+// lista compacta (.metric-list) -- antes eram 10 cartões do mesmo tamanho por seção, e no celular
+// cada um ocupava uma linha inteira.
+.dashboard {
+  .dashboard-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+  }
+
+  .section-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+
+    h2 {
+      font-size: var(--fs-lg);
+    }
+
+    h2 .section-subtitle {
+      font-weight: 400;
+      color: var(--app-text-secondary);
+      font-size: var(--fs-sm);
+    }
+  }
+
+  .cutoff-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+    color: var(--app-text-secondary);
+    cursor: pointer;
+    user-select: none;
+
+    ion-checkbox {
+      --size: 18px;
+      --checkbox-background-checked: var(--ion-color-primary);
+      --border-color-checked: var(--ion-color-primary);
+      --checkmark-color: var(--ion-color-primary-contrast);
+    }
+  }
+
+  .link-inline {
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+    color: var(--ion-color-primary);
+    cursor: pointer;
+  }
+
+  .empty-state {
+    color: var(--app-text-secondary);
+
+    a {
+      color: var(--ion-color-primary);
+      font-weight: 600;
+    }
+  }
+
+  .inflacao-cesta {
+    color: var(--app-text-secondary);
+    font-size: var(--fs-sm);
+    margin: 0 0 var(--sp-3);
+  }
+
+  .inflacao-segment {
+    max-width: 320px;
+    margin: 0 0 var(--sp-2);
+  }
+
+  .inflacao-caption {
+    color: var(--app-text-secondary);
+    font-size: var(--fs-xs);
+    margin: 0 0 var(--sp-4);
+  }
+
+  // Cabeçalho do gráfico de inflação: título e, embaixo, o número do último mês (antes era um bloco
+  // vermelho separado, da largura toda).
+  .chart-card-header.inflacao-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-2);
+  }
+
+  .inflacao-headline {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--sp-3);
+  }
+
+  // --- Mensal: destaque à esquerda, 4 cartões principais à direita (2x2) ---
+  .mensal-top {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) 2fr;
+    gap: var(--sp-3);
+  }
+
+  .key-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-3);
+  }
+
+  .stat-card {
+    @include ds.app-card;
+    padding: var(--sp-4) 20px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    min-width: 0;
+  }
+
+  // Destaque (Disponível pra gastar, inflação do mês): superfície neutra com faixa lateral de 3px e o
+  // número colorido -- antes era um bloco inteiro em gradiente com sombra colorida, que dominava a tela
+  // e cansava a vista. Verde quando bom, vermelho (.negativo) quando ruim.
+  .stat-card--highlight {
+    @include ds.app-card-accent(var(--ion-color-primary));
+
+    .stat-value {
+      color: var(--app-positive);
+    }
+
+    &.negativo {
+      border-left-color: var(--app-negative);
+
+      .stat-value {
+        color: var(--app-negative);
+      }
+    }
+  }
+
+  .hero-card {
+    justify-content: center;
+    padding: 20px var(--sp-5);
+  }
+
+  .stat-value.hero-value {
+    font-size: var(--fs-hero);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  // A conta do "Disponível": Receita − Gastos − Caixa pretendido.
+  .hero-eq {
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+    gap: 2px var(--sp-4);
+    margin: var(--sp-3) 0 0;
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--app-surface-border);
+    font-size: var(--fs-sm);
+    font-variant-numeric: tabular-nums;
+
+    dt {
+      color: var(--app-text-secondary);
+    }
+
+    dd {
+      margin: 0;
+      text-align: right;
+      color: var(--app-text-primary);
+    }
+  }
+
+  .stat-label {
+    font-size: var(--fs-sm);
+    color: var(--app-text-secondary);
+  }
+
+  .stat-value {
+    font-size: var(--fs-lg);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--app-text-primary);
+    white-space: nowrap;
+  }
+
+  .stat-percent {
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    color: var(--app-text-secondary);
+  }
+
+  .valor-negativo {
+    color: var(--app-negative);
+  }
+
+  .valor-positivo {
+    color: var(--app-positive);
+  }
+
+  // Números de apoio (quantidades, médias): uma faixa só, sem cartão por número. No desktop vira uma
+  // linha com divisórias; no celular, uma lista "rótulo ........ valor".
+  .metric-list {
+    @include ds.app-card;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 0;
+    padding: var(--sp-3) 0;
+
+    > div {
+      padding: 2px 20px;
+      border-left: 1px solid var(--app-surface-border);
+      min-width: 0;
+
+      &:first-child {
+        border-left: none;
+      }
+    }
+
+    dt {
+      font-size: var(--fs-xs);
+      color: var(--app-text-secondary);
+    }
+
+    dd {
+      margin: 2px 0 0;
+      font-size: var(--fs-md);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+  }
+
+  // Resumo anual: os 6 números principais numa faixa (6 colunas; 3 em tablet; 2 no celular).
+  .key-strip {
+    @include ds.app-card;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--sp-3) 0;
+    margin: 0;
+    padding: var(--sp-4) 0;
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 0 20px;
+      border-left: 1px solid var(--app-surface-border);
+      min-width: 0;
+
+      &:first-child {
+        border-left: none;
+      }
+    }
+
+    dt {
+      font-size: var(--fs-sm);
+      color: var(--app-text-secondary);
+    }
+
+    dd {
+      margin: 0;
+      font-size: var(--fs-lg);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 1100px) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+
+      > div:nth-child(3n + 1) {
+        border-left: none;
+      }
+    }
+
+    @media (max-width: 767px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding: var(--sp-3) 0;
+
+      > div {
+        padding: 0 var(--sp-4);
+        border-left: 1px solid var(--app-surface-border);
+      }
+
+      > div:nth-child(odd) {
+        border-left: none;
+      }
+
+      dt {
+        font-size: var(--fs-xs);
+      }
+
+      dd {
+        font-size: min(var(--fs-lg), 4.9vw);
+      }
+    }
+  }
+
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-3);
+  }
+
+  // .charts-grid.charts-grid--x: precisa vencer as variantes 7/5 e 5/7, declaradas mais abaixo.
+  @media (max-width: 900px) {
+    .charts-grid,
+    .charts-grid.charts-grid--trend,
+    .charts-grid.charts-grid--historico {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // Tendência (7) ao lado do caixa (5): o gráfico de linhas pede largura, o de caixa pede altura.
+  .charts-grid--trend {
+    grid-template-columns: 7fr 5fr;
+  }
+
+  // Geral: "Por ano" (5 anos) mais estreito que "Por mês" (12 meses).
+  .charts-grid--historico {
+    grid-template-columns: 5fr 7fr;
+  }
+
+  .chart-card {
+    @include ds.app-card;
+    padding: 20px var(--sp-5);
+    min-width: 0;
+  }
+
+  // Cartões lado a lado com alturas diferentes: o gráfico de linhas cresce até a altura do vizinho.
+  .chart-card--grow {
+    display: flex;
+    flex-direction: column;
+
+    .chart-wrap {
+      flex: 1;
+      min-height: 260px;
+    }
+  }
+
+  // Frase do que o gráfico mostra ("Tendência: essenciais subindo R$ 14/mês...").
+  .chart-headline {
+    margin: calc(-1 * var(--sp-2)) 0 var(--sp-3);
+    font-size: var(--fs-sm);
+    color: var(--app-text-secondary);
+  }
+
+  .chart-legend-note {
+    margin: calc(-1 * var(--sp-2)) 0 var(--sp-2);
+    font-size: var(--fs-xs);
+    color: var(--app-text-secondary);
+  }
+
+  .chart-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 var(--sp-3);
+
+    h3 {
+      font-size: var(--fs-md);
+    }
+  }
+
+  .chart-wrap {
+    position: relative;
+    height: 260px;
+  }
+
+  // Relatório geral: faixa "Para onde foi a receita" (a soma dos segmentos é a receita).
+  .fluxo-bar {
+    display: flex;
+    gap: 2px;
+    height: 24px;
+    margin: 0 0 var(--sp-4);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+  }
+
+  .fluxo-seg {
+    flex: 0 1 0;
+    min-width: 2px;
+  }
+
+  .fluxo-seg--oculto {
+    flex-grow: 1;
+    background: rgba(var(--app-muted-rgb), 0.15);
+  }
+
+  .fluxo-legend {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--sp-3) var(--sp-4);
+    margin: 0;
+
+    > div {
+      min-width: 0;
+    }
+
+    dt {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: var(--fs-xs);
+      color: var(--app-text-secondary);
+    }
+
+    dd {
+      margin: 2px 0 0;
+      font-size: var(--fs-md);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+
+      small {
+        font-size: var(--fs-xs);
+        font-weight: 400;
+        color: var(--app-text-secondary);
+      }
+    }
+
+    @media (max-width: 767px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .fluxo-sw {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  .fluxo-note {
+    margin: var(--sp-3) 0 0;
+  }
+
+  // "Por mês" em barras horizontais (celular): 12 linhas.
+  .chart-wrap.chart-wrap--meses {
+    height: 420px;
+  }
+
+  // Painéis empilhados (Inflação): o principal e o de apoio, mais baixo.
+  .panel-caption {
+    margin: var(--sp-2) 0 2px;
+    font-size: var(--fs-xs);
+    color: var(--app-text-secondary);
+  }
+
+  .chart-wrap--panel-main {
+    height: 190px;
+  }
+
+  .chart-wrap--panel-sub {
+    height: 110px;
+  }
+
+  .chart-card--wide .chart-wrap {
+    height: 320px;
+  }
+
+  // Categorias: uma lista só, escala comum, cor da prioridade (percentuais-itens.component.ts).
+  .percentuais-card {
+    @include ds.app-card;
+    padding: 20px var(--sp-5);
+  }
+
+  .percentuais-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2) var(--sp-4);
+    margin-bottom: var(--sp-3);
+
+    h3 {
+      margin: 0;
+      font-size: var(--fs-md);
+      font-weight: 600;
+    }
+  }
+
+  .percentuais-toggle {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--sp-3);
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+
+    .toggle-text {
+      font-size: var(--fs-sm);
+      font-weight: 500;
+      color: var(--ion-color-primary);
+    }
+  }
+
+  // Sem a lista aberta, o cartão é só o cabeçalho.
+  .percentuais-head:last-child {
+    margin-bottom: 0;
+  }
+
+  .percentuais-legend {
+    display: inline-flex;
+    gap: var(--sp-4);
+    font-size: var(--fs-xs);
+    color: var(--app-text-secondary);
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+
+  .cat-dot {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+
+    &.essencial {
+      background: var(--chart-essencial);
+    }
+
+    &.nao-essencial {
+      background: var(--chart-nao-essencial);
+    }
+  }
+
+  .percentuais-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .percentuais-more {
+    margin-top: var(--sp-2);
+    padding: var(--sp-2) 0;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--ion-color-primary);
+    cursor: pointer;
+  }
+
+  .percentual-row {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr) 50px;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: 6px 0;
+    font-size: var(--fs-sm);
+    color: var(--app-text-primary);
+
+    @media (max-width: 480px) {
+      grid-template-columns: 116px minmax(0, 1fr) 44px;
+      gap: var(--sp-2);
+    }
+  }
+
+  .percentual-name {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .percentual-bar {
+    position: relative;
+    display: block;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(var(--app-muted-rgb), 0.12);
+    cursor: pointer;
+  }
+
+  .percentual-fill {
+    display: block;
+    height: 100%;
+    background: var(--ion-color-primary);
+    border-radius: 3px;
+
+    &.essencial {
+      background: var(--chart-essencial);
+    }
+
+    &.nao-essencial {
+      background: var(--chart-nao-essencial);
+    }
+  }
+
+  .percentual-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--app-surface-raised);
+    border: 1px solid var(--app-surface-border);
+    color: var(--app-text-primary);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    padding: 4px 10px;
+    border-radius: var(--r-sm);
+    box-shadow: var(--app-shadow-float);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 5;
+  }
+
+  .percentual-bar:hover .percentual-tooltip,
+  .percentual-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .percentual-value {
+    text-align: right;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--app-text-secondary);
+  }
+
+  @media (max-width: 900px) {
+    .mensal-top {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // Celular: cartões em 2 colunas (antes 1 por linha), lista de apoio em linhas "rótulo .... valor".
+  @media (max-width: 767px) {
+    .metric-list {
+      grid-template-columns: 1fr;
+      padding: var(--sp-1) var(--sp-4);
+
+      > div {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--sp-3);
+        padding: 10px 0;
+        border-left: none;
+        border-top: 1px solid var(--app-surface-border);
+
+        &:first-child {
+          border-top: none;
+        }
+      }
+
+      dt {
+        font-size: var(--fs-sm);
+      }
+
+      dd {
+        margin: 0;
+        font-size: var(--fs-sm);
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--sp-2);
+    }
+
+    .key-grid {
+      gap: var(--sp-2);
+    }
+
+    .stat-card {
+      padding: var(--sp-3);
+    }
+
+    .stat-label {
+      font-size: var(--fs-xs);
+    }
+
+    // Cabe "R$ 12.345,67" em meia tela de 360px sem cortar.
+    .stat-value {
+      font-size: min(var(--fs-lg), 4.9vw);
+    }
+
+    .hero-card {
+      padding: var(--sp-4);
+    }
+
+    .chart-card,
+    .percentuais-card {
+      padding: var(--sp-4);
+    }
+
+    .chart-wrap {
+      height: 220px;
+    }
+
+    .chart-wrap--panel-main {
+      height: 160px;
+    }
+
+    .chart-wrap--panel-sub {
+      height: 96px;
+    }
+  }
+}

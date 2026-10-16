@@ -1,0 +1,50 @@
+site_name: VR Finance
+site_description: Documentação do app VR Finance (backend FastAPI, frontend Ionic, banco SQLite)
+docs_dir: docs
+
+theme:
+  name: material
+  language: pt-BR
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      toggle:
+        icon: material/weather-night
+        name: Modo escuro
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Modo claro
+  features:
+    - navigation.tabs
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+nav:
+  - Início: index.md
+  - Arquitetura: arquitetura.md
+  - Funcionalidades e telas: funcionalidades.md
+  - Módulos opcionais: modulos-opcionais.md
+  - Anexos e compartilhamento: anexos.md
+  - Modelo de dados: modelo-de-dados.md
+  - Autenticação: autenticacao.md
+  - API: api.md
+  - Analítico (resumos e gráficos): analitico.md
+  - Visual e temas: visual-e-temas.md
+  - Setup - Backend: setup-backend.md
+  - Setup - Frontend: setup-frontend.md
+  - Gerar o app Android (APK): build-app.md
+  - Deploy (Ubuntu Server + Tailscale): deploy-ubuntu-tailscale.md
+  - Deploy no Android (Termux) — histórico: deploy-android-tailscale.md

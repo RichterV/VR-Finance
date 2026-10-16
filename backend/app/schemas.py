@@ -1,0 +1,969 @@
+from datetime import date, datetime, timezone
+from typing import Annotated, Literal, Optional, Union
+
+from pydantic import BaseModel, BeforeValidator, Field, StringConstraints, field_serializer
+
+Priority = Literal["essencial", "nao_essencial"]
+ServiceType = Literal["peca", "peca_mao_de_obra", "peca_mao_de_obra_propria"]
+CasaCategoria = Literal[
+    "eletrica", "hidraulica", "pintura", "estrutura", "eletrodomesticos", "jardim", "limpeza",
+    "impostos", "documentos", "outros",
+]
+CasaServiceType = Literal["material", "material_mao_de_obra", "material_mao_de_obra_propria"]
+BolsaOperation = Literal["compra", "venda", "compra_dolar", "venda_dolar"]
+BolsaCurrency = Literal["BRL", "USD"]
+DevedorStatus = Literal["pago", "nao_pago"]
+EntityType = Literal["gasto", "receita", "servico_veiculo", "servico_casa", "nota_fiscal", "empresa"]
+# Compartilhamento (app/compartilhamento.py). Níveis acumulados: cada um inclui os anteriores.
+ShareItemTipo = Literal["imovel"]
+ShareNivel = Literal["leitura", "cadastro", "edicao", "total"]
+ShareStatus = Literal["pendente", "aceito", "recusado", "cancelado", "expirado", "encerrado"]
+# Espelha app.modules.OPTIONAL_MODULES
+# Alias pra campos chamados `date` com default: `date: Optional[date] = None` faria o Pydantic
+# resolver o tipo como o próprio default (None) em vez de `datetime.date`.
+DateField = date
+
+
+
+def _round_money(value):
+    # Antes do Field(gt=0): 0,004 vira 0,00 e é rejeitado, em vez de passar e ser gravado como zero.
+    if value is None or isinstance(value, bool):
+        return value
+    try:
+        return round(float(value), 2)
+    except (TypeError, ValueError):
+        return value  # o Pydantic devolve o erro de tipo normal
+
+
+# Valor em R$ sempre com 2 casas (o banco guarda REAL -- sem isso ficavam valores como 411.10848).
+Money = Annotated[float, BeforeValidator(_round_money)]
+# Texto obrigatório: espaços nas pontas removidos e vazio rejeitado (422).
+NonBlank = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+ModuleKey = Literal[
+    "veiculos",
+    "manutencao_casa",
+    "operacoes_bolsa",
+    "devedores",
+    "ferramentas",
+    "exportar_dados",
+    "analise_inflacionaria",
+    "empresa",
+]
+
+
+# --- Auth ---
+
+# Temas visuais (escolhidos no Perfil). Espelhado em frontend/src/app/shared/themes.ts.
+ThemeKey = Literal[
+    "atual",
+    "grafite",
+    "petroleo",
+    "musgo",
+    "indigo",
+    "cafe",
+    "ambar",
+    "oceano",
+    "lavanda",
+    "oled",
+    "salvia",
+    "cobre",
+    "floresta",
+    "nordico",
+    "sepia",
+]
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    role: str
+    first_name: str
+    last_name: str
+    modules: list[str]
+    must_change_password: bool
+    default_cash_percentage: float
+    theme: str = "salvia"
+    last_login_at: Optional[datetime] = None
+    last_activity_at: Optional[datetime] = None
+    # Foto de perfil: muda a cada foto nova (o front usa como chave de cache); None = sem foto.
+    avatar_version: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+    @field_serializer("last_login_at", "last_activity_at")
+    def _serialize_utc_datetime(self, value: Optional[datetime]) -> Optional[str]:
+        # Gravado em UTC sem tzinfo; sem o offset explícito o navegador leria como horário local.
+        if value is None:
+            return None
+        return value.replace(tzinfo=timezone.utc).isoformat()
+
+
+class UserCreate(BaseModel):
+    username: str = Field(min_length=1)
+    password: str = Field(min_length=6)
+    first_name: str = Field(min_length=1)
+    last_name: str = Field(min_length=1)
+    modules: list[ModuleKey] = []
+
+
+class UserUpdate(BaseModel):
+    username: str = Field(min_length=1)
+    password: Optional[str] = Field(default=None, min_length=6)
+    first_name: str = Field(min_length=1)
+    last_name: str = Field(min_length=1)
+    # None = não mexe nos módulos atuais
+    modules: Optional[list[ModuleKey]] = None
+
+
+class ProfileUpdate(BaseModel):
+    """Usuário logado editando a própria conta (PUT /auth/me)."""
+
+    username: str = Field(min_length=1)
+    first_name: str = Field(min_length=1)
+    last_name: str = Field(min_length=1)
+
+
+class ProfileUpdateOut(BaseModel):
+    # O JWT carrega o username no "sub" -- trocar o username invalida o token antigo, então a
+    # resposta já devolve um novo pro frontend substituir o guardado.
+    access_token: str
+    token_type: str = "bearer"
+    user: UserOut
+
+
+class CashPercentageDefault(BaseModel):
+    """% de caixa pré-selecionado em "Adicionar receita" (PUT /auth/me/default-cash-percentage)."""
+
+    default_cash_percentage: float = Field(ge=0, le=100)
+
+
+class ThemeUpdate(BaseModel):
+    """Tema visual do usuário logado (PUT /auth/me/theme)."""
+
+    theme: ThemeKey
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=6)
+
+
+class PasswordChangeOut(BaseModel):
+    detail: str
+    # Token novo: a troca revoga todos os tokens anteriores, inclusive o deste aparelho.
+    access_token: str
+
+
+# --- Dropdown options ---
+
+class DropdownOptionCreate(BaseModel):
+    priority: Priority
+    name: NonBlank
+
+
+class DropdownOptionUpdate(BaseModel):
+    name: NonBlank
+    include_in_inflation: Optional[bool] = None
+
+
+class DropdownOptionOut(BaseModel):
+    id: int
+    priority: Priority
+    name: str
+    active: bool
+    include_in_inflation: bool
+
+    class Config:
+        from_attributes = True
+
+
+# --- Gastos ---
+
+class GastoCreate(BaseModel):
+    priority: Priority
+    item_id: int
+    value: Money = Field(gt=0)
+    description: Optional[str] = None
+    is_installment: bool = False
+    installment_count: Optional[int] = Field(default=None, ge=2, le=120)
+    # Omitido = hoje. Parcelado: data da parcela 1.
+    date: Optional[DateField] = None
+    # Recorrente: este lançamento é o 1º; a regra gera os próximos a partir do mês seguinte.
+    recorrente: bool = False
+    recorrencia_dia: Optional[int] = Field(default=None, ge=1, le=31)
+    # Último mês que gera (qualquer dia dele serve); omitido = repete sem fim.
+    recorrencia_fim: Optional[DateField] = None
+
+
+class GastoUpdate(BaseModel):
+    priority: Priority
+    item_id: int
+    value: Money = Field(gt=0)
+    description: Optional[str] = None
+
+
+class GastoAntecipar(BaseModel):
+    value: Optional[Money] = Field(default=None, gt=0)
+
+
+class GastoOut(BaseModel):
+    id: int
+    priority: Priority
+    item_id: int
+    item_name: str
+    value: float
+    description: Optional[str]
+    is_installment: bool
+    installment_count: Optional[int]
+    installment_number: Optional[int]
+    installment_group_id: Optional[str]
+    recorrencia_id: Optional[int] = None
+    date: date
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class GastoPage(BaseModel):
+    items: list[GastoOut]
+    total: int
+
+
+# --- Receitas ---
+
+class ReceitaCreate(BaseModel):
+    value: Money = Field(gt=0)
+    cash_percentage: float = Field(ge=0, le=100)
+    description: Optional[str] = None
+    # Omitido = hoje.
+    date: Optional[DateField] = None
+    recorrente: bool = False
+    recorrencia_dia: Optional[int] = Field(default=None, ge=1, le=31)
+    # Último mês que gera (qualquer dia dele serve); omitido = repete sem fim.
+    recorrencia_fim: Optional[DateField] = None
+
+
+class ReceitaUpdate(BaseModel):
+    value: Money = Field(gt=0)
+    cash_percentage: float = Field(ge=0, le=100)
+    description: Optional[str] = None
+
+
+class ReceitaOut(BaseModel):
+    id: int
+    value: float
+    cash_percentage: float
+    cash_value: float
+    description: Optional[str]
+    recorrencia_id: Optional[int] = None
+    date: date
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ReceitaPage(BaseModel):
+    items: list[ReceitaOut]
+    total: int
+
+
+# --- Recorrências ---
+
+RecorrenciaTipo = Literal["gasto", "receita"]
+RecorrenciaStatus = Literal["ativa", "pausada", "encerrada"]
+
+
+class RecorrenciaUpdate(BaseModel):
+    """Vale dos próximos lançamentos em diante; os já gerados não mudam. Campos de gasto (priority,
+    item_id) são ignorados numa receita, e cash_percentage num gasto."""
+
+    priority: Optional[Priority] = None
+    item_id: Optional[int] = None
+    value: Money = Field(gt=0)
+    cash_percentage: Optional[float] = Field(default=None, ge=0, le=100)
+    description: Optional[str] = None
+    dia: int = Field(ge=1, le=31)
+    # Último mês que gera (inclusive) -- qualquer dia do mês serve; null = sem fim.
+    fim_mes: Optional[DateField] = None
+
+
+class RecorrenciaOut(BaseModel):
+    id: int
+    tipo: RecorrenciaTipo
+    priority: Optional[Priority]
+    item_id: Optional[int]
+    item_name: Optional[str]
+    item_active: Optional[bool]
+    value: float
+    cash_percentage: Optional[float]
+    description: Optional[str]
+    dia: int
+    pausada: bool
+    fim_mes: Optional[date]
+    status: RecorrenciaStatus
+    # Data do próximo lançamento que será gerado (null se pausada/encerrada).
+    proxima_data: Optional[date]
+    # Lançamento deste mês já gerado e ainda com data futura -- oferecido pra apagar junto ao excluir.
+    lancamento_pendente_data: Optional[date] = None
+    created_at: datetime
+
+
+# --- Veículos ---
+
+class VehicleCreate(BaseModel):
+    name: NonBlank
+    year: int = Field(ge=1900, le=2100)
+
+
+class VehicleUpdate(BaseModel):
+    name: NonBlank
+    year: int = Field(ge=1900, le=2100)
+
+
+class VehicleOut(BaseModel):
+    id: int
+    name: str
+    year: int
+    active: bool
+
+    class Config:
+        from_attributes = True
+
+
+class VehicleServiceCreate(BaseModel):
+    vehicle_id: int
+    description: NonBlank
+    notes: Optional[str] = None
+    value: Money = Field(ge=0)
+    service_type: Optional[ServiceType] = None
+    mileage: int = Field(ge=0)
+
+
+class VehicleServiceUpdate(VehicleServiceCreate):
+    pass
+
+
+class VehicleServiceOut(BaseModel):
+    id: int
+    vehicle_id: int
+    vehicle_name: str
+    description: str
+    notes: Optional[str]
+    value: float
+    service_type: Optional[ServiceType]
+    mileage: Optional[int]
+    date: date
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class VehicleServicePage(BaseModel):
+    items: list[VehicleServiceOut]
+    total: int
+
+
+class VehicleResumoItem(BaseModel):
+    vehicle_id: int
+    vehicle_name: str
+    total_gasto: float
+    quantidade_servicos: int
+    ultimo_servico: Optional[date]
+
+
+class VehiclesResumo(BaseModel):
+    veiculos: list[VehicleResumoItem]
+    meses: list[str]
+    series: list[dict]
+
+
+# --- Manutenção Casa ---
+
+class ImovelCreate(BaseModel):
+    name: NonBlank
+
+
+class ImovelUpdate(ImovelCreate):
+    pass
+
+
+class UsuarioRef(BaseModel):
+    id: int
+    username: str
+    nome: str  # nome e sobrenome
+
+
+class ImovelOut(BaseModel):
+    id: int
+    name: str
+    active: bool
+    # Imóvel compartilhado comigo: quem é o dono, meu nível e o compartilhamento (pra "Sair").
+    # Imóvel meu: dono None, meu_nivel "dono" e com quantos usuários está compartilhado (aceitos).
+    dono: Optional[UsuarioRef] = None
+    meu_nivel: Literal["dono", "leitura", "cadastro", "edicao", "total"] = "dono"
+    compartilhamento_id: Optional[int] = None
+    compartilhado_com: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class ServicoCasaUpdate(BaseModel):
+    imovel_id: int
+    description: NonBlank
+    notes: Optional[str] = None
+    value: Money = Field(ge=0)
+    categoria: CasaCategoria
+    service_type: Optional[CasaServiceType] = None
+    prestador: Optional[str] = None
+    garantia_ate: Optional[DateField] = None
+
+
+class ServicoCasaCreate(ServicoCasaUpdate):
+    # Opcional, omitido = hoje. Pode ser no passado (serviço lançado depois de feito), nunca no futuro.
+    date: Optional[DateField] = None
+
+
+class ServicoCasaOut(BaseModel):
+    id: int
+    imovel_id: int
+    imovel_name: str
+    description: str
+    notes: Optional[str]
+    value: float
+    categoria: CasaCategoria
+    service_type: Optional[CasaServiceType]
+    prestador: Optional[str]
+    garantia_ate: Optional[date]
+    date: date
+    criado_por: Optional[int] = None
+    criado_por_nome: Optional[str] = None  # None com criado_por None = conta excluída
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ServicoCasaPage(BaseModel):
+    items: list[ServicoCasaOut]
+    total: int
+
+
+class ImovelResumoItem(BaseModel):
+    imovel_id: int
+    imovel_name: str
+    total_gasto: float
+    quantidade_servicos: int
+    ultimo_servico: Optional[date]
+
+
+class CasaCategoriaResumo(BaseModel):
+    categoria: CasaCategoria
+    total: float
+    quantidade: int
+
+
+class CasaResumo(BaseModel):
+    imoveis: list[ImovelResumoItem]
+    categorias: list[CasaCategoriaResumo]
+    garantias_vigentes: int
+    meses: list[str]
+    series: list[dict]
+
+
+# --- Compartilhamento ---
+
+class CompartilhamentoCreate(BaseModel):
+    item_tipo: ShareItemTipo
+    item_id: int
+    username: NonBlank
+    nivel: ShareNivel
+
+
+class CompartilhamentoUpdate(BaseModel):
+    nivel: ShareNivel
+
+
+def _utc(value: Optional[datetime]) -> Optional[str]:
+    return value.replace(tzinfo=timezone.utc).isoformat() if value is not None else None
+
+
+class CompartilhamentoOut(BaseModel):
+    id: int
+    item_tipo: ShareItemTipo
+    item_id: int
+    item_nome: str
+    dono: UsuarioRef
+    convidado: UsuarioRef
+    nivel: ShareNivel
+    status: ShareStatus
+    created_at: datetime
+    respondido_em: Optional[datetime] = None
+    encerrado_em: Optional[datetime] = None
+    expira_em: Optional[datetime] = None  # só pendente
+
+    @field_serializer("created_at", "respondido_em", "encerrado_em", "expira_em")
+    def _serialize_utc(self, value: Optional[datetime]) -> Optional[str]:
+        return _utc(value)
+
+
+# --- Empresa (MEI) ---
+
+def _only_digits(value):
+    return "".join(ch for ch in value if ch.isdigit()) if isinstance(value, str) else value
+
+
+Digits = Annotated[str, BeforeValidator(_only_digits)]
+
+
+class EmpresaIn(BaseModel):
+    nome: NonBlank
+    cnpj: Digits
+    data_abertura: date
+
+
+class EmpresaOut(BaseModel):
+    id: int
+    nome: str
+    cnpj: str
+    data_abertura: date
+
+    class Config:
+        from_attributes = True
+
+
+class NotaFiscalIn(BaseModel):
+    numero: NonBlank
+    chave_acesso: Optional[Digits] = None
+    data_emissao: date
+    competencia: date  # qualquer dia do mês; gravado como dia 1
+    tomador_nome: NonBlank
+    tomador_documento: Optional[Digits] = None
+    valor: Money = Field(gt=0)
+    descricao: Optional[str] = None
+    substitui_chave: Optional[Digits] = None
+
+
+class NotaFiscalOut(BaseModel):
+    id: int
+    numero: str
+    chave_acesso: Optional[str]
+    data_emissao: date
+    competencia: date
+    tomador_nome: str
+    tomador_documento: Optional[str]
+    valor: float
+    descricao: Optional[str]
+    substitui_chave: Optional[str]
+    substituida_por: Optional[int]
+    # Números das notas ligadas (pra exibir "Substituída pela nº X" / "Substitui a nº Y")
+    substituida_por_numero: Optional[str] = None
+    substitui_numero: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class NotaFiscalPage(BaseModel):
+    items: list[NotaFiscalOut]
+    total: int
+    soma_valor: float  # sem as notas substituídas
+
+
+class NotaXmlLida(BaseModel):
+    """Campos lidos do XML pra pré-preencher o formulário -- nada é gravado nessa etapa."""
+
+    numero: str
+    chave_acesso: Optional[str]
+    data_emissao: date
+    competencia: date
+    tomador_nome: str
+    tomador_documento: Optional[str]
+    valor: float
+    descricao: Optional[str]
+    prestador_documento: Optional[str]
+    substitui_chave: Optional[str]
+    avisos: list[str]
+
+
+LimiteSituacao = Literal["ok", "atencao", "excedido_ate_20", "excedido_acima_20"]
+
+
+class LimiteMeiOut(BaseModel):
+    ano: int
+    limite: float
+    faturado: float
+    restante: float
+    pct: float
+    situacao: LimiteSituacao
+    por_mes: list[float]
+    proporcional: bool  # ano de abertura: limite de R$ 6.750 por mês aberto
+
+
+# --- Resumo ---
+
+class ItemPercentual(BaseModel):
+    item_id: int
+    item_name: str
+    priority: Priority
+    total: float
+    percentual: float
+
+
+class ResumoBase(BaseModel):
+    total_gastos: float
+    total_receita: float
+    total_essenciais: float
+    total_nao_essenciais: float
+    quantidade_gastos: int
+    quantidade_receitas: int
+    total_caixa_pretendido: float
+    total_caixa_real: float
+    percentuais_itens: list[ItemPercentual]
+
+
+class ResumoAnual(ResumoBase):
+    ano: int
+    media_gastos_mensal: float
+    media_receitas_mensal: float
+    evolucao_12_meses: list[dict]
+    caixa_pretendido_vs_real: list[dict]
+
+
+class ResumoMensal(ResumoBase):
+    ano: int
+    mes: int
+    media_gastos_lancamento: float
+    media_receitas_lancamento: float
+    disponivel_para_gastar: float
+
+
+class ResumoGeralAno(BaseModel):
+    ano: int
+    total_essenciais: float
+    total_nao_essenciais: float
+    total_receita: float
+    total_caixa_pretendido: float
+    total_caixa_real: float
+
+
+class ResumoGeralMes(BaseModel):
+    mes: int
+    total_essenciais: float
+    total_nao_essenciais: float
+    total_receita: float
+    total_caixa_pretendido: float
+    total_caixa_real: float
+
+
+class ResumoGeral(BaseModel):
+    anos: list[ResumoGeralAno]
+    por_mes: list[ResumoGeralMes]
+    total_essenciais: float
+    total_nao_essenciais: float
+    total_receita: float
+    total_caixa_pretendido: float
+    total_caixa_real: float
+
+
+class InflacaoPonto(BaseModel):
+    ano: int
+    mes: int
+    total_cesta: float
+    variacao_pct: Optional[float]  # None = sem base de comparação (ex: mês anterior sem gasto)
+    caixa_real_pct: float
+
+
+class ResumoInflacao(BaseModel):
+    possui_cesta: bool
+    cesta: list[str]  # nomes das categorias marcadas, só pra exibir
+    mensal: list[InflacaoPonto]  # variacao_pct = mês a mês
+    anual: list[InflacaoPonto]  # variacao_pct = ano a ano
+    headline_mom_pct: Optional[float]
+    headline_yoy_pct: Optional[float]
+
+
+# --- Anexos ---
+
+class AttachmentOut(BaseModel):
+    id: int
+    entity_type: EntityType
+    entity_id: str
+    original_filename: str
+    content_type: str
+    size_bytes: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AttachmentExistsOut(BaseModel):
+    entity_ids_with_attachments: list[str]
+
+
+# --- Backup ---
+
+class BackupStatusOut(BaseModel):
+    last_backup_at: Optional[datetime] = None
+
+
+# --- Notificações / resumo da virada do mês ---
+
+class IndicadorMensal(BaseModel):
+    valor: float
+    media: Optional[float]  # média dos meses base com dados; None = sem histórico pra comparar
+    variacao_pct: Optional[float]
+
+
+class DetalheCategoria(BaseModel):
+    item_id: int
+    item_name: str
+    priority: Priority
+    total: float
+    pct: float  # do total de gastos do mês
+    lancamentos: int
+    media: Optional[float]  # média dos meses base com dados (zero onde a categoria não apareceu)
+    variacao_pct: Optional[float]
+
+
+class ComposicaoGastos(BaseModel):
+    recorrentes: float  # avulsos ligados a uma recorrência
+    parcelas: float
+    avulsos_essenciais: float
+    avulsos_nao_essenciais: float
+
+
+class DetalhesMesOut(BaseModel):
+    """Modal "Ver detalhes" do mês: totais com comparação, categorias, composição e o que ainda vai cair."""
+
+    ano: int
+    mes: int
+    situacao: Literal["passado", "atual", "futuro"]
+    dia_atual: Optional[int]  # só no mês atual
+    dias_no_mes: int
+    meses_base: int
+    receita: IndicadorMensal
+    gastos: IndicadorMensal
+    caixa_pretendido: IndicadorMensal
+    caixa_real: IndicadorMensal
+    disponivel: IndicadorMensal  # receita − gastos − caixa pretendido
+    quantidade_gastos: int
+    quantidade_receitas: int
+    categorias: list[DetalheCategoria]
+    composicao: ComposicaoGastos
+    ja_lancado: float  # gastos com data até hoje (mês inteiro, se passado)
+    programado: float  # gastos com data depois de hoje (mês inteiro, se futuro)
+
+
+class TaxaPoupanca(BaseModel):
+    valor_pct: Optional[float]  # caixa real ÷ receita do mês; None = mês sem receita
+    media_pct: Optional[float]
+    meta_pct: Optional[float]  # caixa pretendido ÷ receita (o que o usuário pretendia guardar)
+
+
+class VariacaoCategoria(BaseModel):
+    item_id: int
+    item_name: str
+    priority: Priority
+    valor: float
+    media: float
+    diferenca: float
+    variacao_pct: float
+
+
+class GastoPontual(BaseModel):
+    item_id: int
+    item_name: str
+    priority: Priority
+    valor: float
+
+
+class ParcelamentoResumo(BaseModel):
+    descricao: str
+    item_name: str
+    valor_parcela: float
+    parcelas: int
+
+
+class InflacaoResumo(BaseModel):
+    cesta: list[str]
+    total_cesta: float
+    variacao_pct: Optional[float]
+
+
+class DevedoresResumo(BaseModel):
+    parcelas_atrasadas: int
+    valor_atrasado: float
+
+
+class ResumoMensalPayload(BaseModel):
+    ano: int
+    mes: int
+    meses_base: int  # quantos meses anteriores formam a média de comparação
+    gastos: IndicadorMensal
+    receita: IndicadorMensal
+    caixa_real: IndicadorMensal
+    caixa_pretendido: IndicadorMensal
+    taxa_poupanca: TaxaPoupanca
+    subiram: list[VariacaoCategoria]
+    cairam: list[VariacaoCategoria]
+    pontuais: list[GastoPontual]
+    parcelamentos_novos: list[ParcelamentoResumo]
+    parcelamentos_encerrados: list[ParcelamentoResumo]
+    inflacao: Optional[InflacaoResumo] = None  # None = módulo desabilitado ou cesta vazia
+    devedores: Optional[DevedoresResumo] = None  # None = módulo desabilitado
+
+
+ShareEvento = Literal["convite", "aceito", "recusado", "revogado", "saiu", "imovel_excluido", "nivel"]
+
+
+class CompartilhamentoPayload(BaseModel):
+    """Foto do aviso de compartilhamento (o nome do imóvel e de quem fez a ação no momento)."""
+
+    compartilhamento_id: int
+    evento: ShareEvento
+    item_tipo: ShareItemTipo
+    item_id: int
+    item_nome: str
+    ator: UsuarioRef  # quem fez a ação (enviou, aceitou, encerrou...)
+    nivel: ShareNivel
+    # Situação atual do compartilhamento (lida na hora, não é foto): no convite, diz se ainda dá
+    # pra aceitar. None = o compartilhamento não existe mais (conta excluída).
+    status: Optional[ShareStatus] = None
+
+
+NotificacaoTipo = Literal[
+    "resumo_mensal",
+    "relatorio_anual",
+    "compartilhamento_convite",
+    "compartilhamento_resposta",
+    "compartilhamento_encerrado",
+    "compartilhamento_nivel",
+]
+
+
+class NotificacaoOut(BaseModel):
+    id: int
+    tipo: NotificacaoTipo
+    ano: Optional[int] = None  # None nos avisos de compartilhamento (não têm mês)
+    mes: Optional[int] = None
+    titulo: str
+    lida: bool
+    created_at: datetime
+    # Resumo mensal: o resumo; compartilhamento_*: o aviso; relatório anual: None (não leva dados).
+    payload: Optional[Union[ResumoMensalPayload, CompartilhamentoPayload]] = None
+
+    @field_serializer("created_at")
+    def _serialize_utc_datetime(self, value: datetime) -> str:
+        return value.replace(tzinfo=timezone.utc).isoformat()
+
+
+# --- Analytics (anomalia, previsão do fim do mês, indicadores) ---
+
+class AnomaliaOut(BaseModel):
+    anomalo: bool
+    mediana: Optional[float]  # mediana dos lançamentos avulsos da categoria nos últimos 12 meses
+    multiplo: Optional[float]  # valor ÷ mediana
+    amostras: int
+
+
+class PrevisaoOut(BaseModel):
+    ano: int
+    mes: int
+    dia: int
+    historico_suficiente: bool  # menos de 3 meses com gasto avulso = previsão pouco confiável
+    receita: float
+    receita_estimada: bool  # sem receita lançada no mês: mediana dos últimos 6 meses
+    comprometido: float  # todo gasto do mês já lançado (inclusive parcelas e datas futuras)
+    variavel_ate_hoje: float
+    variavel_restante: float  # quanto ainda deve sair de gasto variável até o fim do mês
+    caixa_pretendido: float
+    saldo_previsto: float
+    saldo_min: float
+    saldo_max: float
+
+
+class PontoIndicador(BaseModel):
+    ano: int
+    mes: int
+    valor: Optional[float]
+
+
+class IndicadorPoupanca(BaseModel):
+    atual_3m_pct: Optional[float]
+    serie: list[PontoIndicador]
+
+
+class IndicadorComprometimento(BaseModel):
+    pct: Optional[float]  # parcelas dos próximos 6 meses ÷ (receita média × 6)
+    total: float
+    receita_media: float
+    meses: list[PontoIndicador]
+
+
+class CustoFixoItem(BaseModel):
+    descricao: str
+    item_name: str
+    valor: float
+
+
+class IndicadorCustoFixo(BaseModel):
+    pct: Optional[float]
+    total: float
+    itens: list[CustoFixoItem]
+
+
+class IndicadorEssencial(BaseModel):
+    atual_pct: Optional[float]
+    inclinacao_pp_mes: Optional[float]
+    serie: list[PontoIndicador]
+
+
+class IndicadoresOut(BaseModel):
+    ano: int
+    mes: int
+    poupanca: IndicadorPoupanca
+    comprometimento: IndicadorComprometimento
+    custo_fixo: IndicadorCustoFixo
+    essencial: IndicadorEssencial
+
+
+# --- Lixeira ---
+
+
+class LixeiraAnexoOut(BaseModel):
+    id: int  # id do item da lixeira (não do anexo original)
+    original_filename: str
+    content_type: str
+    size_bytes: int
+
+
+class LixeiraItemOut(BaseModel):
+    id: int
+    tipo: Literal["registro", "anexo"]
+    entity_type: str  # mesmos valores de AttachmentOut.entity_type
+    titulo: str
+    detalhe: Optional[str] = None
+    valor: Optional[float] = None
+    data_registro: Optional[DateField] = None
+    deleted_at: datetime
+    expira_em: datetime
+    # Registro: anexos que saíram junto com ele. Anexo avulso: ele mesmo.
+    anexos: list[LixeiraAnexoOut] = []
+
+
+class LixeiraRestauradoOut(BaseModel):
+    entity_type: str
+    entity_id: str

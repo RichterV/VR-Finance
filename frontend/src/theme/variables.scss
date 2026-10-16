@@ -1,0 +1,117 @@
+// Slate Dark — dashboard financeiro moderno (paleta fixa, não segue o tema do sistema).
+// Identidade verde (fintech/SaaS): --ion-color-primary é a cor de marca/ação, escolhida pra
+// funcionar bem nos dois papéis que uma cor de destaque tem num tema escuro -- como fundo de
+// botão sólido (com --ion-color-primary-contrast escuro, não branco, em cima) E como cor de
+// ícone/texto sobre o fundo escuro do app (--ion-background-color/--app-surface) -- as duas
+// combinações passam de 4.5:1 de contraste. --ion-color-success continua um verde-esmeralda
+// deliberadamente distinto do primary (marca vs. "ganho financeiro" são papéis diferentes,
+// mesmo os dois sendo verdes -- ver CLAUDE.md, decisões da reformulação visual).
+//
+// Paleta "Sálvia suave" (2026-10-10, escolhida pelo usuário entre 15 protótipos): tudo dessaturado e
+// com pouca diferença de cor -- a opção mais calma para a vista. Marca verde-sálvia, positivo um
+// verde-sálvia mais claro (continua distinto da marca), negativo e aviso em tons terrosos. Todo texto
+// sobre a cor da marca/positivo/negativo/aviso é escuro.
+//
+// Revisão visual de 2026-10-09 (menos ruído, conforto pra visão sensível): texto principal menos
+// brilhante (#e2e8f0, 14,5:1 em vez de 17:1), vermelho mais claro e menos saturado (vale pra texto
+// e pra fundo, sempre com texto escuro em cima, igual ao verde), superfícies opacas sem vidro/blur e
+// escalas fixas de tipo, espaço e raio. Toda tela nova usa estes tokens em vez de valores soltos.
+:root {
+  // Cor de destaque / ação (verde-sálvia)
+  --ion-color-primary: #7fb59a;
+  --ion-color-primary-rgb: 127, 181, 154;
+  --ion-color-primary-contrast: #0d231a;
+  --ion-color-primary-contrast-rgb: 13, 35, 26;
+  --ion-color-primary-shade: #709f88;
+  --ion-color-primary-tint: #8cbca4;
+
+  // Indicadores financeiros: positivo (receita, ganho) um degrau mais claro que a marca
+  --ion-color-success: #95c9a8;
+  --ion-color-success-rgb: 149, 201, 168;
+  --ion-color-success-contrast: #0d231a;
+  --ion-color-success-contrast-rgb: 13, 35, 26;
+  --ion-color-success-shade: #83b194;
+  --ion-color-success-tint: #a0ceb1;
+
+  --ion-color-danger: #d98c84;
+  --ion-color-danger-rgb: 217, 140, 132;
+  --ion-color-danger-contrast: #3a1210;
+  --ion-color-danger-contrast-rgb: 58, 18, 16;
+  --ion-color-danger-shade: #bf7b74;
+  --ion-color-danger-tint: #dd978f;
+
+  --ion-color-warning: #d4ae63;
+  --ion-color-warning-rgb: 212, 174, 99;
+  --ion-color-warning-contrast: #3a2a08;
+  --ion-color-warning-contrast-rgb: 58, 42, 8;
+  --ion-color-warning-shade: #bb9957;
+  --ion-color-warning-tint: #d8b673;
+
+  // Fundo principal e superfícies (3 tons: fundo, superfície, superfície elevada)
+  --ion-background-color: #141716;
+  --ion-background-color-rgb: 20, 23, 22;
+
+  --ion-toolbar-background: #141716;
+  --ion-item-background: #1b201e;
+
+  // Texto
+  --ion-text-color: #dde3df;
+  --ion-text-color-rgb: 221, 227, 223;
+
+  --ion-color-medium: #99a49e;
+  --ion-color-medium-rgb: 153, 164, 158;
+
+  --ion-font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  // Tokens próprios do app (cards, bordas) — usados fora dos componentes Ionic.
+  // --app-surface-glass ficou com o nome antigo por compatibilidade, mas agora é opaco (sem blur).
+  --app-surface: #1b201e;
+  --app-surface-glass: #1b201e;
+  --app-surface-raised: #242a28;
+  --app-muted-rgb: 153, 164, 158;
+  --app-surface-border: rgba(var(--app-muted-rgb), 0.18);
+  --app-field-border: rgba(var(--app-muted-rgb), 0.3);
+  --app-surface-hover: rgba(var(--app-muted-rgb), 0.08);
+  --app-surface-active: rgba(var(--ion-color-primary-rgb), 0.14);
+  --app-text-primary: #dde3df;
+  --app-text-secondary: #99a49e;
+  --app-positive: #95c9a8;
+  --app-negative: #d98c84;
+  --app-tint-positive: rgba(var(--ion-color-primary-rgb), 0.12);
+  --app-tint-negative: rgba(var(--ion-color-danger-rgb), 0.1);
+  --app-tint-warning: rgba(var(--ion-color-warning-rgb), 0.12);
+
+  // Cores das séries dos gráficos (mesmos valores de home/dashboard-charts.ts, que o chart.js usa
+  // direto; aqui pra quem precisar em CSS -- legendas, barras, mini-gráficos)
+  --chart-essencial: #86a9cc;
+  --chart-nao-essencial: #d39a6a;
+  --chart-caixa-real: #7fb59a;
+  --chart-receita: #d4bb6a;
+  --chart-caixa-pretendido: #b9d8c4;
+  --chart-razao: #b39cc8;
+
+  // Escala de tipo (6 passos) -- piso de 0,75rem pra texto
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.75rem;
+  --fs-hero: 2.25rem;
+
+  // Raios: controles/chips, cartões/modais, pílulas
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-pill: 999px;
+
+  // Espaços (base 4)
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  // Sombra só pro que flutua (modal, popover, toast, botão flutuante) -- cartões da página não têm.
+  --app-shadow-float: 0 12px 32px rgba(0, 0, 0, 0.45);
+}

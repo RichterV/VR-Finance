@@ -1,0 +1,196 @@
+from datetime import date
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
+
+from app import models, schemas
+from app.deps import get_current_user, get_db, require_module
+from app.lixeira import trash_record
+from app.utils import like_contains, today_local
+
+router = APIRouter(
+    prefix="/servicos-veiculos",
+    tags=["servicos-veiculos"],
+    dependencies=[Depends(require_module("veiculos"))],
+)
+
+
+def _mileage_neighbors(
+    db: Session,
+    vehicle_id: int,
+    service_date: date,
+    exclude_id: Optional[int],
+) -> tuple[Optional[models.VehicleService], Optional[models.VehicleService]]:
+    """Serviço imediatamente anterior/posterior (por data, com id como tie-break) do mesmo veículo,
+    ignorando linhas sem km registrado (histórico antigo) e o próprio serviço em edição.
+    `exclude_id=None` (criação) trata todas as linhas existentes na mesma data como "anteriores" --
+    o novo serviço, ainda sem id, sempre entra depois de qualquer uma delas e nunca tem "próximo"
+    (a data de um serviço já criado nunca é reeditável, então nada existente pode ter data futura)."""
+    base = db.query(models.VehicleService).filter(
+        models.VehicleService.vehicle_id == vehicle_id,
+        models.VehicleService.mileage.isnot(None),
+    )
+    if exclude_id is not None:
+        base = base.filter(models.VehicleService.id != exclude_id)
+        previous_cond = or_(
+            models.VehicleService.date < service_date,
+            and_(models.VehicleService.date == service_date, models.VehicleService.id < exclude_id),
+        )
+        next_cond = or_(
+            models.VehicleService.date > service_date,
+            and_(models.VehicleService.date == service_date, models.VehicleService.id > exclude_id),
+        )
+    else:
+        previous_cond = models.VehicleService.date <= service_date
+        next_cond = models.VehicleService.date > service_date
+
+    previous = (
+        base.filter(previous_cond)
+        .order_by(models.VehicleService.date.desc(), models.VehicleService.id.desc())
+        .first()
+    )
+    next_ = (
+        base.filter(next_cond)
+        .order_by(models.VehicleService.date.asc(), models.VehicleService.id.asc())
+        .first()
+    )
+    return previous, next_
+
+
+def _validate_mileage_order(
+    db: Session,
+    vehicle_id: int,
+    mileage: int,
+    service_date: date,
+    exclude_id: Optional[int] = None,
+) -> None:
+    """A quilometragem só pode aumentar ao longo do tempo, por veículo -- não dá pra registrar um
+    serviço com km menor que o do serviço anterior daquele veículo, nem maior que o do próximo
+    (relevante ao editar um serviço que não é o mais recente)."""
+    previous, next_ = _mileage_neighbors(db, vehicle_id, service_date, exclude_id)
+    if previous is not None and mileage < previous.mileage:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"A quilometragem não pode ser menor que a do serviço anterior deste veículo "
+                f"({previous.mileage} km, em {previous.date.strftime('%d/%m/%Y')})."
+            ),
+        )
+    if next_ is not None and mileage > next_.mileage:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"A quilometragem não pode ser maior que a do próximo serviço deste veículo "
+                f"({next_.mileage} km, em {next_.date.strftime('%d/%m/%Y')})."
+            ),
+        )
+
+
+def _get_owned_service(db: Session, current_user: models.User, service_id: int) -> models.VehicleService:
+    service = (
+        db.query(models.VehicleService)
+        .filter(models.VehicleService.id == service_id, models.VehicleService.user_id == current_user.id)
+        .first()
+    )
+    if service is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Serviço não encontrado")
+    return service
+
+
+def _get_owned_vehicle(db: Session, current_user: models.User, vehicle_id: int) -> models.Vehicle:
+    vehicle = (
+        db.query(models.Vehicle)
+        .filter(models.Vehicle.id == vehicle_id, models.Vehicle.user_id == current_user.id)
+        .first()
+    )
+    if vehicle is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Veículo não encontrado")
+    return vehicle
+
+
+@router.get("", response_model=schemas.VehicleServicePage)
+def list_services(
+    vehicle_id: Optional[int] = Query(None),
+    busca: Optional[str] = Query(None),
+    limit: int = Query(25, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    query = db.query(models.VehicleService).filter(models.VehicleService.user_id == current_user.id)
+    if vehicle_id is not None:
+        query = query.filter(models.VehicleService.vehicle_id == vehicle_id)
+    if busca:
+        termo = like_contains(busca)
+        query = query.filter(
+            or_(
+                models.VehicleService.description.ilike(termo, escape="\\"),
+                models.VehicleService.notes.ilike(termo, escape="\\"),
+            )
+        )
+    total = query.count()
+    items = (
+        query.order_by(models.VehicleService.date.desc(), models.VehicleService.id.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    return {"items": items, "total": total}
+
+
+@router.post("", response_model=schemas.VehicleServiceOut, status_code=status.HTTP_201_CREATED)
+def create_service(
+    payload: schemas.VehicleServiceCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    _get_owned_vehicle(db, current_user, payload.vehicle_id)
+    _validate_mileage_order(db, payload.vehicle_id, payload.mileage, today_local())
+    service = models.VehicleService(
+        user_id=current_user.id,
+        vehicle_id=payload.vehicle_id,
+        description=payload.description,
+        notes=payload.notes,
+        value=payload.value,
+        service_type=payload.service_type,
+        mileage=payload.mileage,
+        date=today_local(),
+    )
+    db.add(service)
+    db.commit()
+    db.refresh(service)
+    return service
+
+
+@router.put("/{service_id}", response_model=schemas.VehicleServiceOut)
+def update_service(
+    service_id: int,
+    payload: schemas.VehicleServiceUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    service = _get_owned_service(db, current_user, service_id)
+    _get_owned_vehicle(db, current_user, payload.vehicle_id)
+    _validate_mileage_order(db, payload.vehicle_id, payload.mileage, service.date, exclude_id=service.id)
+    service.vehicle_id = payload.vehicle_id
+    service.description = payload.description
+    service.notes = payload.notes
+    service.value = payload.value
+    service.service_type = payload.service_type
+    service.mileage = payload.mileage
+    db.commit()
+    db.refresh(service)
+    return service
+
+
+@router.delete("/{service_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_service(
+    service_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    service = _get_owned_service(db, current_user, service_id)
+    trash_record(db, "servico_veiculo", service)  # lixeira (15 dias), com os anexos
+    db.commit()

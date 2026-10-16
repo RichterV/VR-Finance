@@ -1,0 +1,430 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Início"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Manutenção Casa</ion-title>
+    <ion-buttons slot="end">
+      <ion-button aria-label="Adicionar imóvel" (click)="abrirAdicionarImovel()">
+        <ion-icon slot="start" name="business-outline"></ion-icon>
+        <span class="btn-text">Adicionar imóvel</span>
+      </ion-button>
+      @if (podeAdicionarServico()) {
+        <ion-button aria-label="Adicionar serviço" (click)="abrirAdicionarServico()">
+          <ion-icon slot="start" name="add-circle-outline"></ion-icon>
+          <span class="btn-text">Adicionar serviço</span>
+        </ion-button>
+      }
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  @if (initialLoading()) {
+    <app-loading-state message="Carregando imóveis e serviços..."></app-loading-state>
+  } @else {
+  <div class="casa">
+    <div class="resumo-filters">
+      <app-reset-period-button
+        [disabled]="mesResumo() === null && anoResumo() === null"
+        (reset)="resetPeriodoResumo()"
+      ></app-reset-period-button>
+      <ion-select
+        [value]="mesResumo()"
+        (ionChange)="onMesResumoChange($any($event.detail.value))"
+        interface="popover"
+        [interfaceOptions]="{ size: 'auto' }"
+        fill="outline"
+        label="Mês"
+        labelPlacement="floating"
+        [selectedText]="mesResumo() === null ? 'Todos' : null"
+      >
+        <ion-select-option [value]="null">Todos os meses</ion-select-option>
+        @for (m of meses; track $index) {
+          <ion-select-option [value]="$index + 1">{{ m }}</ion-select-option>
+        }
+      </ion-select>
+      <ion-select
+        [value]="anoResumo()"
+        (ionChange)="onAnoResumoChange($any($event.detail.value))"
+        interface="popover"
+        fill="outline"
+        label="Ano"
+        labelPlacement="floating"
+        [selectedText]="anoResumo() === null ? 'Todos' : null"
+      >
+        <ion-select-option [value]="null">Todos os anos</ion-select-option>
+        @for (a of anos; track a) {
+          <ion-select-option [value]="a">{{ a }}</ion-select-option>
+        }
+      </ion-select>
+    </div>
+
+    <section class="cards-grid">
+      @for (i of resumo()?.imoveis ?? []; track i.imovel_id) {
+        <div class="stat-card">
+          <span class="stat-label">
+            {{ i.imovel_name }}
+            @if (donoDoImovel(i.imovel_id); as dono) {
+              <span class="owner-tag">de {{ dono }}</span>
+            }
+          </span>
+          <span class="stat-value">{{ i.total_gasto | currency: 'BRL' }}</span>
+          <div class="card-footer">
+            <span>{{ i.quantidade_servicos }} serviço(s)</span>
+            <span>{{ i.ultimo_servico ? ('Último: ' + (i.ultimo_servico | date: 'dd/MM/yyyy')) : 'Sem serviços' }}</span>
+          </div>
+        </div>
+      } @empty {
+        <p class="empty-state">Nenhum imóvel cadastrado ainda. Use "Adicionar imóvel" para começar.</p>
+      }
+      @if ((resumo()?.imoveis?.length ?? 0) > 0) {
+        <button
+          type="button"
+          class="stat-card garantia-card"
+          [class.active]="filtroGarantia()"
+          [attr.aria-pressed]="filtroGarantia()"
+          (click)="toggleGarantia()"
+        >
+          <span class="stat-label"><ion-icon name="shield-checkmark-outline" aria-hidden="true"></ion-icon> Em garantia</span>
+          <span class="stat-value">{{ resumo()?.garantias_vigentes ?? 0 }}</span>
+          <div class="card-footer">
+            <span>{{ filtroGarantia() ? 'Filtrando a lista' : 'Ver os serviços' }}</span>
+          </div>
+        </button>
+      }
+    </section>
+
+    @if ((resumo()?.imoveis?.length ?? 0) > 0) {
+      <div class="charts-row">
+        <section class="chart-card">
+          <div class="chart-card-header">
+            <h3>Evolução de gastos</h3>
+            <span class="chart-sub">Últimos 12 meses</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas baseChart role="img" [attr.aria-label]="chartLabel()" [type]="'bar'" [data]="chartData()" [options]="chartOptions()"></canvas>
+          </div>
+        </section>
+
+        <section class="chart-card categorias-card">
+          <div class="chart-card-header">
+            <h3>Por categoria</h3>
+            <span class="chart-sub">{{ totalPeriodo() | currency: 'BRL' }}</span>
+          </div>
+          @if (resumo()?.categorias?.length) {
+            <ul class="categoria-list">
+              @for (c of resumo()!.categorias; track c.categoria) {
+                <li>
+                  <button
+                    type="button"
+                    class="categoria-row"
+                    [class.active]="filtroCategoria() === c.categoria"
+                    [attr.aria-pressed]="filtroCategoria() === c.categoria"
+                    [title]="'Filtrar serviços de ' + categoriaLabels[c.categoria]"
+                    (click)="filtrarCategoria(c.categoria)"
+                  >
+                    <ion-icon [name]="categoriaIcons[c.categoria]" aria-hidden="true"></ion-icon>
+                    <span class="categoria-name">{{ categoriaLabels[c.categoria] }}</span>
+                    <span class="categoria-value">{{ c.total | currency: 'BRL' }}</span>
+                    <span class="categoria-bar" aria-hidden="true"><span [style.width.%]="barPct(c.total)"></span></span>
+                    <span class="categoria-count">{{ c.quantidade }} serviço(s)</span>
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="empty-state">Nenhum serviço no período.</p>
+          }
+        </section>
+      </div>
+    }
+
+    <section class="data-section">
+      <div class="section-header">
+        <h2>Imóveis cadastrados</h2>
+      </div>
+      <div class="table-card has-cards">
+        <table>
+          <thead>
+            <tr>
+              <th appSortTh="name" [sortColumn]="imoveisSort().column" [sortDirection]="imoveisSort().direction" (sort)="toggleImoveisSort($event)">Nome</th>
+              <th>Compartilhamento</th>
+              <th class="actions-col">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (imovel of sortedImoveis(); track imovel.id) {
+              <tr>
+                <td>{{ imovel.name }}</td>
+                <td class="muted">
+                  @if (imovel.dono) {
+                    <span class="owner-tag">de {{ imovel.dono.nome }}</span> · {{ nivelLabel(imovel) }}
+                  } @else if (imovel.compartilhado_com) {
+                    Com {{ imovel.compartilhado_com }} {{ imovel.compartilhado_com === 1 ? 'pessoa' : 'pessoas' }}
+                  } @else {
+                    -
+                  }
+                </td>
+                <td class="actions-col">
+                  @if (imovel.dono) {
+                    <span class="icon-slot" aria-hidden="true"></span>
+                    <span class="icon-slot" aria-hidden="true"></span>
+                    <button aria-label="Sair do compartilhamento" class="icon-btn danger" title="Sair do compartilhamento" (click)="sairDoCompartilhamento(imovel)">
+                      <ion-icon name="exit-outline"></ion-icon>
+                    </button>
+                  } @else {
+                    <button aria-label="Compartilhar" class="icon-btn" title="Compartilhar" (click)="compartilharImovel(imovel)">
+                      <ion-icon name="people-outline"></ion-icon>
+                    </button>
+                    <button aria-label="Editar" class="icon-btn" title="Editar" (click)="editarImovel(imovel)">
+                      <ion-icon name="create-outline"></ion-icon>
+                    </button>
+                    <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirImovel(imovel)">
+                      <ion-icon name="trash-outline"></ion-icon>
+                    </button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="empty">Nenhum imóvel cadastrado.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="entry-list">
+        @for (imovel of sortedImoveis(); track imovel.id) {
+          <article class="entry-card">
+            <div class="entry-meta">
+              <strong class="entry-title">{{ imovel.name }}</strong>
+              <span class="entry-actions">
+                @if (imovel.dono) {
+                  <button aria-label="Sair do compartilhamento" class="icon-btn danger" title="Sair do compartilhamento" (click)="sairDoCompartilhamento(imovel)">
+                    <ion-icon name="exit-outline"></ion-icon>
+                  </button>
+                } @else {
+                  <button aria-label="Compartilhar" class="icon-btn" title="Compartilhar" (click)="compartilharImovel(imovel)">
+                    <ion-icon name="people-outline"></ion-icon>
+                  </button>
+                  <button aria-label="Editar" class="icon-btn" title="Editar" (click)="editarImovel(imovel)">
+                    <ion-icon name="create-outline"></ion-icon>
+                  </button>
+                  <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirImovel(imovel)">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </button>
+                }
+              </span>
+            </div>
+            @if (imovel.dono) {
+              <p class="entry-desc"><span class="owner-tag">de {{ imovel.dono.nome }}</span> · {{ nivelLabel(imovel) }}</p>
+            } @else if (imovel.compartilhado_com) {
+              <p class="entry-desc">Compartilhado com {{ imovel.compartilhado_com }} {{ imovel.compartilhado_com === 1 ? 'pessoa' : 'pessoas' }}</p>
+            }
+          </article>
+        } @empty {
+          <div class="entry-empty">Nenhum imóvel cadastrado.</div>
+        }
+      </div>
+    </section>
+
+    <section class="data-section">
+      <div class="section-header">
+        <h2>Serviços <span class="count">({{ services().length }} de {{ totalServices() }})</span></h2>
+        <div class="list-controls">
+          <ion-input
+            [value]="busca()"
+            (ionInput)="onBuscaInput($event)"
+            [debounce]="300"
+            fill="outline"
+            placeholder="Buscar serviço ou prestador"
+            class="busca-filter"
+          ></ion-input>
+          <app-sort-select [options]="servicesSortOptions" [state]="servicesSort()" (stateChange)="servicesSort.set($event)"></app-sort-select>
+        </div>
+      </div>
+      <div class="service-filters">
+        <ion-select
+          [value]="filtroImovelId()"
+          (ionChange)="onFiltroImovelChange($any($event.detail.value))"
+          interface="popover"
+          [interfaceOptions]="{ size: 'auto' }"
+          fill="outline"
+          label="Imóvel"
+          labelPlacement="floating"
+          [selectedText]="filtroImovelId() === null ? 'Todos' : null"
+        >
+          <ion-select-option [value]="null">Todos os imóveis</ion-select-option>
+          @for (imovel of imoveis(); track imovel.id) {
+            <ion-select-option [value]="imovel.id">{{ imovel.name }}</ion-select-option>
+          }
+        </ion-select>
+        <ion-select
+          [value]="filtroCategoria()"
+          (ionChange)="onFiltroCategoriaChange($any($event.detail.value))"
+          interface="popover"
+          [interfaceOptions]="{ size: 'auto' }"
+          fill="outline"
+          label="Categoria"
+          labelPlacement="floating"
+          [selectedText]="filtroCategoria() === null ? 'Todas' : null"
+        >
+          <ion-select-option [value]="null">Todas as categorias</ion-select-option>
+          @for (cat of categorias; track cat[0]) {
+            <ion-select-option [value]="cat[0]">{{ cat[1] }}</ion-select-option>
+          }
+        </ion-select>
+        <button type="button" class="filter-chip" [class.active]="filtroGarantia()" [attr.aria-pressed]="filtroGarantia()" (click)="toggleGarantia()">
+          <ion-icon name="shield-checkmark-outline" aria-hidden="true"></ion-icon>
+          Com garantia
+        </button>
+        @if (temFiltroServicos()) {
+          <button type="button" class="clear-filters" (click)="limparFiltrosServicos()">Limpar filtros</button>
+        }
+      </div>
+      <div class="table-card has-cards">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th appSortTh="date" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Data</th>
+                @if (mostrarImovel()) {
+                  <th appSortTh="imovel" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Imóvel</th>
+                }
+                <th appSortTh="description" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Descrição</th>
+                <th appSortTh="categoria" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Categoria</th>
+                <th appSortTh="prestador" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Prestador</th>
+                <th class="num" appSortTh="value" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Valor</th>
+                <th appSortTh="garantia" [sortColumn]="servicesSort().column" [sortDirection]="servicesSort().direction" (sort)="toggleServicesSort($event)">Garantia até</th>
+                <th class="actions-col">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (servico of sortedServices(); track servico.id) {
+                <tr>
+                  <td>{{ servico.date | date: 'dd/MM/yyyy' }}</td>
+                  @if (mostrarImovel()) {
+                    <td>
+                      {{ servico.imovel_name }}
+                      @if (donoDoImovel(servico.imovel_id); as dono) {
+                        <span class="owner-tag">de {{ dono }}</span>
+                      }
+                    </td>
+                  }
+                  <td class="description" [title]="servico.notes || servico.description">
+                    {{ servico.description }}
+                    @if (serviceTypeLabel(servico)) {
+                      <span class="sub">{{ serviceTypeLabel(servico) }}</span>
+                    }
+                    @if (autorDoServico(servico); as autor) {
+                      <span class="sub">{{ autor }}</span>
+                    }
+                  </td>
+                  <td>{{ categoriaLabels[servico.categoria] }}</td>
+                  <td class="muted">{{ servico.prestador || '-' }}</td>
+                  <td class="num">{{ servico.value | currency: 'BRL' }}</td>
+                  <td>
+                    @if (servico.garantia_ate) {
+                      <span
+                        class="garantia"
+                        [class.vigente]="garantiaVigente(servico)"
+                        [title]="garantiaVigente(servico) ? 'Garantia vigente' : 'Garantia vencida'"
+                      >{{ servico.garantia_ate | date: 'dd/MM/yyyy' }}</span>
+                    } @else {
+                      <span class="muted">-</span>
+                    }
+                  </td>
+                  <td class="actions-col">
+                    @if (serviceAttachmentKeys().has(rowKey(servico))) {
+                      <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexos($event, servico)">
+                        <ion-icon name="attach-outline"></ion-icon>
+                      </button>
+                    } @else {
+                      <span class="icon-slot" aria-hidden="true"></span>
+                    }
+                    @if (podeEditar(servico)) {
+                      <button aria-label="Editar" class="icon-btn" title="Editar" (click)="editarServico(servico)">
+                        <ion-icon name="create-outline"></ion-icon>
+                      </button>
+                    } @else {
+                      <span class="icon-slot" aria-hidden="true"></span>
+                    }
+                    @if (podeExcluir(servico)) {
+                      <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirServico(servico)">
+                        <ion-icon name="trash-outline"></ion-icon>
+                      </button>
+                    } @else {
+                      <span class="icon-slot" aria-hidden="true"></span>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td [attr.colspan]="mostrarImovel() ? 8 : 7" class="empty">{{ temFiltroServicos() ? 'Nenhum serviço com esses filtros.' : 'Nenhum serviço registrado ainda.' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="entry-list">
+        @for (servico of sortedServices(); track servico.id) {
+          <article class="entry-card">
+            <div class="entry-main">
+              <strong class="entry-title">{{ servico.description }}</strong>
+              <span class="entry-value">{{ servico.value | currency: 'BRL' }}</span>
+            </div>
+            <div class="entry-meta">
+              <span class="entry-meta-text">
+                {{ servico.date | date: 'dd/MM/yyyy' }} · <strong>{{ categoriaLabels[servico.categoria] }}</strong>
+                @if (mostrarImovel()) {
+                  · {{ servico.imovel_name }}
+                }
+                @if (servico.prestador) {
+                  · {{ servico.prestador }}
+                }
+                @if (servico.garantia_ate && garantiaVigente(servico)) {
+                  · <span class="garantia vigente">garantia até {{ servico.garantia_ate | date: 'dd/MM/yyyy' }}</span>
+                }
+                @if (autorDoServico(servico); as autor) {
+                  · {{ autor }}
+                }
+              </span>
+              <span class="entry-actions">
+                @if (serviceAttachmentKeys().has(rowKey(servico))) {
+                  <button aria-label="Baixar anexos" class="icon-btn" title="Baixar anexos" (click)="abrirAnexos($event, servico)">
+                    <ion-icon name="attach-outline"></ion-icon>
+                  </button>
+                } @else {
+                  <span class="icon-slot" aria-hidden="true"></span>
+                }
+                @if (podeEditar(servico)) {
+                  <button aria-label="Editar" class="icon-btn" title="Editar" (click)="editarServico(servico)">
+                    <ion-icon name="create-outline"></ion-icon>
+                  </button>
+                }
+                @if (podeExcluir(servico)) {
+                  <button aria-label="Excluir" class="icon-btn danger" title="Excluir" (click)="excluirServico(servico)">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </button>
+                }
+              </span>
+            </div>
+            @if (servico.notes) {
+              <p class="entry-desc">{{ servico.notes }}</p>
+            }
+          </article>
+        } @empty {
+          <div class="entry-empty">{{ temFiltroServicos() ? 'Nenhum serviço com esses filtros.' : 'Nenhum serviço registrado ainda.' }}</div>
+        }
+      </div>
+      @if (services().length < totalServices()) {
+        <button class="load-more-btn" (click)="carregarMais()">
+          Carregar mais 25 ({{ totalServices() - services().length }} restantes)
+        </button>
+      }
+    </section>
+  </div>
+  }
+</ion-content>

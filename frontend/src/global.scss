@@ -1,0 +1,987 @@
+/*
+ * App Global CSS
+ * ----------------------------------------------------------------------------
+ * Put style rules here that you want to apply globally. These styles are for
+ * the entire app and not just one component. Additionally, this file can be
+ * used as an entry point to import other CSS/Sass files to be included in the
+ * output CSS.
+ * For more information on global stylesheets, visit the documentation:
+ * https://ionicframework.com/docs/layout/global-stylesheets
+ */
+
+@use "./theme/mixins" as ds;
+@use "./theme/dashboard";
+@use "./theme/temas";
+
+/* Core CSS required for Ionic components to work properly */
+@import "@ionic/angular/css/core.css";
+
+/* Basic CSS for apps built with Ionic */
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import "@ionic/angular/css/display.css";
+
+/* Optional CSS utils that can be commented out */
+@import "@ionic/angular/css/padding.css";
+@import "@ionic/angular/css/float-elements.css";
+@import "@ionic/angular/css/text-alignment.css";
+@import "@ionic/angular/css/text-transformation.css";
+@import "@ionic/angular/css/flex-utils.css";
+
+/* Fonte do app (IBM Plex Sans), embutida no build -- web e APK com a mesma letra, sem depender de
+   rede. Só o subconjunto latino (cobre português, "−", "•", "€"...) nos 3 pesos usados: 400, 500, 600.
+   Antes o app declarava Roboto sem carregá-la: no PC caía numa fonte genérica, no Android na do sistema. */
+@import "@fontsource/ibm-plex-sans/latin-400.css";
+@import "@fontsource/ibm-plex-sans/latin-500.css";
+@import "@fontsource/ibm-plex-sans/latin-600.css";
+
+body {
+  font-family: var(--ion-font-family);
+  -webkit-font-smoothing: antialiased;
+}
+
+/**
+ * Caixa normal em botões, abas e "voltar"
+ * -----------------------------------------------------
+ * O tema md do Ionic põe tudo em caixa alta com espaçamento ("SALVAR GASTO", "GASTOS", "INÍCIO") --
+ * era padrão herdado, não decisão. Caixa normal lê melhor e faz menos ruído.
+ */
+ion-button,
+ion-segment-button,
+ion-back-button,
+ion-fab-button {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+ion-button {
+  --border-radius: var(--r-sm);
+  font-weight: 500;
+}
+
+// Botão sólido desabilitado: o Ionic só baixa a opacidade, e o verde a 50% sobre o fundo escuro virava
+// um verde-escuro com texto quase ilegível ("Entrar", "Salvar" com formulário incompleto).
+ion-button.button-solid.button-disabled {
+  opacity: 1;
+  --background: var(--app-surface-raised);
+  --color: var(--app-text-secondary);
+  --box-shadow: none;
+}
+
+ion-segment-button {
+  font-weight: 500;
+  min-height: 40px;
+  --indicator-height: 2px;
+}
+
+/**
+ * Abas de página (ion-segment.page-tabs: Visualizar dados, Exportar, Ferramentas, Inflação): sublinhado
+ * verde, alinhadas à esquerda e com a largura do texto no desktop; no celular dividem a largura.
+ */
+// O ion-segment do Ionic 8 é um grid de colunas iguais (1fr): no desktop cada aba fica com a largura
+// do próprio texto.
+ion-segment.page-tabs {
+  width: auto;
+  max-width: 100%;
+  grid-auto-columns: max-content;
+  justify-content: flex-start;
+  background: transparent;
+  border-bottom: 1px solid var(--app-surface-border);
+}
+
+ion-segment.page-tabs ion-segment-button {
+  flex: 0 0 auto;
+  min-width: 0;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --background: transparent;
+  --background-checked: transparent;
+  --color: var(--app-text-secondary);
+  --color-checked: var(--app-text-primary);
+  --indicator-color: var(--ion-color-primary);
+}
+
+@media (max-width: 767px) {
+  ion-segment.page-tabs {
+    width: 100%;
+    grid-auto-columns: 1fr;
+  }
+
+  ion-segment.page-tabs ion-segment-button {
+    flex: 1 1 0;
+    --padding-start: 4px;
+    --padding-end: 4px;
+  }
+}
+
+/**
+ * Cabeçalho das telas e dos modais: mesmo fundo da página, separado por uma borda fina em vez da
+ * sombra do tema md. Título em 600.
+ */
+ion-header.header-md {
+  box-shadow: none;
+}
+
+ion-header ion-toolbar {
+  --border-width: 0 0 1px 0;
+  --border-color: var(--app-surface-border);
+  --border-style: solid;
+}
+
+ion-title {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+
+/**
+ * Ionic Dark Mode
+ * -----------------------------------------------------
+ * For more info, please see:
+ * https://ionicframework.com/docs/theming/dark-mode
+ */
+
+/* @import "@ionic/angular/css/palettes/dark.always.css"; */
+/* @import "@ionic/angular/css/palettes/dark.class.css"; */
+/* @import '@ionic/angular/css/palettes/dark.system.css'; */
+
+/**
+ * Side-docked modals
+ * -----------------------------------------------------
+ * Docks the modal to the right edge, full height, instead of the default
+ * centered card. Paired with slideInFromRight/slideOutToRight animations
+ * (see app/modals/side-modal.animations.ts) for a drawer-like entrance.
+ */
+ion-modal.side-modal {
+  --width: min(440px, 100vw);
+  --height: 100%;
+  --border-radius: 0;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+
+ion-modal.side-modal .modal-wrapper {
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.45);
+  border-left: 1px solid var(--app-surface-border);
+}
+
+/* Título dos modais um passo menor que o das páginas (a borda do header vale pra todos, ver acima). */
+ion-modal ion-title {
+  font-size: var(--fs-md);
+}
+
+/**
+ * Campos de formulário dos modais (Adicionar/Editar dos 6 módulos)
+ * -----------------------------------------------------
+ * Escopado em "ion-modal form" (não ".side-modal form") de propósito -- essas regras
+ * precisam valer tanto no docked de desktop quanto no centralizado/fullscreen do
+ * mobile, senão o celular fica preso no visual cru padrão do Ionic (itens sem
+ * agrupamento visual, sem respiro entre campos, cash-card sem layout nenhum —
+ * foi exatamente isso que fazia "% para caixa" e o valor aparecerem colados no
+ * celular: a linha nunca virava flex por falta desse seletor alcançar lá).
+ * "ion-modal" (não só "form") evita vazar pro <form> da tela de Login, que fica
+ * fora de qualquer ion-modal e já tem o próprio estilo glass em login.page.scss.
+ */
+ion-modal form ion-item:not([lines="none"]) {
+  --background: var(--app-surface);
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --min-height: 52px;
+  border: 1px solid var(--app-field-border);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  margin-bottom: var(--sp-3);
+  transition: border-color 0.15s ease;
+}
+
+ion-modal form ion-item:not([lines="none"]):focus-within {
+  border-color: var(--ion-color-primary);
+}
+
+ion-modal form ion-item[lines="none"] {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  --min-height: 0;
+  margin-bottom: 2px;
+}
+
+/* Campo "Valor" -- a informação principal do formulário, marcado explicitamente com essa
+   classe (só ele, nunca campos de apoio como "Cotação do dólar") pra ganhar mais destaque:
+   fonte maior e o prefixo "R$"/"US$" alinhado com o mesmo tamanho/peso do valor digitado. */
+ion-modal form .value-primary {
+  --min-height: 68px;
+}
+
+ion-modal form .value-primary ion-input {
+  --padding-top: 6px;
+  --padding-bottom: 6px;
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ion-input não expõe ::part(native-input) nesta versão do Ionic -- font-size no host
+   herda pro shadow DOM inteiro, engordando também o label "Valor" junto com "0,00" se o
+   label vier do atributo `label`. Por isso o label desses campos vem via `slot="label"`
+   (projetado no light DOM, HTML normal) em vez do atributo -- um elemento de verdade que
+   aceita um font-size explícito próprio, sem herdar o tamanho grande do ion-input pai. */
+/* O Ionic reduz o rótulo empilhado a 75%: 1rem aqui vira 12px na tela (com 0,8rem ficava em ~9,6px,
+   abaixo do piso de 0,75rem). */
+ion-modal form .value-primary [slot="label"] {
+  font-size: var(--fs-md);
+  font-weight: 400;
+  color: var(--app-text-secondary);
+}
+
+ion-modal form .value-primary .currency-prefix {
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  align-self: flex-end;
+}
+
+/* Agrupa o slider de % e os dois labels de valor ao vivo (adicionar/editar receita) num
+   só cartão, em vez de três ion-items "lines=none" quase invisíveis sem respiro entre si. */
+ion-modal form .cash-card {
+  background: var(--app-surface-glass);
+  border: 1px solid var(--app-surface-border);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+/* Aviso nos modais de editar parcela: a edição vale pro grupo inteiro de parcelas. */
+ion-modal form .installment-note {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--app-surface-border);
+  background: var(--app-surface-glass);
+  color: var(--app-text-secondary);
+  font-size: var(--fs-sm);
+  line-height: 1.35;
+}
+
+ion-modal form .cash-card ion-item {
+  margin-bottom: 0;
+  --padding-top: 4px;
+  --padding-bottom: 4px;
+}
+
+ion-modal form .cash-card-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+ion-modal form .cash-card-label {
+  font-size: var(--fs-xs);
+  color: var(--app-text-secondary);
+}
+
+ion-modal form .cash-card-value {
+  font-weight: 600;
+  color: var(--app-text-primary);
+}
+
+ion-modal form .cash-card-footer {
+  margin-top: 2px;
+}
+
+ion-modal form .cash-card-footer .cash-card-value {
+  color: var(--ion-color-success);
+  font-weight: 600;
+}
+
+ion-modal form .field-row {
+  display: flex;
+  gap: 12px;
+}
+
+ion-modal form .field-row > ion-item {
+  flex: 1;
+  min-width: 0;
+}
+
+ion-modal form .field-row > ion-item.col-grow {
+  flex: 2;
+}
+
+/* ion-segment (ex: Essencial / Não essencial) -- garante que o indicador da aba ativa
+   ocupe a largura toda do botão e fique bem visível/proporcional no celular. */
+ion-modal form ion-segment {
+  margin-bottom: 14px;
+}
+
+ion-modal form ion-segment-button {
+  --indicator-color: var(--ion-color-primary);
+  min-height: 44px;
+  font-weight: 500;
+  text-transform: none;
+}
+
+/* ion-toggle (ex: "Parcelado?") -- item com altura mínima confortável pro toque, toggle
+   com folga do texto em vez de colado na borda. */
+ion-modal form ion-item:has(ion-toggle) {
+  --min-height: 52px;
+}
+
+ion-modal form ion-toggle {
+  padding: 8px 0;
+}
+
+ion-modal form ion-button[type="submit"] {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: var(--sp-5);
+  min-height: 48px;
+  font-weight: 600;
+  --border-radius: var(--r-sm);
+  // Sombra neutra (não verde): o botão fica grudado no fim e flutua sobre o conteúdo que rola.
+  --box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+/**
+ * Fullscreen modals
+ * -----------------------------------------------------
+ * Takes over the entire viewport — used for the expanded chart view.
+ */
+ion-modal.fullscreen-modal {
+  --width: 100vw;
+  --height: 100vh;
+  --border-radius: 0;
+}
+
+/**
+ * Prefixo "R$" nos campos de valor com máscara de moeda (ver shared/currency-mask.ts)
+ * -----------------------------------------------------
+ * Fica fora do texto editável do input (que só contém os dígitos formatados, ex: "12,56"),
+ * então a regex de máscara nunca precisa lidar com o símbolo da moeda.
+ */
+ion-input .currency-prefix {
+  color: var(--app-text-secondary);
+  font-weight: 600;
+  margin-inline-end: 2px;
+}
+
+/**
+ * Botões de ação do header em icon-only no mobile
+ * -----------------------------------------------------
+ * Headers com vários botões de ação (Home, Manutenção Veículos) ficariam
+ * espremidos ou cortados num toolbar estreito de celular — abaixo de 576px o
+ * texto do botão é escondido, o ícone sozinho já identifica a ação.
+ */
+@media (max-width: 576px) {
+  ion-toolbar ion-buttons[slot="end"] ion-button .btn-text {
+    display: none;
+  }
+
+  ion-toolbar ion-buttons[slot="end"] ion-button ion-icon[slot="start"] {
+    margin-inline-end: 0;
+  }
+}
+
+/**
+ * Design System compartilhado
+ * -----------------------------------------------------
+ * Consolidação de padrões que existiam duplicados (com pequenas divergências) em várias páginas:
+ * o "glass card" (stat-card/chart-card/table-card/tool-card/modulo-card/percentuais-col — todos
+ * repetiam literalmente as mesmas 5 propriedades), a pilha de tabela inteira (table-card,
+ * table-scroll, table, thead/tbody, td.num, td.empty, actions-col — idêntica em dados/veículos/
+ * operações-bolsa/devedores) e o ".icon-btn" (duplicado em 5 arquivos). Cada página passa a só
+ * declarar o que é de fato específico dela (larguras de coluna, badges próprios etc.).
+ */
+
+// Cartão "vidro" translúcido -- `ds.app-card`/`ds.app-card-compact` (theme/_mixins.scss) aplicado
+// via `@include` nas classes de cartão de cada página (mesmo nome de classe que já existia, ex:
+// .stat-card, .table-card), não as substitui. Mixin em vez de `%placeholder`+`@extend` porque os
+// estilos de componente do Angular são compilados um a um -- um placeholder definido aqui não
+// seria visível de dentro de home.page.scss/veiculos.page.scss/etc.
+
+// Botão de ícone discreto (editar/excluir/baixar em linhas de tabela e cards) -- um só lugar,
+// reaproveitado por qualquer página via a classe "icon-btn". O modificador ".success" cobre o
+// caso de "marcar como pago" (devedores); ".danger"/".highlight" já existiam em várias páginas.
+.icon-btn {
+  border: none;
+  background: transparent;
+  color: var(--app-text-secondary);
+  padding: 6px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+
+  ion-icon {
+    font-size: 1.1rem;
+  }
+
+  &:hover {
+    background: var(--app-surface-hover);
+    color: var(--app-text-primary);
+  }
+
+  &.danger:hover {
+    color: var(--ion-color-danger);
+  }
+
+  &.highlight:hover {
+    color: var(--ion-color-primary);
+  }
+
+  &.success:hover {
+    color: var(--ion-color-success);
+  }
+}
+
+// Lugar reservado de uma ação que a linha não tem (anexo, antecipar): as ações seguintes ficam sempre
+// na mesma coluna em todas as linhas. Nos cartões do celular não reserva nada.
+.icon-slot {
+  display: inline-block;
+  width: calc(1.1rem + 12px);
+}
+
+.entry-actions .icon-slot {
+  display: none;
+}
+
+// Barra de filtros no topo de uma tela de listagem (operações-bolsa/devedores -- dados.page.scss
+// tem seu próprio .top-controls, layout diferente: segmento + espaço entre os dois lados).
+.top-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  ion-select {
+    max-width: 220px;
+  }
+}
+
+// Campos fora dos modais (filtros e buscas das listagens, período da Home): um estilo só, o mesmo
+// dos campos dos modais -- fundo de superfície, borda suave, raio de 8px, 44px de altura. Antes o
+// contorno padrão do Ionic era claro e alto (56px) e a busca tinha outro raio.
+// (ion-input não usa shadow DOM: o Ionic aplica --border-color com duas classes, por isso o
+// .sc-ion-input-md-h a mais aqui.)
+ion-select.select-fill-outline,
+ion-input.input-fill-outline.sc-ion-input-md-h {
+  --background: var(--app-surface);
+  --border-color: var(--app-field-border);
+  --border-radius: var(--r-sm);
+  --highlight-color-focused: var(--ion-color-primary);
+  --placeholder-color: var(--app-text-secondary);
+  --placeholder-opacity: 1;
+  min-height: 44px;
+  font-size: var(--fs-sm);
+}
+
+ion-select.select-fill-outline:hover,
+ion-input.input-fill-outline.sc-ion-input-md-h:hover {
+  --border-color: rgba(var(--app-muted-rgb), 0.4);
+}
+
+@media (max-width: 480px) {
+  .top-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .top-controls ion-select,
+  .top-controls > * {
+    max-width: none;
+  }
+}
+
+// Cartão + tabela paginada (dados/veículos/operações-bolsa/devedores/detalhes-mês). Cada página
+// mantém só suas colunas/badges específicas por cima disso.
+.table-card {
+  @include ds.app-card;
+  overflow: hidden;
+}
+
+.table-scroll {
+  max-height: 860px;
+  overflow-y: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-card table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.table-card thead th {
+  position: sticky;
+  top: 0;
+  background: var(--app-surface);
+  color: var(--app-text-secondary);
+  text-align: left;
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--app-surface-border);
+  z-index: 1;
+}
+
+.table-card tbody td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--app-surface-border);
+  color: var(--app-text-primary);
+  white-space: nowrap;
+}
+
+.table-card tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table-card tbody tr:hover td {
+  background: var(--app-surface-hover);
+}
+
+// Cabeçalho de coluna numérica (th.num) acompanha o valor alinhado à direita -- sem isso o título
+// ficava à esquerda e o número à direita, parecendo desalinhado (ex: Receitas em "Ver detalhes").
+.table-card th.num,
+.table-card td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-card td.empty {
+  text-align: center;
+  color: var(--app-text-secondary);
+  padding: 24px 16px;
+  white-space: normal;
+}
+
+.table-card th.actions-col,
+.table-card td.actions-col {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.load-more-btn {
+  align-self: center;
+  border: 1px solid var(--app-surface-border);
+  background: var(--app-surface-glass);
+  color: var(--app-text-primary);
+  padding: 10px 20px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+
+  &:hover {
+    background: var(--app-surface-hover);
+  }
+}
+
+// --- Listas em cartões no celular ---------------------------------------------------------------
+// Abaixo de 768px toda tabela marcada com `.has-cards` some e dá lugar a uma
+// `.entry-list` irmã (um `.entry-card` por linha) -- as tabelas escondiam colunas atrás de scroll
+// lateral, inclusive o valor. Tabela e cartões ficam os dois no DOM e a troca é só por CSS (mesmo
+// padrão do painel de Administração). Estrutura do cartão:
+//   .entry-main  -> [.prio-dot] .entry-title ............ .entry-value
+//   .entry-meta  -> .entry-meta-text (data · detalhes) ... .entry-actions (anexo sempre primeiro)
+//   .entry-desc  -> descrição/observação, só quando existe
+// Sem cabeçalho clicável, a ordenação fica no <app-sort-select>, também só no celular.
+$cards-breakpoint: 767px;
+
+.entry-list,
+app-sort-select {
+  display: none;
+}
+
+@media (max-width: $cards-breakpoint) {
+  .has-cards {
+    display: none !important;
+  }
+
+  .entry-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  app-sort-select {
+    display: block;
+  }
+}
+
+.entry-card {
+  @include ds.app-card-compact;
+  padding: 12px 12px 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  // Lembrete visual (parcela de devedor do mês atual) -- mesma borda âmbar da linha da tabela.
+  &.highlight {
+    background: rgba(var(--ion-color-warning-rgb), 0.1);
+    box-shadow: inset 3px 0 0 var(--ion-color-warning);
+  }
+}
+
+.entry-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// Prioridade como ponto colorido na frente do item (verde = essencial, âmbar = não essencial);
+// o texto por extenso fica nos metadados.
+.prio-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ion-color-warning);
+
+  &.essencial {
+    background: var(--ion-color-primary);
+  }
+}
+
+.entry-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--app-text-primary);
+
+  &.muted {
+    color: var(--app-text-secondary);
+    font-weight: 500;
+  }
+}
+
+.entry-value {
+  flex-shrink: 0;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text-primary);
+
+  &.income {
+    color: var(--ion-color-success);
+  }
+
+  &.danger {
+    color: var(--ion-color-danger);
+  }
+}
+
+.entry-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.entry-meta-text {
+  min-width: 0;
+  font-size: var(--fs-xs);
+  color: var(--app-text-secondary);
+  font-variant-numeric: tabular-nums;
+
+  strong {
+    color: var(--app-text-primary);
+    font-weight: 600;
+  }
+}
+
+.entry-actions {
+  flex-shrink: 0;
+  display: flex;
+  margin-right: -6px;
+}
+
+.entry-desc {
+  margin: 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--app-surface-border);
+  font-size: var(--fs-sm);
+  color: var(--app-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Pílula curta dentro do título/metadados (tipo de operação, status de devedor).
+.entry-chip {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--app-text-secondary);
+  border: 1px solid var(--app-surface-border);
+}
+
+.entry-empty {
+  @include ds.app-card-compact;
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--app-text-secondary);
+}
+
+// Contador "(25 de 194)" nunca quebra no meio quando divide a linha com o "Ordenar por".
+.section-title-row h2 .count {
+  white-space: nowrap;
+}
+
+// Busca + "Ordenar por" lado a lado no celular.
+@media (max-width: $cards-breakpoint) {
+  .list-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+
+    ion-input {
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: none !important;
+    }
+
+    app-sort-select {
+      flex: 0 0 150px;
+    }
+  }
+}
+
+// Hierarquia tipográfica básica -- antes cada página redeclarava peso/cor de h1/h2/h3 em ad hoc
+// (mesmo trio de propriedades, idêntico, em home/veículos/operações-bolsa/devedores). Não mexe em
+// font-size aqui de propósito -- cada página já define o tamanho que faz sentido pro contexto
+// (título de dashboard vs. título de seção), só a cor/peso base era duplicada sem motivo.
+h1,
+h2,
+h3 {
+  color: var(--app-text-primary);
+  font-weight: 600;
+  margin: 0;
+}
+
+// Popover dos ion-select (o Ionic já adiciona .select-popover sozinho em todo select com
+// interface="popover") -- cartão escuro com borda/raio do design system, itens em "pílula" com
+// hover e o selecionado destacado em verde, no lugar da lista crua padrão do Ionic.
+ion-popover.select-popover {
+  --background: var(--app-surface);
+  --box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  --max-height: min(60vh, 420px);
+
+  &::part(content) {
+    border: 1px solid var(--app-surface-border);
+    border-radius: var(--r-md);
+  }
+
+  ion-list {
+    padding: 6px;
+    background: transparent;
+  }
+
+  ion-item {
+    --background: transparent;
+    --background-hover: rgba(var(--ion-color-primary-rgb), 1);
+    --background-hover-opacity: 0.08;
+    --background-focused: rgba(var(--ion-color-primary-rgb), 1);
+    --background-focused-opacity: 0.12;
+    --color: var(--app-text-primary);
+    --min-height: 42px;
+    --padding-start: 12px;
+    --inner-padding-end: 12px;
+    --border-radius: var(--r-sm);
+    margin: 2px 0;
+    font-size: var(--fs-md);
+  }
+
+  ion-item.item-radio-checked {
+    --background: rgba(var(--ion-color-primary-rgb), 0.14);
+    --color: var(--ion-color-primary);
+    font-weight: 600;
+  }
+
+  ion-radio {
+    --color-checked: var(--ion-color-primary);
+  }
+
+  // "+ Nova categoria" (Adicionar/Editar gasto): ação, não valor -- linha acima, texto verde e
+  // sem o círculo do radio, que sugeriria uma categoria selecionável.
+  ion-item.select-option-new {
+    --color: var(--ion-color-primary);
+    margin-top: 6px;
+    font-weight: 500;
+    overflow: visible;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -4px 6px auto;
+      border-top: 1px solid var(--app-surface-border);
+    }
+
+    ion-radio::part(container) {
+      display: none;
+    }
+  }
+}
+
+// Lista de categorias (Adicionar/Editar gasto): abre colada embaixo do campo, com ~a largura dele
+// (campo = modal de 440px menos o padding lateral; no celular, a tela menos o padding), em vez de
+// uma caixa estreita flutuando à direita e vazando do modal.
+ion-popover.category-select-popover {
+  --width: min(380px, calc(100vw - 48px));
+  --max-height: min(50vh, 360px);
+
+  // Sem isso o topo da lista cobre a borda de baixo do campo
+  &::part(content) {
+    margin-top: 18px;
+  }
+}
+
+// Popover de anexos (ícone "Baixar anexos" das listagens): o padrão do Ionic (250px) espremia o
+// nome do arquivo entre o ícone e os 2-3 botões de ação, que quebrava letra por letra no celular.
+// `:has()` pra valer nas 4 telas que abrem o popover sem cada uma precisar passar um cssClass.
+ion-popover:has(app-attachments-popover) {
+  --width: min(360px, calc(100vw - 32px));
+}
+
+// Calendário do campo "Data" de Adicionar Gasto/Receita (shared/launch-date-field.component.ts).
+// O ion-datetime vem com fundo claro por padrão, e o texto claro do tema sumia em cima dele.
+ion-popover.launch-date-popover {
+  --background: var(--app-surface);
+  --box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  --width: 320px;
+
+  &::part(content) {
+    border: 1px solid var(--app-surface-border);
+    border-radius: var(--r-md);
+  }
+
+  ion-datetime {
+    --background: var(--app-surface);
+    --background-rgb: 30, 41, 59;
+    --title-color: var(--app-text-secondary);
+    color: var(--ion-text-color);
+  }
+}
+
+/**
+ * Visibilidade por largura: .desktop-only some no celular (< 768px) e .mobile-only só aparece nele
+ * (botão flutuante e itens Categorias/Perfil do menu lateral).
+ */
+@media (max-width: 767px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+/** Toast com ação -- "Desfazer" (shared/undo-delete.service.ts) e "Ver" (anexado a um lançamento,
+ * core/share-intake.service.ts): cartão escuro do tema, botão verde. */
+ion-toast.undo-toast,
+ion-toast.action-toast {
+  --background: var(--app-surface);
+  --color: var(--app-text-primary);
+  --button-color: var(--ion-color-primary);
+  --border-color: var(--app-surface-border);
+  --border-style: solid;
+  --border-width: 1px;
+  --border-radius: var(--r-md);
+  --box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-weight: 500;
+
+  &::part(button) {
+    color: var(--ion-color-primary);
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+}
+
+/**
+ * Movimento reduzido (configuração de acessibilidade do sistema): animações e transições viram
+ * instantâneas -- inclui o pulso da digital, a entrada dos cards e os slides (o slide dos side-modals
+ * é tratado em modals/side-modal.animations.ts, que não passa por CSS).
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/** "Como calculamos" da projeção do fim do mês (home/sections/mensal-section). */
+ion-popover.forecast-popover {
+  --background: var(--app-surface);
+  --box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --width: min(340px, calc(100vw - 32px));
+
+  &::part(content) {
+    border: 1px solid var(--app-surface-border);
+    border-radius: var(--r-md);
+  }
+}
+
+/* "O que você quer cadastrar?" -- arquivo compartilhado de outro app (core/share-intake.service.ts) */
+ion-action-sheet.share-intake-sheet {
+  --background: var(--app-surface);
+  --color: var(--app-text-primary);
+  --button-color: var(--app-text-primary);
+  --button-background-hover: rgba(var(--ion-color-primary-rgb), 1);
+  --button-background-hover-opacity: 0.08;
+  --button-background-activated: rgba(var(--ion-color-primary-rgb), 1);
+  --button-background-activated-opacity: 0.12;
+
+  .action-sheet-container {
+    padding: 0 var(--sp-2) var(--sp-2);
+  }
+  .action-sheet-group:first-child {
+    border-radius: var(--r-md) var(--r-md) 0 0;
+  }
+  .action-sheet-title {
+    color: var(--app-text-primary);
+    font-size: var(--fs-md);
+    font-weight: 500;
+  }
+  .action-sheet-sub-title {
+    color: var(--app-text-secondary);
+    font-size: var(--fs-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .action-sheet-button {
+    font-size: var(--fs-md);
+  }
+  .action-sheet-button {
+    min-height: 52px;
+  }
+  .action-sheet-icon {
+    margin-inline-end: var(--sp-4);
+    font-size: 1.25rem;
+    color: var(--app-text-secondary);
+  }
+  .share-existing {
+    border-top: 1px solid var(--app-surface-border);
+  }
+  .share-existing .action-sheet-icon {
+    color: var(--ion-color-primary);
+  }
+  .action-sheet-cancel {
+    color: var(--app-text-secondary);
+  }
+}

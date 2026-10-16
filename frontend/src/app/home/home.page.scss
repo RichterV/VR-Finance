@@ -1,0 +1,278 @@
+@use "../../theme/mixins" as ds;
+
+.dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+// Indicadores dentro da faixa do mês: título no mesmo tamanho dos cartões ao lado.
+.indicadores-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+  scroll-margin-top: var(--sp-4);
+}
+
+.block-title {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 600;
+
+  .section-subtitle {
+    font-weight: 400;
+    color: var(--app-text-secondary);
+    font-size: var(--fs-sm);
+  }
+}
+
+// O checkbox de corte fica logo abaixo do período do Resumo mensal, com o mesmo respiro.
+#resumo-mensal > .cutoff-toggle {
+  margin-top: calc(-1 * var(--sp-2));
+}
+
+// Sino do header: contador sobreposto ao ícone, no canto superior direito.
+.bell-btn {
+  position: relative;
+}
+
+.bell-badge {
+  position: absolute;
+  top: 3px;
+  right: -3px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--ion-color-primary);
+  color: var(--ion-color-primary-contrast);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 17px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--ion-background-color);
+  pointer-events: none;
+}
+
+// Faixa "Seu resumo de <mês> chegou" -- some quando o resumo é aberto ou dispensado. Uma linha só,
+// com fundo verde bem suave (antes era um cartão alto com ícone em gradiente e botão verde sólido).
+.digest-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 10px var(--sp-2) 10px var(--sp-4);
+  margin-top: calc(-1 * var(--sp-4));
+  border-radius: var(--r-md);
+  background: var(--app-tint-positive);
+  animation: digest-in 0.35s ease-out;
+}
+
+.digest-icon {
+  flex-shrink: 0;
+  display: flex;
+  font-size: 1.3rem;
+  color: var(--app-positive);
+}
+
+.digest-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.digest-title {
+  font-weight: 600;
+  color: var(--app-text-primary);
+}
+
+.digest-teaser {
+  font-size: var(--fs-sm);
+  color: var(--app-text-secondary);
+}
+
+.digest-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  .digest-open {
+    --color: var(--app-positive);
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .digest-dismiss {
+    --color: var(--app-text-secondary);
+    margin: 0;
+  }
+}
+
+@media (max-width: 576px) {
+  .digest-banner {
+    align-items: flex-start;
+    padding-left: var(--sp-3);
+  }
+
+  .digest-icon {
+    padding-top: 2px;
+  }
+
+  .digest-teaser {
+    font-size: var(--fs-xs);
+  }
+
+  .digest-actions {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+  }
+}
+
+@keyframes digest-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.dashboard-header h1 {
+  font-size: var(--fs-xl);
+}
+
+.period-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+
+  ion-select {
+    max-width: 110px;
+  }
+
+  ion-select.select-mes {
+    max-width: 160px;
+  }
+
+  .btn-detalhes {
+    height: 44px;
+    margin: 0;
+    flex-shrink: 0;
+    white-space: nowrap;
+    --color: var(--ion-color-primary);
+    font-weight: 600;
+  }
+}
+
+// No celular, "Ver detalhes" vira só ícone (mesma regra dos botões de header abaixo de 576px) e os
+// seletores encolhem pra reset + mês + ano + botão caberem numa linha só, sem vazar da tela.
+@media (max-width: 576px) {
+  .period-controls {
+    width: 100%;
+
+    ion-select,
+    ion-select.select-mes {
+      max-width: none;
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    ion-select.select-mes {
+      flex-grow: 1.4;
+    }
+
+    .btn-detalhes {
+      flex: 0 0 auto;
+      width: 44px;
+      --padding-start: 0;
+      --padding-end: 0;
+      --background: var(--app-surface);
+      border: 1px solid var(--app-field-border);
+      border-radius: var(--r-sm);
+
+      ion-icon {
+        font-size: 1.25rem;
+      }
+
+      .btn-text {
+        display: none;
+      }
+
+      ion-icon[slot="start"] {
+        margin-inline-end: 0;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard {
+    gap: var(--sp-6);
+  }
+
+  .dashboard-header h1 {
+    font-size: var(--fs-lg);
+  }
+}
+
+// --- Botão flutuante (celular) ---------------------------------------------------------------
+.home-fab {
+  margin-bottom: env(safe-area-inset-bottom);
+
+  ion-fab-list {
+    align-items: flex-end;
+  }
+}
+
+// O ion-fab-list tem a largura do botão: o rótulo fica posicionado à esquerda dele, fora do fluxo
+// (no fluxo, empurrava o mini-botão pra fora da tela).
+.fab-action {
+  position: relative;
+  margin: 6px 0;
+}
+
+.fab-label {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  background: var(--app-surface-raised);
+  border: 1px solid var(--app-surface-border);
+  color: var(--app-text-primary);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  box-shadow: var(--app-shadow-float);
+}
+
+.fab-action ion-fab-button {
+  margin: 0;
+}
+
+.fab-gasto {
+  --background: var(--ion-color-danger);
+  --background-activated: var(--ion-color-danger-shade);
+  --color: var(--ion-color-danger-contrast);
+}
+
+.fab-receita {
+  --background: var(--ion-color-success);
+  --background-activated: var(--ion-color-success-shade);
+  --color: var(--ion-color-success-contrast);
+}
+
+// O botão flutuante não cobre o último card.
+@media (max-width: 767px) {
+  .home-content {
+    --padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}

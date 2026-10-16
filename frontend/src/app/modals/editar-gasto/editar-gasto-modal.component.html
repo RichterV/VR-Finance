@@ -1,0 +1,87 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Editar gasto</ion-title>
+    <ion-buttons slot="end">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <ion-segment [value]="form.value.priority" (ionChange)="onPriorityChange($any($event.detail.value))">
+      <ion-segment-button value="essencial">
+        <ion-label>Essencial</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="nao_essencial">
+        <ion-label>Não essencial</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+
+    @if (creatingCategory()) {
+      <app-category-quick-add
+        [priority]="form.value.priority!"
+        [existing]="items()"
+        (created)="onCategoryCreated($event)"
+        (cancelled)="creatingCategory.set(false)"
+      ></app-category-quick-add>
+    } @else {
+      <ion-item>
+        <ion-select
+          label="Item"
+          placeholder="Selecione"
+          formControlName="itemId"
+          interface="popover"
+          [interfaceOptions]="categorySelectOptions"
+        >
+          @for (item of items(); track item.id) {
+            <ion-select-option [value]="item.id">{{ item.name }}</ion-select-option>
+          }
+          <ion-select-option class="select-option-new" [value]="newCategoryOption">+ Nova categoria</ion-select-option>
+        </ion-select>
+      </ion-item>
+    }
+
+    <ion-item class="value-primary">
+      <ion-input
+        labelPlacement="stacked"
+        type="text"
+        [appCurrencyInput]="form.controls.value"
+        placeholder="0,00"
+      >
+        <div slot="label">Valor</div>
+        <div slot="start" class="currency-prefix">R$</div>
+      </ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-textarea
+        label="Descrição"
+        labelPlacement="stacked"
+        formControlName="description"
+        placeholder="Opcional"
+      ></ion-textarea>
+    </ion-item>
+
+    @if (gasto.installment_group_id && gasto.installment_count) {
+      <p class="installment-note">
+        As alterações são aplicadas às {{ gasto.installment_count }} parcelas desta compra. Parcelas antecipadas mantêm o
+        próprio valor.
+      </p>
+    }
+
+    <app-attachment-picker entityType="gasto" [entityId]="attachmentEntityId" mode="edit"></app-attachment-picker>
+
+    @if (errorMessage()) {
+      <ion-text color="danger">
+        <p>{{ errorMessage() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving() || checking() || attachmentBusy">
+      {{ saving() ? 'Salvando...' : checking() ? 'Verificando...' : attachmentBusy ? 'Aguarde o anexo...' : 'Salvar alterações' }}
+    </ion-button>
+  </form>
+</ion-content>

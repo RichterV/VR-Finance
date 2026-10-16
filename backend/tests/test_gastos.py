@@ -1,0 +1,522 @@
+from datetime import date
+
+from app.utils import add_months, max_launch_date, today_local
+
+
+def _create_item(client, headers, priority="essencial", name="Casa"):
+    response = client.post("/dropdown-options", headers=headers, json={"priority": priority, "name": name})
+    return response.json()
+
+
+def test_create_simple_gasto(client, auth_headers):
+    item = _create_item(client, auth_headers)
+
+    response = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": item["id"], "value": 150.0, "description": "Aluguel"},
+    )
+    assert response.status_code == 201
+    rows = response.json()
+    assert len(rows) == 1
+    assert rows[0]["value"] == 150.0
+    assert rows[0]["is_installment"] is False
+    assert rows[0]["date"] == today_local().isoformat()
+
+
+def test_create_installment_gasto_creates_n_rows_with_incrementing_dates(client, auth_headers):
+    item = _create_item(client, auth_headers, priority="nao_essencial", name="Notebook")
+
+    response = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={
+            "priority": "nao_essencial",
+            "item_id": item["id"],
+            "value": 200.0,
+            "is_installment": True,
+            "installment_count": 3,
+        },
+    )
+    assert response.status_code == 201
+    rows = response.json()
+    assert len(rows) == 3
+
+    group_ids = {row["installment_group_id"] for row in rows}
+    assert len(group_ids) == 1
+
+    today = today_local()
+    expected_dates = [add_months(today, i).isoformat() for i in range(3)]
+    assert [row["date"] for row in rows] == expected_dates
+    assert [row["installment_number"] for row in rows] == [1, 2, 3]
+    assert all(row["value"] == 200.0 for row in rows)
+
+
+def test_installment_without_count_is_rejected(client, auth_headers):
+    item = _create_item(client, auth_headers)
+
+    response = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": item["id"], "value": 100.0, "is_installment": True},
+    )
+    assert response.status_code == 400
+
+
+def test_gasto_with_unknown_item_returns_404(client, auth_headers):
+    response = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": 9999, "value": 100.0},
+    )
+    assert response.status_code == 404
+
+
+def test_gasto_with_mismatched_priority_returns_400(client, auth_headers):
+    item = _create_item(client, auth_headers, priority="essencial", name="Casa")
+
+    response = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={"priority": "nao_essencial", "item_id": item["id"], "value": 100.0},
+    )
+    assert response.status_code == 400
+
+
+def test_gasto_with_inactive_item_returns_404(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    client.delete(f"/dropdown-options/{item['id']}", headers=auth_headers)
+
+    response = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": item["id"], "value": 100.0},
+    )
+    assert response.status_code == 404
+
+
+def test_list_gastos_orders_by_date_desc(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": item["id"], "value": 200.0, "is_installment": True, "installment_count": 3},
+    )
+
+    response = client.get("/gastos", headers=auth_headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 3
+    rows = body["items"]
+    assert len(rows) == 3
+    dates = [row["date"] for row in rows]
+    assert dates == sorted(dates, reverse=True)
+
+
+def test_list_gastos_filters_by_ano_e_mes(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    client.post("/gastos", headers=auth_headers, json={"priority": "essencial", "item_id": item["id"], "value": 100.0})
+
+    today = today_local()
+    matching = client.get("/gastos", headers=auth_headers, params={"ano": today.year, "mes": today.month}).json()
+    assert len(matching["items"]) == 1
+    assert matching["total"] == 1
+
+    other_month = today.month - 1 if today.month > 1 else 12
+    other_year = today.year if today.month > 1 else today.year - 1
+    not_matching = client.get("/gastos", headers=auth_headers, params={"ano": other_year, "mes": other_month}).json()
+    assert not_matching["items"] == []
+    assert not_matching["total"] == 0
+
+
+def test_list_gastos_filters_by_busca_na_descricao(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": item["id"], "value": 100.0, "description": "Compra no mercado"},
+    )
+    client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": item["id"], "value": 50.0, "description": "Farmácia"},
+    )
+
+    matching = client.get("/gastos", headers=auth_headers, params={"busca": "mercado"}).json()
+    assert matching["total"] == 1
+    assert matching["items"][0]["description"] == "Compra no mercado"
+
+    not_matching = client.get("/gastos", headers=auth_headers, params={"busca": "inexistente"}).json()
+    assert not_matching["total"] == 0
+
+
+def test_list_gastos_filters_by_busca_na_categoria(client, auth_headers):
+    carro = _create_item(client, auth_headers, name="Carro")
+    casa = _create_item(client, auth_headers, name="Casa")
+    client.post("/gastos", headers=auth_headers, json={"priority": "essencial", "item_id": carro["id"], "value": 100.0})
+    client.post("/gastos", headers=auth_headers, json={"priority": "essencial", "item_id": casa["id"], "value": 50.0})
+
+    matching = client.get("/gastos", headers=auth_headers, params={"busca": "carro"}).json()
+    assert matching["total"] == 1
+    assert matching["items"][0]["item_name"] == "Carro"
+
+
+def test_list_gastos_e_paginado(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": item["id"], "value": 10.0, "is_installment": True, "installment_count": 30},
+    )
+
+    primeira_pagina = client.get("/gastos", headers=auth_headers, params={"limit": 25, "offset": 0}).json()
+    assert primeira_pagina["total"] == 30
+    assert len(primeira_pagina["items"]) == 25
+
+    segunda_pagina = client.get("/gastos", headers=auth_headers, params={"limit": 25, "offset": 25}).json()
+    assert segunda_pagina["total"] == 30
+    assert len(segunda_pagina["items"]) == 5
+
+    ids_primeira = {row["id"] for row in primeira_pagina["items"]}
+    ids_segunda = {row["id"] for row in segunda_pagina["items"]}
+    assert ids_primeira.isdisjoint(ids_segunda)
+
+
+def test_update_gasto(client, auth_headers):
+    item = _create_item(client, auth_headers, priority="essencial", name="Casa")
+    other_item = _create_item(client, auth_headers, priority="nao_essencial", name="Lanche")
+    created = client.post(
+        "/gastos", headers=auth_headers, json={"priority": "essencial", "item_id": item["id"], "value": 100.0}
+    ).json()[0]
+
+    response = client.put(
+        f"/gastos/{created['id']}",
+        headers=auth_headers,
+        json={"priority": "nao_essencial", "item_id": other_item["id"], "value": 250.0, "description": "Corrigido"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["priority"] == "nao_essencial"
+    assert body["item_id"] == other_item["id"]
+    assert body["value"] == 250.0
+    assert body["description"] == "Corrigido"
+
+
+def _create_parcelado(client, headers, item, value=200.0, count=3, description="Notebook"):
+    return client.post(
+        "/gastos",
+        headers=headers,
+        json={
+            "priority": "nao_essencial",
+            "item_id": item["id"],
+            "value": value,
+            "description": description,
+            "is_installment": True,
+            "installment_count": count,
+        },
+    ).json()
+
+
+def _all_gastos(client, headers):
+    return {g["id"]: g for g in client.get("/gastos", headers=headers, params={"limit": 100}).json()["items"]}
+
+
+def test_update_parcela_replica_em_todas_as_parcelas_do_grupo(client, auth_headers):
+    item = _create_item(client, auth_headers, priority="nao_essencial", name="Eletrônicos")
+    other_item = _create_item(client, auth_headers, priority="essencial", name="Casa")
+    rows = _create_parcelado(client, auth_headers, item)
+    avulso = client.post(
+        "/gastos", headers=auth_headers, json={"priority": "nao_essencial", "item_id": item["id"], "value": 50.0}
+    ).json()[0]
+
+    response = client.put(
+        f"/gastos/{rows[0]['id']}",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": other_item["id"], "value": 220.0, "description": "Notebook Dell"},
+    )
+    assert response.status_code == 200
+
+    gastos = _all_gastos(client, auth_headers)
+    for original in rows:
+        atual = gastos[original["id"]]
+        assert atual["priority"] == "essencial"
+        assert atual["item_id"] == other_item["id"]
+        assert atual["value"] == 220.0
+        assert atual["description"] == "Notebook Dell"
+        assert atual["date"] == original["date"]
+        assert atual["installment_number"] == original["installment_number"]
+    assert gastos[avulso["id"]]["value"] == 50.0
+    assert gastos[avulso["id"]]["item_id"] == item["id"]
+
+
+def test_update_parcela_preserva_valor_e_marca_de_parcela_antecipada(client, auth_headers):
+    item = _create_item(client, auth_headers, priority="nao_essencial", name="Roupas")
+    rows = _create_parcelado(client, auth_headers, item, value=150.0, description="Blazer")
+    antecipada = rows[2]
+    client.post(f"/gastos/{antecipada['id']}/antecipar", headers=auth_headers, json={"value": 140.0})
+
+    response = client.put(
+        f"/gastos/{rows[0]['id']}",
+        headers=auth_headers,
+        json={"priority": "nao_essencial", "item_id": item["id"], "value": 160.0, "description": "Blazer azul"},
+    )
+    assert response.status_code == 200
+
+    gastos = _all_gastos(client, auth_headers)
+    assert gastos[rows[1]["id"]]["value"] == 160.0
+    assert gastos[rows[1]["id"]]["description"] == "Blazer azul"
+    assert gastos[antecipada["id"]]["value"] == 140.0
+    assert gastos[antecipada["id"]]["description"] == "Blazer azul - Parcela Antecipada"
+
+
+def test_update_da_parcela_antecipada_replica_descricao_sem_a_marca_e_nao_o_valor(client, auth_headers):
+    item = _create_item(client, auth_headers, priority="nao_essencial", name="Roupas")
+    rows = _create_parcelado(client, auth_headers, item, value=150.0, description="Blazer")
+    antecipada = rows[2]
+    client.post(f"/gastos/{antecipada['id']}/antecipar", headers=auth_headers, json={"value": 140.0})
+
+    response = client.put(
+        f"/gastos/{antecipada['id']}",
+        headers=auth_headers,
+        json={
+            "priority": "nao_essencial",
+            "item_id": item["id"],
+            "value": 135.0,
+            "description": "Blazer preto - Parcela Antecipada",
+        },
+    )
+    assert response.status_code == 200
+
+    gastos = _all_gastos(client, auth_headers)
+    assert gastos[antecipada["id"]]["value"] == 135.0
+    assert gastos[antecipada["id"]]["description"] == "Blazer preto - Parcela Antecipada"
+    for original in rows[:2]:
+        assert gastos[original["id"]]["value"] == 150.0
+        assert gastos[original["id"]]["description"] == "Blazer preto"
+
+
+def test_update_gasto_rejects_mismatched_priority(client, auth_headers):
+    item = _create_item(client, auth_headers, priority="essencial", name="Casa")
+    other_item = _create_item(client, auth_headers, priority="nao_essencial", name="Lanche")
+    created = client.post(
+        "/gastos", headers=auth_headers, json={"priority": "essencial", "item_id": item["id"], "value": 100.0}
+    ).json()[0]
+
+    response = client.put(
+        f"/gastos/{created['id']}",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": other_item["id"], "value": 100.0},
+    )
+    assert response.status_code == 400
+
+
+def test_update_gasto_not_owned_returns_404(client, auth_headers, db_session):
+    from app import models
+    from app.security import hash_password
+
+    other = models.User(username="outro", password_hash=hash_password("senha123"), role="user")
+    db_session.add(other)
+    db_session.commit()
+    login = client.post("/auth/login", data={"username": "outro", "password": "senha123"})
+    other_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    item = _create_item(client, other_headers, priority="essencial", name="Casa")
+    created = client.post(
+        "/gastos", headers=other_headers, json={"priority": "essencial", "item_id": item["id"], "value": 100.0}
+    ).json()[0]
+
+    response = client.put(
+        f"/gastos/{created['id']}",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": item["id"], "value": 999.0},
+    )
+    assert response.status_code == 404
+
+
+def test_delete_gasto(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    created = client.post(
+        "/gastos", headers=auth_headers, json={"priority": "essencial", "item_id": item["id"], "value": 100.0}
+    ).json()[0]
+
+    response = client.delete(f"/gastos/{created['id']}", headers=auth_headers)
+    assert response.status_code == 204
+
+    listed = client.get("/gastos", headers=auth_headers).json()
+    assert listed["items"] == []
+    assert listed["total"] == 0
+
+
+def test_antecipar_gasto_moves_future_installment_to_current_month(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    rows = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={
+            "priority": "essencial",
+            "item_id": item["id"],
+            "value": 100.0,
+            "description": "Blazer",
+            "is_installment": True,
+            "installment_count": 3,
+        },
+    ).json()
+    future_row = rows[1]
+
+    response = client.post(f"/gastos/{future_row['id']}/antecipar", headers=auth_headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["date"] == today_local().isoformat()
+    assert body["is_installment"] is True
+    assert body["installment_number"] == future_row["installment_number"]
+    assert body["installment_group_id"] == future_row["installment_group_id"]
+    assert body["value"] == 100.0
+    assert body["description"] == "Blazer - Parcela Antecipada"
+
+
+def test_antecipar_gasto_without_description_sets_default(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    rows = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={
+            "priority": "essencial",
+            "item_id": item["id"],
+            "value": 100.0,
+            "is_installment": True,
+            "installment_count": 2,
+        },
+    ).json()
+    future_row = rows[1]
+
+    response = client.post(f"/gastos/{future_row['id']}/antecipar", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json()["description"] == "Parcela Antecipada"
+
+
+def test_antecipar_gasto_accepts_discounted_value(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    rows = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={
+            "priority": "essencial",
+            "item_id": item["id"],
+            "value": 149.98,
+            "description": "Blazer",
+            "is_installment": True,
+            "installment_count": 2,
+        },
+    ).json()
+    future_row = rows[1]
+
+    response = client.post(
+        f"/gastos/{future_row['id']}/antecipar", headers=auth_headers, json={"value": 148.73}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["value"] == 148.73
+    assert body["description"] == "Blazer - Parcela Antecipada"
+
+
+def test_antecipar_gasto_rejects_current_month(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    created = client.post(
+        "/gastos", headers=auth_headers, json={"priority": "essencial", "item_id": item["id"], "value": 100.0}
+    ).json()[0]
+
+    response = client.post(f"/gastos/{created['id']}/antecipar", headers=auth_headers)
+    assert response.status_code == 400
+
+
+def test_antecipar_gasto_not_owned_returns_404(client, auth_headers, db_session):
+    from app import models
+    from app.security import hash_password
+
+    other = models.User(username="outro3", password_hash=hash_password("senha123"), role="user")
+    db_session.add(other)
+    db_session.commit()
+    login = client.post("/auth/login", data={"username": "outro3", "password": "senha123"})
+    other_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    item = _create_item(client, other_headers, priority="essencial", name="Casa")
+    rows = client.post(
+        "/gastos",
+        headers=other_headers,
+        json={
+            "priority": "essencial",
+            "item_id": item["id"],
+            "value": 100.0,
+            "is_installment": True,
+            "installment_count": 2,
+        },
+    ).json()
+    future_row = rows[1]
+
+    response = client.post(f"/gastos/{future_row['id']}/antecipar", headers=auth_headers)
+    assert response.status_code == 404
+
+
+def test_delete_gasto_not_owned_returns_404(client, auth_headers, db_session):
+    from app import models
+    from app.security import hash_password
+
+    other = models.User(username="outro2", password_hash=hash_password("senha123"), role="user")
+    db_session.add(other)
+    db_session.commit()
+    login = client.post("/auth/login", data={"username": "outro2", "password": "senha123"})
+    other_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    item = _create_item(client, other_headers, priority="essencial", name="Casa")
+    created = client.post(
+        "/gastos", headers=other_headers, json={"priority": "essencial", "item_id": item["id"], "value": 100.0}
+    ).json()[0]
+
+    response = client.delete(f"/gastos/{created['id']}", headers=auth_headers)
+    assert response.status_code == 404
+
+
+def test_create_gasto_com_data_futura(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    futura = max_launch_date(today_local())
+
+    response = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={"priority": "essencial", "item_id": item["id"], "value": 80.0, "date": futura.isoformat()},
+    )
+    assert response.status_code == 201
+    assert response.json()[0]["date"] == futura.isoformat()
+
+
+def test_create_gasto_parcelado_comeca_na_data_escolhida(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    inicio = add_months(today_local(), 1)
+
+    response = client.post(
+        "/gastos",
+        headers=auth_headers,
+        json={
+            "priority": "essencial",
+            "item_id": item["id"],
+            "value": 50.0,
+            "is_installment": True,
+            "installment_count": 3,
+            "date": inicio.isoformat(),
+        },
+    )
+    assert response.status_code == 201
+    datas = sorted(r["date"] for r in response.json())
+    assert datas == [add_months(inicio, i).isoformat() for i in range(3)]
+
+
+def test_create_gasto_rejeita_data_fora_da_faixa(client, auth_headers):
+    item = _create_item(client, auth_headers)
+    hoje = today_local()
+    for invalida in (date.fromordinal(hoje.toordinal() - 1), date.fromordinal(max_launch_date(hoje).toordinal() + 1)):
+        response = client.post(
+            "/gastos",
+            headers=auth_headers,
+            json={"priority": "essencial", "item_id": item["id"], "value": 10.0, "date": invalida.isoformat()},
+        )
+        assert response.status_code == 400

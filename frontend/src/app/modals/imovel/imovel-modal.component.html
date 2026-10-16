@@ -1,0 +1,34 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>{{ editing ? 'Editar imóvel' : 'Adicionar imóvel' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <ion-item>
+      <ion-input
+        appAutofocus
+        label="Nome do imóvel"
+        labelPlacement="stacked"
+        formControlName="name"
+        placeholder="Ex: Casa, Apartamento da praia"
+      ></ion-input>
+    </ion-item>
+
+    @if (errorMessage()) {
+      <ion-text color="danger">
+        <p>{{ errorMessage() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving()">
+      {{ saving() ? 'Salvando...' : editing ? 'Salvar alterações' : 'Salvar imóvel' }}
+    </ion-button>
+  </form>
+</ion-content>

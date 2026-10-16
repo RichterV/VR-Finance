@@ -1,0 +1,97 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>{{ editing ? 'Editar serviço' : 'Adicionar serviço' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  @if (imoveis()?.length === 0 && !editing) {
+    <ion-text color="warning">
+      <p>Nenhum imóvel cadastrado. Feche esta janela e use "Adicionar imóvel" antes.</p>
+    </ion-text>
+  }
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="field-row">
+      <ion-item class="col-grow">
+        <ion-select label="Imóvel" labelPlacement="stacked" formControlName="imovelId" interface="popover" placeholder="Selecione">
+          @for (imovel of imovelOptions(); track imovel.id) {
+            <ion-select-option [value]="imovel.id">{{ imovel.name }}</ion-select-option>
+          }
+        </ion-select>
+      </ion-item>
+
+      <ion-item class="col-grow">
+        <ion-select label="Categoria" labelPlacement="stacked" formControlName="categoria" interface="popover" placeholder="Selecione">
+          @for (cat of categorias; track cat[0]) {
+            <ion-select-option [value]="cat[0]">{{ cat[1] }}</ion-select-option>
+          }
+        </ion-select>
+      </ion-item>
+    </div>
+
+    <ion-item>
+      <ion-textarea label="Descrição" labelPlacement="stacked" formControlName="description" placeholder="O que foi feito" [autoGrow]="true"></ion-textarea>
+    </ion-item>
+
+    <ion-item class="value-primary">
+      <ion-input appAutofocus labelPlacement="stacked" type="text" [appCurrencyInput]="form.controls.value" placeholder="0,00">
+        <div slot="label">Valor</div>
+        <div slot="start" class="currency-prefix">R$</div>
+      </ion-input>
+    </ion-item>
+    @if (!editing) {
+      <app-receipt-value-hint [autofill]="valorComprovante"></app-receipt-value-hint>
+      <app-date-field formControlName="date" label="Data do serviço" [min]="minDate" [max]="maxDate"></app-date-field>
+    }
+
+    <ion-item>
+      <ion-input label="Prestador" labelPlacement="stacked" formControlName="prestador" placeholder="Opcional — quem fez o serviço"></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-select label="Tipo de serviço" labelPlacement="stacked" formControlName="serviceType" interface="popover" placeholder="Opcional">
+        <ion-select-option [value]="null">Não informar</ion-select-option>
+        @for (type of serviceTypes; track type[0]) {
+          <ion-select-option [value]="type[0]">{{ type[1] }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-item>
+
+    <app-date-field formControlName="garantiaAte" label="Garantia até" [optional]="true" [min]="serviceDate()"></app-date-field>
+    <div class="garantia-atalhos" role="group" aria-label="Atalhos de garantia">
+      @for (atalho of garantiaAtalhos; track atalho.meses) {
+        <button type="button" class="garantia-chip" (click)="aplicarGarantia(atalho.meses)">{{ atalho.label }}</button>
+      }
+    </div>
+
+    <ion-item>
+      <ion-textarea label="Observação" labelPlacement="stacked" formControlName="notes" placeholder="Opcional" [autoGrow]="true"></ion-textarea>
+    </ion-item>
+
+    @if (servico) {
+      <app-attachment-picker entityType="servico_casa" [entityId]="servico.id" mode="edit"></app-attachment-picker>
+    } @else {
+      <app-attachment-picker
+        entityType="servico_casa"
+        mode="create"
+        [initialFiles]="initialFiles"
+        (filesAdded)="valorComprovante.onFilesAdded($event)"
+      ></app-attachment-picker>
+    }
+
+    @if (errorMessage()) {
+      <ion-text color="danger">
+        <p>{{ errorMessage() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving() || attachmentBusy">
+      {{ saving() ? 'Salvando...' : attachmentBusy ? 'Aguarde o anexo...' : editing ? 'Salvar alterações' : 'Salvar serviço' }}
+    </ion-button>
+  </form>
+</ion-content>

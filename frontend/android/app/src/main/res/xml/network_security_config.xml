@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HTTP puro liberado só pro IP da rede local do servidor (tentado antes do Tailscale, ver
+     src/app/core/api-base.ts). Todo o resto continua exigindo HTTPS. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">ip-local-do-servidor</domain>
+    </domain-config>
+</network-security-config>

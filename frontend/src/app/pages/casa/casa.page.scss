@@ -1,0 +1,377 @@
+@use "../../../theme/mixins" as ds;
+
+.casa {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.resumo-filters,
+.service-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+
+  ion-select {
+    max-width: 200px;
+    border-radius: var(--r-sm);
+  }
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.empty-state {
+  color: var(--app-text-secondary);
+  margin: 0;
+}
+
+.stat-card {
+  @include ds.app-card;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.stat-label {
+  font-size: var(--fs-sm);
+  color: var(--app-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-value {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text-primary);
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--app-text-secondary);
+  margin-top: var(--sp-1);
+}
+
+// Cartão de garantias: é um botão (filtra a lista), com a faixa lateral quando ativo.
+.garantia-card {
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--app-field-border);
+  }
+
+  &.active {
+    @include ds.app-card-accent(var(--ion-color-primary));
+    padding-left: 22px;
+  }
+}
+
+.charts-row {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  align-items: start;
+  gap: 20px;
+}
+
+.chart-card {
+  @include ds.app-card;
+  padding: var(--sp-5);
+  min-width: 0;
+}
+
+.chart-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-3);
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.chart-sub {
+  font-size: var(--fs-sm);
+  color: var(--app-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-wrap {
+  position: relative;
+  height: 280px;
+}
+
+// "Por categoria": nome + valor na linha de cima, barra (escala comum: a maior categoria enche) e
+// quantidade embaixo. Uma cor só -- as categorias não são comparadas por cor, só pelo comprimento.
+.categoria-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.categoria-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  grid-template-areas:
+    "icon name value"
+    ". bar bar"
+    ". count count";
+  column-gap: var(--sp-2);
+  row-gap: 4px;
+  align-items: center;
+  padding: var(--sp-2);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  @media (hover: hover) {
+    &:hover {
+      background: var(--app-surface-hover);
+    }
+  }
+
+  &.active {
+    background: var(--app-tint-positive);
+
+    .categoria-name {
+      color: var(--ion-color-primary);
+    }
+  }
+
+  ion-icon {
+    grid-area: icon;
+    color: var(--app-text-secondary);
+    font-size: 1.1rem;
+  }
+}
+
+.categoria-name {
+  grid-area: name;
+  font-size: var(--fs-sm);
+}
+
+.categoria-value {
+  grid-area: value;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.categoria-bar {
+  grid-area: bar;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: rgba(var(--app-muted-rgb), 0.15);
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: var(--r-pill);
+    background: var(--ion-color-primary);
+  }
+}
+
+.categoria-count {
+  grid-area: count;
+  font-size: var(--fs-xs);
+  color: var(--app-text-secondary);
+}
+
+.data-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+
+  h2 .count {
+    font-weight: 400;
+    color: var(--app-text-secondary);
+    font-size: var(--fs-sm);
+  }
+}
+
+.section-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+
+  .list-controls {
+    flex: 1;
+    max-width: 360px;
+  }
+
+  .busca-filter {
+    border-radius: var(--r-sm);
+  }
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--app-field-border);
+  border-radius: var(--r-sm);
+  background: none;
+  font: inherit;
+  font-size: var(--fs-sm);
+  color: var(--app-text-secondary);
+  cursor: pointer;
+
+  &.active {
+    color: var(--ion-color-primary);
+    border-color: var(--ion-color-primary);
+  }
+}
+
+.clear-filters {
+  background: none;
+  border: 0;
+  padding: var(--sp-2);
+  font: inherit;
+  font-size: var(--fs-sm);
+  color: var(--ion-color-primary);
+  cursor: pointer;
+}
+
+td.description {
+  min-width: 180px;
+  max-width: 280px;
+
+  .sub {
+    display: block;
+    font-size: var(--fs-xs);
+    color: var(--app-text-secondary);
+  }
+}
+
+.muted {
+  color: var(--app-text-secondary);
+}
+
+/* Imóvel compartilhado comigo: "de Fulano" */
+.owner-tag {
+  display: inline-block;
+  padding: 1px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: rgba(var(--app-muted-rgb), 0.14);
+  color: var(--app-text-secondary);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.stat-label .owner-tag {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
+}
+
+.garantia {
+  font-size: var(--fs-sm);
+  color: var(--app-text-secondary);
+  white-space: nowrap;
+
+  &.vigente {
+    color: var(--app-positive);
+  }
+}
+
+@media (max-width: 900px) {
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .section-header .list-controls {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .service-filters {
+    flex-wrap: nowrap;
+
+    ion-select {
+      max-width: none;
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .filter-chip {
+      flex-shrink: 0;
+      padding: 0 var(--sp-3);
+    }
+  }
+
+  .clear-filters {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .casa {
+    gap: var(--sp-5);
+  }
+
+  .stat-card,
+  .chart-card {
+    padding: 16px 18px;
+  }
+
+  // Cartões em 2 colunas (como na Home): "Casa" e "Garantias vigentes" lado a lado.
+  .cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-3);
+  }
+
+  .card-footer {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .garantia-card.active {
+    padding-left: 16px;
+  }
+
+  .chart-wrap {
+    height: 220px;
+  }
+
+  .resumo-filters {
+    flex-wrap: nowrap;
+  }
+
+  .resumo-filters ion-select {
+    max-width: none;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}

@@ -1,0 +1,108 @@
+$mobile-max: 767px;
+
+.dados {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+// Abas à esquerda, mês/ano à direita, na mesma linha (no desktop).
+.top-controls {
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.cat-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+// Mês/ano não se aplicam à aba Recorrências.
+.filters.hidden {
+  display: none;
+}
+
+.rec-mark {
+  margin-left: 4px;
+  vertical-align: -2px;
+  font-size: 0.95em;
+  color: var(--ion-color-primary);
+}
+
+// Reset + mês + ano sempre numa linha só -- com wrap o grupo encolhia até o texto dos selects e
+// "Todos os anos" caía pra linha de baixo (inclusive no desktop).
+.filters {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+
+  ion-select {
+    width: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .filters {
+    width: 100%;
+  }
+
+  .filters ion-select {
+    max-width: none;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  td.description {
+    max-width: 140px;
+  }
+}
+
+.data-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  h2 .count {
+    font-weight: 400;
+    color: var(--app-text-secondary);
+    font-size: var(--fs-sm);
+  }
+
+  .busca-filter {
+    max-width: 360px;
+  }
+}
+
+@media (max-width: 480px) {
+  .data-section .busca-filter {
+    max-width: none;
+  }
+}
+
+td.description {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--app-text-secondary);
+}
+
+// Cartões do celular: estilos compartilhados em global.scss (.entry-*). Aqui só o que é de /dados.
+@media (max-width: $mobile-max) {
+  // "Gastos"/"Receitas" repete a aba logo acima -- no celular fica só o contador.
+  .data-section h2 {
+    font-size: 0;
+
+    .count {
+      font-size: var(--fs-sm);
+    }
+  }
+
+  .dados {
+    gap: var(--sp-4);
+  }
+}

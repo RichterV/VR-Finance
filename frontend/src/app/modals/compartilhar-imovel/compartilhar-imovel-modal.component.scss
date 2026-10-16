@@ -1,0 +1,101 @@
+.intro,
+.hint,
+.muted {
+  color: var(--app-text-secondary);
+  font-size: var(--fs-sm);
+}
+
+.intro {
+  margin: 0 0 var(--sp-4);
+}
+
+.hint {
+  margin: var(--sp-2) 0 var(--sp-4);
+}
+
+.error {
+  margin: 0 0 var(--sp-3);
+}
+
+/* Mesmo título de seção do Perfil (.perfil-section) */
+.share-section {
+  margin: var(--sp-6) 0 var(--sp-3);
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+.share-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.share-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--app-surface-border);
+  border-radius: var(--r-md);
+  background: var(--app-surface);
+}
+
+.share-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.share-name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share-meta {
+  font-size: var(--fs-xs);
+  color: var(--app-text-secondary);
+}
+
+.pending {
+  color: var(--ion-color-warning);
+}
+
+.share-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex-shrink: 0;
+
+  ion-select {
+    min-height: 36px;
+    width: 120px;
+  }
+}
+
+.nivel-text {
+  font-size: var(--fs-sm);
+  color: var(--app-text-secondary);
+}
+
+.share-empty {
+  font-size: var(--fs-sm);
+  color: var(--app-text-secondary);
+}
+
+@media (max-width: 420px) {
+  .share-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .share-actions {
+    justify-content: space-between;
+  }
+}

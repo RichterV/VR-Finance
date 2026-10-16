@@ -1,0 +1,165 @@
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  AlertController,
+  IonButton,
+  IonButtons,
+  IonContent,
+  IonHeader,
+  IonIcon,
+  IonItem,
+  IonLabel,
+  IonList,
+  IonSegment,
+  IonSegmentButton,
+  IonTitle,
+  IonToggle,
+  IonToolbar,
+  ModalController,
+  ToastController,
+} from '@ionic/angular';
+import { addIcons } from 'ionicons';
+import { add, close, createOutline, trashOutline } from 'ionicons/icons';
+
+import { AuthService } from '../../core/auth.service';
+import { HomeRefreshService } from '../../core/home-refresh.service';
+import { DropdownOption, DropdownOptionsService, Priority } from '../../services/dropdown-options.service';
+import { UndoDeleteService } from '../../shared/undo-delete.service';
+import { httpErrorMessage } from '../../shared/http-error';
+
+@Component({
+  selector: 'app-itens-modal',
+  templateUrl: './itens-modal.component.html',
+  styleUrls: ['./itens-modal.component.scss'],
+  imports: [
+    IonHeader,
+    IonToolbar,
+    IonButtons,
+    IonButton,
+    IonIcon,
+    IonTitle,
+    IonContent,
+    IonSegment,
+    IonSegmentButton,
+    IonLabel,
+    IonList,
+    IonItem,
+    IonToggle,
+  ],
+})
+export class ItensModalComponent implements OnInit, OnDestroy {
+  private readonly undoDelete = inject(UndoDeleteService);
+  private readonly toastCtrl = inject(ToastController);
+  readonly priority = signal<Priority>('essencial');
+  readonly items = signal<DropdownOption[]>([]);
+  /** Toggle "Cesta de inflação" só existe com o módulo Análise inflacionária habilitado. */
+  readonly cestaHabilitada = computed(() => this.auth.hasModule('analise_inflacionaria'));
+
+  constructor(
+    private readonly service: DropdownOptionsService,
+    private readonly alertCtrl: AlertController,
+    private readonly modalCtrl: ModalController,
+    private readonly homeRefresh: HomeRefreshService,
+    private readonly auth: AuthService,
+  ) {
+    addIcons({ add, createOutline, trashOutline, close });
+  }
+
+  ngOnInit(): void {
+    this.reload();
+  }
+
+  onPriorityChange(value: Priority): void {
+    this.priority.set(value);
+    this.reload();
+  }
+
+  reload(): void {
+    this.service.list(this.priority()).subscribe((items) => this.items.set(items));
+  }
+
+  /** Fechar o modal (botão, gesto ou fundo) confirma na hora uma exclusão ainda no "Desfazer". */
+  ngOnDestroy(): void {
+    this.undoDelete.flushAll();
+  }
+
+  dismiss(): void {
+    this.modalCtrl.dismiss();
+  }
+
+  async addItem(): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'Nova categoria',
+      inputs: [{ name: 'name', type: 'text', placeholder: 'Nome da categoria' }],
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Salvar',
+          handler: (data) => {
+            const name = (data.name ?? '').trim();
+            if (!name) {
+              return false;
+            }
+            this.service.create(this.priority(), name).subscribe({
+              next: () => this.reload(),
+              error: (err: unknown) => void this.showError(err, 'Não foi possível criar a categoria.'),
+            });
+            return true;
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  async editItem(item: DropdownOption): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'Editar categoria',
+      inputs: [{ name: 'name', type: 'text', value: item.name }],
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Salvar',
+          handler: (data) => {
+            const name = (data.name ?? '').trim();
+            if (!name) {
+              return false;
+            }
+            this.service.update(item.id, { name }).subscribe({
+              next: () => this.reload(),
+              error: (err: unknown) => void this.showError(err, 'Não foi possível renomear a categoria.'),
+            });
+            return true;
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  private async showError(err: unknown, fallback: string): Promise<void> {
+    const toast = await this.toastCtrl.create({ message: httpErrorMessage(err, fallback), duration: 2500, color: 'danger' });
+    await toast.present();
+  }
+
+  toggleInflacao(item: DropdownOption): void {
+    this.service
+      .update(item.id, { name: item.name, include_in_inflation: !item.include_in_inflation })
+      .subscribe(() => {
+        this.reload();
+        // A cesta de inflação é lida na Home (seção "Análise inflacionária") -- sem isso, a
+        // Home só refletiria a mudança num F5 manual ou pull-to-refresh, já que esse modal
+        // não fica "por baixo" da Home como os modais de Adicionar.
+        this.homeRefresh.request();
+      });
+  }
+
+  deleteItem(item: DropdownOption): void {
+    this.undoDelete.schedule({
+      message: `Categoria "${item.name}" excluída. Gastos já lançados com ela continuam válidos.`,
+      hide: () => this.items.update((lista) => lista.filter((i) => i.id !== item.id)),
+      restore: () => this.reload(),
+      commit: () => this.service.remove(item.id),
+      errorMessage: 'Erro ao excluir a categoria.',
+    });
+  }
+}

@@ -1,0 +1,160 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Perfil</ion-title>
+    <ion-buttons slot="end">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  @if (auth.currentUser(); as user) {
+    <div class="account-head">
+      <app-user-avatar [version]="user.avatar_version" [initials]="iniciais()" [size]="72" alt="Sua foto de perfil"></app-user-avatar>
+      <div class="account-head-text">
+        <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+        <span>{{ user.username }} · {{ user.role === 'master' ? 'Master' : 'Usuário' }}</span>
+        <div class="foto-acoes">
+          <ion-button size="small" fill="clear" [disabled]="fotoBusy()" (click)="escolherFoto(fotoInput)">
+            {{ fotoBusy() ? 'Enviando...' : user.avatar_version ? 'Trocar foto' : 'Adicionar foto' }}
+          </ion-button>
+          @if (user.avatar_version) {
+            <ion-button size="small" fill="clear" color="medium" [disabled]="fotoBusy()" (click)="removerFoto()">Remover</ion-button>
+          }
+        </div>
+      </div>
+      <!-- image/* sem capture: no celular o Android oferece câmera e galeria no mesmo seletor. -->
+      <input #fotoInput type="file" accept="image/*" hidden (change)="onFotoEscolhida($event)" />
+    </div>
+    @if (fotoErro()) {
+      <ion-text color="danger">
+        <p>{{ fotoErro() }}</p>
+      </ion-text>
+    }
+  }
+
+  <h2 class="perfil-section">Meus dados</h2>
+  <form [formGroup]="profileForm" (ngSubmit)="submitProfile()">
+    <ion-item>
+      <ion-input label="Usuário" labelPlacement="stacked" formControlName="username" autocomplete="username"></ion-input>
+    </ion-item>
+    <div class="field-row">
+      <ion-item class="col-grow">
+        <ion-input label="Nome" labelPlacement="stacked" formControlName="firstName"></ion-input>
+      </ion-item>
+      <ion-item class="col-grow">
+        <ion-input label="Sobrenome" labelPlacement="stacked" formControlName="lastName"></ion-input>
+      </ion-item>
+    </div>
+
+    @if (profileError()) {
+      <ion-text color="danger">
+        <p>{{ profileError() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="profileSaving()">
+      {{ profileSaving() ? 'Salvando...' : 'Salvar dados' }}
+    </ion-button>
+  </form>
+
+  <h2 class="perfil-section">Aparência</h2>
+  <div class="tema-grid" role="group" aria-label="Tema do app">
+    @for (t of temas; track t.key) {
+      <button
+        type="button"
+        class="tema"
+        [class.ativo]="theme.current() === t.key"
+        [attr.aria-pressed]="theme.current() === t.key"
+        [title]="t.descricao"
+        (click)="escolherTema(t.key)"
+      >
+        <span class="tema-amostra" aria-hidden="true" [style.background]="t.amostra.fundo">
+          <span class="tema-cartao" [style.background]="t.amostra.cartao">
+            <span class="tema-barra" [style.background]="t.amostra.marca"></span>
+            <span class="tema-ponto" [style.background]="t.amostra.positivo"></span>
+            <span class="tema-ponto" [style.background]="t.amostra.negativo"></span>
+          </span>
+        </span>
+        <span class="tema-nome">{{ t.nome }}</span>
+      </button>
+    }
+  </div>
+  <p class="tema-descricao">{{ temaDescricao() }}</p>
+  @if (temaErro()) {
+    <ion-text color="danger">
+      <p>{{ temaErro() }}</p>
+    </ion-text>
+  }
+
+  <h2 class="perfil-section">Trocar senha</h2>
+  <form [formGroup]="passwordForm" (ngSubmit)="submitPasswordChange()">
+    <ion-item>
+      <ion-input
+        label="Senha atual"
+        labelPlacement="stacked"
+        type="password"
+        formControlName="currentPassword"
+        autocomplete="current-password"
+      ></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-input
+        label="Nova senha"
+        labelPlacement="stacked"
+        type="password"
+        formControlName="newPassword"
+        autocomplete="new-password"
+      ></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-input
+        label="Confirmar nova senha"
+        labelPlacement="stacked"
+        type="password"
+        formControlName="confirmPassword"
+        autocomplete="new-password"
+      ></ion-input>
+    </ion-item>
+
+    @if (passwordError()) {
+      <ion-text color="danger">
+        <p>{{ passwordError() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="passwordSaving()">
+      {{ passwordSaving() ? 'Salvando...' : 'Trocar senha' }}
+    </ion-button>
+  </form>
+
+  @if (lockAvailable()) {
+    <h2 class="perfil-section">Segurança</h2>
+    <ion-item>
+      <ion-select
+        label="Pedir digital ao voltar pro app"
+        labelPlacement="stacked"
+        interface="popover"
+        [interfaceOptions]="selectPopoverOptions"
+        [value]="lockTimeout()"
+        (ionChange)="onLockTimeoutChange($any($event.detail.value))"
+      >
+        @for (option of lockOptions; track option.value) {
+          <ion-select-option [value]="option.value">{{ option.label }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-item>
+    <ion-note class="lock-hint">
+      Depois desse tempo com o app em segundo plano, ele pede sua digital (ou o bloqueio de tela do
+      celular) antes de mostrar seus dados. Vale só neste aparelho.
+    </ion-note>
+  }
+
+  <!-- Sair no fim, como botão de texto: é uma ação rara e não deve ser a primeira coisa do Perfil. -->
+  <ion-button expand="block" fill="clear" color="danger" class="logout-btn" (click)="logout()">
+    <ion-icon slot="start" name="log-out-outline"></ion-icon>
+    Sair
+  </ion-button>
+</ion-content>

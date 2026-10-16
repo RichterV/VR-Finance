@@ -1,0 +1,446 @@
+import { Component, EventEmitter, HostListener, Input, OnInit, Output, computed, signal } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
+import { AlertController, IonIcon, IonLabel, IonText, ToastController } from '@ionic/angular';
+import { addIcons } from 'ionicons';
+import { add, cameraOutline, documentOutline, trashOutline } from 'ionicons/icons';
+import { Observable, forkJoin, of } from 'rxjs';
+
+import { markExpectedExternalActivity } from '../core/expected-exit';
+import { Attachment, AttachmentsService, EntityType } from '../services/attachments.service';
+import {
+  ALLOWED_ATTACHMENT_TYPES,
+  MAX_ATTACHMENT_SIZE_BYTES,
+  asXmlFile,
+  buildPastedFileName,
+  extractHttpErrorMessage,
+  formatFileSize,
+  isAllowedAttachmentFile,
+  isXmlFile,
+} from './attachment-types';
+import { shrinkPhoto } from './camera-photo';
+
+interface DisplayItem {
+  key: string;
+  name: string;
+  sizeLabel: string;
+  removable: boolean;
+}
+
+/**
+ * Seletor de anexos (imagem/PDF) reusado nos modais de Adicionar (mode="create") e Editar
+ * (mode="edit") dos 5 módulos com comprovantes. Em modo criação os arquivos ficam "em espera"
+ * até o registro pai ser salvo (não existe id ainda) -- o modal pai chama commit(entityId) depois
+ * que o create() dele resolve. Em modo edição o entityId já é conhecido, então cada arquivo sobe
+ * imediatamente e pode ser removido a qualquer momento.
+ */
+@Component({
+  selector: 'app-attachment-picker',
+  standalone: true,
+  imports: [IonLabel, IonIcon, IonText],
+  template: `
+    <div class="attachment-picker">
+      <ion-label class="picker-label">
+        Anexos (opcional){{ showPasteHint ? ' — cole uma imagem copiada com Ctrl+V' : '' }}
+      </ion-label>
+
+      <div class="picker-actions">
+        <button
+          type="button"
+          class="add-attachment-btn"
+          [class.drag-over]="dragOver()"
+          [disabled]="uploading()"
+          (click)="openPicker(fileInput)"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+        >
+          <ion-icon name="add"></ion-icon>
+          <span>{{ uploading() ? 'Enviando...' : dragOver() ? 'Solte o arquivo aqui' : 'Adicionar arquivo' }}</span>
+        </button>
+        @if (showCameraButton) {
+          <button
+            type="button"
+            class="add-attachment-btn camera-btn"
+            title="Tirar foto"
+            aria-label="Tirar foto"
+            [disabled]="uploading()"
+            (click)="openPicker(cameraInput)"
+          >
+            <ion-icon name="camera-outline"></ion-icon>
+          </button>
+        }
+      </div>
+      <!-- capture="environment": no celular abre direto a câmera traseira (no app nativo o
+           WebView do Capacitor trata isso abrindo o app de câmera do Android) -->
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        [disabled]="uploading()"
+        (change)="onPhotoCaptured($event)"
+        #cameraInput
+        hidden
+      />
+      <input
+        type="file"
+        multiple
+        [accept]="acceptAttr"
+        [disabled]="uploading()"
+        (change)="onFilesSelected($event)"
+        #fileInput
+        hidden
+      />
+
+      @if (errorMessage()) {
+        <ion-text color="danger">
+          <p class="attachment-error">{{ errorMessage() }}</p>
+        </ion-text>
+      }
+
+      @if (displayItems().length) {
+        <ul class="attachment-list">
+          @for (item of displayItems(); track item.key) {
+            <li>
+              <ion-icon name="document-outline"></ion-icon>
+              <span class="name">{{ item.name }}</span>
+              <span class="size">{{ item.sizeLabel }}</span>
+              @if (item.removable) {
+                <button type="button" class="remove-btn" (click)="remove(item)" [disabled]="uploading()">
+                  <ion-icon name="trash-outline"></ion-icon>
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  `,
+  styles: [
+    `
+      .attachment-picker {
+        margin-bottom: 14px;
+      }
+      .picker-label {
+        display: block;
+        font-size: var(--fs-xs);
+        color: var(--app-text-secondary);
+        margin-bottom: 8px;
+      }
+      .picker-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .add-attachment-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 44px;
+        padding: 8px 18px;
+        border-radius: var(--r-pill);
+        border: 1px dashed var(--app-surface-border);
+        background: var(--app-surface-glass);
+        color: var(--ion-color-primary);
+        font-size: var(--fs-sm);
+        font-weight: 500;
+        cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease;
+      }
+      .add-attachment-btn ion-icon {
+        font-size: 1.1rem;
+      }
+      .add-attachment-btn.camera-btn {
+        justify-content: center;
+        width: 44px;
+        padding: 0;
+      }
+      .add-attachment-btn.camera-btn ion-icon {
+        font-size: 1.25rem;
+      }
+      .add-attachment-btn:hover:not(:disabled) {
+        border-color: var(--ion-color-primary);
+        border-style: solid;
+        background: rgba(var(--ion-color-primary-rgb), 0.12);
+      }
+      .add-attachment-btn.drag-over {
+        border-color: var(--ion-color-primary);
+        border-style: solid;
+        background: rgba(var(--ion-color-primary-rgb), 0.2);
+      }
+      .add-attachment-btn:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      .attachment-error {
+        margin: 8px 0 0;
+        font-size: var(--fs-sm);
+      }
+      .attachment-list {
+        list-style: none;
+        margin: 10px 0 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .attachment-list li {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: var(--r-sm);
+        background: var(--app-surface-glass);
+        border: 1px solid var(--app-surface-border);
+        font-size: var(--fs-sm);
+        color: var(--app-text-secondary);
+      }
+      .attachment-list ion-icon:first-child {
+        flex-shrink: 0;
+        font-size: 1rem;
+        color: var(--ion-color-primary);
+      }
+      .attachment-list .name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .attachment-list .size {
+        flex-shrink: 0;
+        opacity: 0.7;
+      }
+      .remove-btn {
+        border: none;
+        background: transparent;
+        color: var(--app-text-secondary);
+        padding: 8px;
+        margin: -8px;
+        border-radius: var(--r-sm);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        flex-shrink: 0;
+      }
+      .remove-btn ion-icon {
+        font-size: 1rem;
+      }
+      .remove-btn:hover:not(:disabled) {
+        color: var(--ion-color-danger);
+      }
+    `,
+  ],
+})
+export class AttachmentPickerComponent implements OnInit {
+  @Input({ required: true }) entityType!: EntityType;
+  @Input() entityId: string | number | null = null;
+  @Input() mode: 'create' | 'edit' = 'create';
+  /** Aceita também XML (só notas fiscais -- o backend recusa XML nos outros tipos). */
+  @Input() allowXml = false;
+  /** Arquivos que já entram na seleção ao abrir (ex: compartilhados de outro app). */
+  @Input() initialFiles: File[] = [];
+  @Output() readonly filesChanged = new EventEmitter<void>();
+  /** Arquivos aceitos, por qualquer caminho (seletor, câmera, Ctrl+V, arrastar, compartilhados) -- o
+   * modal de Adicionar usa pra ler o valor do comprovante. */
+  @Output() readonly filesAdded = new EventEmitter<File[]>();
+
+  /** Celular = app nativo ou navegador com tela de toque. */
+  private readonly isMobile = Capacitor.isNativePlatform() || window.matchMedia('(pointer: coarse)').matches;
+
+  /** Não existe Ctrl+V no teclado do celular -- a dica só aparece no desktop. */
+  readonly showPasteHint = !this.isMobile;
+
+  /** Câmera só faz sentido no celular -- no desktop o atributo capture é ignorado e o botão só
+   * abriria o mesmo seletor de arquivos. */
+  readonly showCameraButton = this.isMobile;
+
+  get acceptAttr(): string {
+    return [...ALLOWED_ATTACHMENT_TYPES, ...(this.allowXml ? ['.xml', 'application/xml', 'text/xml'] : [])].join(',');
+  }
+  readonly uploading = signal(false);
+  readonly errorMessage = signal<string | null>(null);
+  readonly dragOver = signal(false);
+  private readonly pendingFiles = signal<File[]>([]);
+  private readonly existingFiles = signal<Attachment[]>([]);
+
+  readonly displayItems = computed<DisplayItem[]>(() => [
+    ...this.existingFiles().map((a) => ({
+      key: `existing-${a.id}`,
+      name: a.original_filename,
+      sizeLabel: formatFileSize(a.size_bytes),
+      removable: true,
+    })),
+    ...this.pendingFiles().map((f, index) => ({
+      key: `pending-${index}`,
+      name: f.name,
+      sizeLabel: formatFileSize(f.size),
+      removable: this.mode === 'create',
+    })),
+  ]);
+
+  constructor(
+    private readonly attachmentsService: AttachmentsService,
+    private readonly toastCtrl: ToastController,
+    private readonly alertCtrl: AlertController,
+  ) {
+    addIcons({ documentOutline, trashOutline, add, cameraOutline });
+  }
+
+  ngOnInit(): void {
+    if (this.mode === 'edit' && this.entityId != null) {
+      this.attachmentsService.list(this.entityType, this.entityId).subscribe((files) => this.existingFiles.set(files));
+    }
+    if (this.initialFiles.length) this.addFiles(this.initialFiles);
+  }
+
+  /** Seletor de arquivo e câmera tiram o app do primeiro plano -- avisa o bloqueio do app (APK) pra não pedir digital na volta. */
+  openPicker(input: HTMLInputElement): void {
+    markExpectedExternalActivity();
+    input.click();
+  }
+
+  onFilesSelected(ev: Event): void {
+    const input = ev.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    this.addFiles(files);
+  }
+
+  async onPhotoCaptured(ev: Event): Promise<void> {
+    const input = ev.target as HTMLInputElement;
+    const photo = input.files?.[0];
+    input.value = '';
+    if (!photo) return;
+    // Reduzir a foto leva um instante -- trava os botões pra não disparar outra captura no meio
+    this.uploading.set(true);
+    const file = await shrinkPhoto(photo);
+    this.uploading.set(false);
+    this.addFiles([file]);
+  }
+
+  /** preventDefault() é obrigatório aqui -- sem isso o navegador nunca dispara o evento "drop"
+   * (o comportamento padrão dele em cima de um elemento comum é rejeitar o drop). */
+  onDragOver(ev: DragEvent): void {
+    ev.preventDefault();
+    if (this.uploading()) return;
+    this.dragOver.set(true);
+  }
+
+  onDragLeave(ev: DragEvent): void {
+    ev.preventDefault();
+    this.dragOver.set(false);
+  }
+
+  onDrop(ev: DragEvent): void {
+    ev.preventDefault();
+    this.dragOver.set(false);
+    if (this.uploading()) return;
+    this.addFiles(Array.from(ev.dataTransfer?.files ?? []));
+  }
+
+  /** Cola uma imagem da área de transferência como anexo -- funciona em qualquer campo do
+   * formulário, não só com o picker em foco, já que ele não tem nenhum campo de texto próprio. */
+  @HostListener('document:paste', ['$event'])
+  onPaste(ev: ClipboardEvent): void {
+    if (this.uploading()) return;
+    const item = Array.from(ev.clipboardData?.items ?? []).find((i) => i.type.startsWith('image/'));
+    if (!item) return;
+    const blob = item.getAsFile();
+    if (!blob) return;
+    ev.preventDefault();
+    this.addFiles([new File([blob], buildPastedFileName(item.type), { type: item.type })]);
+  }
+
+  /** Pra o modal pai já deixar um arquivo na fila (ex: o XML que acabou de ser lido). */
+  addPendingFiles(files: File[]): void {
+    this.addFiles(files);
+  }
+
+  private addFiles(files: File[]): void {
+    this.errorMessage.set(null);
+    if (!files.length) return;
+
+    const valid: File[] = [];
+    for (const file of files) {
+      if (this.allowXml && isXmlFile(file) && file.size <= MAX_ATTACHMENT_SIZE_BYTES) {
+        valid.push(asXmlFile(file));
+        continue;
+      }
+      if (!isAllowedAttachmentFile(file)) {
+        const tipos = this.allowXml ? 'imagem, PDF ou XML' : 'imagem ou PDF';
+        this.errorMessage.set(`"${file.name}" não é um arquivo válido (só ${tipos}, até 10MB).`);
+        continue;
+      }
+      valid.push(file);
+    }
+    if (!valid.length) return;
+    this.filesAdded.emit(valid);
+
+    if (this.mode === 'create') {
+      this.pendingFiles.update((current) => [...current, ...valid]);
+      return;
+    }
+
+    if (this.entityId == null) return;
+    this.uploading.set(true);
+    const entityId = this.entityId;
+    forkJoin(valid.map((file) => this.attachmentsService.upload(this.entityType, entityId, file))).subscribe({
+      next: (uploaded) => {
+        this.uploading.set(false);
+        this.existingFiles.update((current) => [...current, ...uploaded]);
+        this.filesChanged.emit();
+      },
+      error: async (err) => {
+        this.uploading.set(false);
+        console.error('Erro ao enviar anexo', err);
+        const toast = await this.toastCtrl.create({
+          message: `Erro ao enviar anexo: ${extractHttpErrorMessage(err)}`,
+          duration: 4000,
+          color: 'danger',
+        });
+        await toast.present();
+      },
+    });
+  }
+
+  async remove(item: DisplayItem): Promise<void> {
+    if (item.key.startsWith('pending-')) {
+      // Ainda não foi enviado pra nenhum lugar -- só descarta da seleção local, nada irreversível.
+      const index = Number(item.key.slice('pending-'.length));
+      this.pendingFiles.update((current) => current.filter((_, i) => i !== index));
+      return;
+    }
+
+    const id = Number(item.key.slice('existing-'.length));
+    const alert = await this.alertCtrl.create({
+      header: 'Excluir anexo',
+      message: `Excluir o anexo "${item.name}"? Essa ação não pode ser desfeita.`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Excluir',
+          role: 'destructive',
+          handler: () => {
+            this.attachmentsService.remove(id).subscribe(() => {
+              this.existingFiles.update((current) => current.filter((a) => a.id !== id));
+              this.filesChanged.emit();
+            });
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  /** Chamado pelo modal de Adicionar depois que create() resolve e o id/group id já é conhecido. */
+  commit(entityId: string | number): Observable<Attachment[]> {
+    const files = this.pendingFiles();
+    if (!files.length) return of([]);
+    return forkJoin(files.map((file) => this.attachmentsService.upload(this.entityType, entityId, file)));
+  }
+
+  /** Chamado junto do resetForm() do modal pai (fica aberto pra cadastro rápido em sequência). */
+  reset(): void {
+    this.pendingFiles.set([]);
+    this.errorMessage.set(null);
+  }
+}

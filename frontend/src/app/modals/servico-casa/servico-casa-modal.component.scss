@@ -1,0 +1,22 @@
+.garantia-atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: calc(-1 * var(--sp-1)) 0 var(--sp-4);
+}
+
+.garantia-chip {
+  background: none;
+  border: 1px solid var(--app-field-border);
+  border-radius: var(--r-pill);
+  color: var(--app-text-secondary);
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: var(--sp-1) var(--sp-3);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--ion-color-primary);
+    border-color: var(--ion-color-primary);
+  }
+}

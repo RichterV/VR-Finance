@@ -1,0 +1,116 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Início"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Lixeira</ion-title>
+    @if (items().length > 0) {
+      <ion-buttons slot="end">
+        <ion-button color="danger" [disabled]="emptying()" (click)="esvaziar()" title="Esvaziar lixeira" aria-label="Esvaziar lixeira">
+          <ion-icon slot="start" name="trash-bin-outline"></ion-icon>
+          <span class="btn-text">Esvaziar lixeira</span>
+        </ion-button>
+      </ion-buttons>
+    }
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div class="lixeira">
+    <div class="lixeira-top">
+      <p class="tool-hint">
+        O que você exclui fica aqui por 15 dias, junto com os anexos, e pode ser restaurado. Depois disso some de vez.
+      </p>
+      @if (tipos().length > 1) {
+        <ion-select
+          class="tipo-select"
+          label="Tipo"
+          labelPlacement="floating"
+          fill="outline"
+          interface="popover"
+          [interfaceOptions]="{ size: 'auto' }"
+          [value]="tipoFiltro() ?? ''"
+          (ionChange)="onTipoChange($event.detail.value)"
+        >
+          <ion-select-option value="">Todos</ion-select-option>
+          @for (tipo of tipos(); track tipo) {
+            <ion-select-option [value]="tipo">{{ tipoLabel(tipo) }}</ion-select-option>
+          }
+        </ion-select>
+      }
+    </div>
+
+    @if (loading() && items().length === 0) {
+      <div class="lixeira-state"><ion-spinner name="crescent"></ion-spinner></div>
+    } @else if (errorMessage(); as erro) {
+      <div class="lixeira-state">
+        <p>{{ erro }}</p>
+        <ion-button fill="clear" (click)="load()">Tentar novamente</ion-button>
+      </div>
+    } @else if (visiveis().length === 0) {
+      <p class="entry-empty trash-empty">
+        {{ items().length === 0 ? 'Nada foi excluído nos últimos 15 dias.' : 'Nada deste tipo na lixeira.' }}
+      </p>
+    } @else {
+      <div class="trash-list">
+        @for (item of visiveis(); track item.id) {
+          <article class="trash-row" [class.busy]="busyId() === item.id">
+            <div class="trash-main">
+              <div class="trash-head">
+                <span class="entry-chip">{{ item.tipo === 'anexo' ? 'Anexo' : tipoLabel(item.entity_type) }}</span>
+                <span class="trash-title">{{ item.titulo }}</span>
+                @if (valor(item); as v) {
+                  <span class="trash-value entry-value" [class.income]="item.entity_type === 'receita'">{{ v }}</span>
+                }
+              </div>
+              <div class="trash-meta">
+                @for (part of metaParts(item); track $index) {
+                  <span class="meta-part">{{ part }}</span>
+                }
+                <span class="trash-expira" [class.perto]="expiraPerto(item)">{{ expira(item) }}</span>
+              </div>
+              @if (item.tipo === 'registro' && item.anexos.length > 0) {
+                <ul class="trash-files" aria-label="Anexos">
+                  @for (anexo of item.anexos; track anexo.id) {
+                    <li>
+                      <ion-icon name="document-attach-outline" aria-hidden="true"></ion-icon>
+                      <span class="file-name">{{ anexo.original_filename }}</span>
+                      <span class="file-format">{{ formatLabel(anexo) }}</span>
+                      <button class="icon-btn" aria-label="Ver anexo" title="Ver anexo" (click)="preview(anexo)">
+                        <ion-icon name="eye-outline"></ion-icon>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+            <div class="trash-actions">
+              @if (item.tipo === 'anexo') {
+                <button class="icon-btn" aria-label="Ver anexo" title="Ver anexo" (click)="preview(item.anexos[0])">
+                  <ion-icon name="eye-outline"></ion-icon>
+                </button>
+              }
+              <ion-button fill="clear" size="small" [disabled]="busyId() !== null" (click)="restaurar(item)">
+                <ion-icon slot="start" name="arrow-undo-outline"></ion-icon>
+                Restaurar
+              </ion-button>
+              <button
+                class="icon-btn danger"
+                aria-label="Excluir de vez"
+                title="Excluir de vez"
+                [disabled]="busyId() !== null"
+                (click)="excluirDeVez(item)"
+              >
+                <ion-icon name="trash-outline"></ion-icon>
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </div>
+</ion-content>

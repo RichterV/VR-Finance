@@ -1,0 +1,51 @@
+.add-row {
+  padding: var(--sp-2) var(--sp-2) 0;
+
+  ion-button {
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.inflacao-toggle-row {
+  margin: 4px 0 0;
+  display: flex;
+  align-items: center;
+
+  ion-toggle {
+    font-size: var(--fs-xs);
+    color: var(--app-text-secondary);
+    --handle-height: 18px;
+    --handle-width: 18px;
+  }
+}
+
+.icon-btn {
+  border: none;
+  background: transparent;
+  color: var(--app-text-secondary);
+  padding: 6px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+
+  ion-icon {
+    font-size: 1.1rem;
+  }
+
+  &:hover {
+    background: var(--app-surface-hover);
+    color: var(--app-text-primary);
+  }
+
+  &.danger:hover {
+    color: var(--ion-color-danger);
+  }
+}

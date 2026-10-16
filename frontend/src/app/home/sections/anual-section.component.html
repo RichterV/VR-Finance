@@ -1,0 +1,104 @@
+@switch (resumo.state()) {
+  @case ('loading') {
+    <app-section-skeleton [cards]="4" [charts]="2"></app-section-skeleton>
+  }
+  @case ('error') {
+    <app-error-state title="Não foi possível carregar o resumo anual" (retry)="carregar()"></app-error-state>
+  }
+  @default {
+    @if (resumo.data(); as ra) {
+      <!-- Os 6 números do ano numa faixa só (antes eram 6 cartões em 2 linhas). -->
+      <dl class="key-strip">
+        <div>
+          <dt>Receita total</dt>
+          <dd>{{ currency(ra.total_receita) }}</dd>
+        </div>
+        <div>
+          <dt>Gastos do ano</dt>
+          <dd>{{ currency(ra.total_gastos) }}</dd>
+        </div>
+        <div>
+          <dt>Caixa real</dt>
+          <dd>{{ currency(ra.total_caixa_real) }}</dd>
+        </div>
+        <div>
+          <dt>Caixa pretendido</dt>
+          <dd>{{ currency(ra.total_caixa_pretendido) }}</dd>
+        </div>
+        <div>
+          <dt>Essenciais</dt>
+          <dd>{{ currency(ra.total_essenciais) }}</dd>
+          <span class="stat-percent">{{ percentOf(ra.total_essenciais, ra.total_gastos) }} dos gastos</span>
+        </div>
+        <div>
+          <dt>Não essenciais</dt>
+          <dd>{{ currency(ra.total_nao_essenciais) }}</dd>
+          <span class="stat-percent">{{ percentOf(ra.total_nao_essenciais, ra.total_gastos) }} dos gastos</span>
+        </div>
+      </dl>
+
+      <dl class="metric-list">
+        <div>
+          <dt>Média mensal de gastos</dt>
+          <dd>{{ currency(ra.media_gastos_mensal) }}</dd>
+        </div>
+        <div>
+          <dt>Média mensal de receitas</dt>
+          <dd>{{ currency(ra.media_receitas_mensal) }}</dd>
+        </div>
+        <div>
+          <dt>Gastos lançados</dt>
+          <dd>{{ count(ra.quantidade_gastos) }}</dd>
+        </div>
+        <div>
+          <dt>Receitas lançadas</dt>
+          <dd>{{ count(ra.quantidade_receitas) }}</dd>
+        </div>
+      </dl>
+
+      <!-- Tendência (mais larga) ao lado do caixa; sem eixo duplo em nenhum dos dois. -->
+      <div class="charts-grid charts-grid--trend">
+        <div class="chart-card chart-card--grow">
+          <div class="chart-card-header">
+            <h3>Gastos essenciais × não essenciais (últimos 12 meses)</h3>
+            <button
+              class="icon-btn"
+              title="Expandir gráfico"
+              aria-label="Expandir gráfico Evolução"
+              (click)="expandir('line', 'Evolução')"
+            >
+              <ion-icon name="expand-outline" aria-hidden="true"></ion-icon>
+            </button>
+          </div>
+          @if (lineHeadline()) {
+            <p class="chart-headline">{{ lineHeadline() }}</p>
+          }
+          <div class="chart-wrap">
+            <canvas baseChart role="img" [attr.aria-label]="lineChartLabel()" [type]="'line'" [data]="lineChartData()" [options]="lineChartOptions()"></canvas>
+          </div>
+        </div>
+        <div class="chart-card chart-card--grow">
+          <div class="chart-card-header">
+            <h3>Caixa real vs. meta (últimos 12 meses)</h3>
+            <button
+              class="icon-btn"
+              title="Expandir gráfico"
+              aria-label="Expandir gráfico Caixa pretendido vs. real"
+              (click)="expandir('bar', 'Caixa real vs. meta')"
+            >
+              <ion-icon name="expand-outline" aria-hidden="true"></ion-icon>
+            </button>
+          </div>
+          <app-caixa-meta-chart [rows]="ra.caixa_pretendido_vs_real" [valoresOcultos]="valoresOcultos()"></app-caixa-meta-chart>
+        </div>
+      </div>
+
+      <app-percentuais-itens
+        [itens]="ra.percentuais_itens"
+        [valoresOcultos]="valoresOcultos()"
+        titulo="Categorias no ano"
+        [recolhido]="true"
+      ></app-percentuais-itens>
+    }
+  }
+}

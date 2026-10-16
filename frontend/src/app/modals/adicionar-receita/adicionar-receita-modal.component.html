@@ -1,0 +1,85 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Adicionar receita</ion-title>
+    <ion-buttons slot="end">
+      <ion-button aria-label="Fechar" (click)="dismiss()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <ion-item class="value-primary">
+      <ion-input appAutofocus
+        labelPlacement="stacked"
+        type="text"
+        [appCurrencyInput]="form.controls.value"
+        placeholder="0,00"
+      >
+        <div slot="label">Valor</div>
+        <div slot="start" class="currency-prefix">R$</div>
+      </ion-input>
+    </ion-item>
+    <app-receipt-value-hint [autofill]="valorComprovante"></app-receipt-value-hint>
+
+    <div class="cash-card">
+      <app-cash-percentage-field formControlName="cashPercentage"></app-cash-percentage-field>
+      <div class="cash-card-row cash-card-footer">
+        <span class="cash-card-label">Valor caixa:</span>
+        <span class="cash-card-value">{{ cashValue() | currency: 'BRL' }}</span>
+      </div>
+      <div class="cash-card-default">
+        @if (isDefaultCashPercentage()) {
+          <span class="default-hint">Este é o seu padrão</span>
+        } @else {
+          <button
+            type="button"
+            class="default-btn"
+            [disabled]="savingDefault()"
+            (click)="saveDefaultCashPercentage()"
+            title="Próximas receitas já abrem com este percentual"
+          >
+            {{ savingDefault() ? 'Salvando...' : 'Usar como padrão' }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <app-launch-date-field formControlName="date"></app-launch-date-field>
+
+    <app-recurrence-field
+      [enabled]="form.controls.recorrente"
+      [day]="form.controls.recorrenciaDia"
+      [end]="form.controls.recorrenciaFim"
+      [launchDate]="form.value.date ?? ''"
+    ></app-recurrence-field>
+
+    <ion-item>
+      <ion-textarea
+        label="Descrição"
+        labelPlacement="stacked"
+        formControlName="description"
+        placeholder="Opcional"
+      ></ion-textarea>
+    </ion-item>
+
+    <app-attachment-picker
+      entityType="receita"
+      mode="create"
+      [initialFiles]="initialFiles"
+      (filesAdded)="valorComprovante.onFilesAdded($event)"
+    ></app-attachment-picker>
+
+    @if (errorMessage()) {
+      <ion-text color="danger">
+        <p>{{ errorMessage() }}</p>
+      </ion-text>
+    }
+
+    <ion-button type="submit" expand="block" class="ion-margin-top" [disabled]="saving() || attachmentBusy">
+      {{ saving() ? 'Salvando...' : attachmentBusy ? 'Aguarde o anexo...' : 'Salvar receita' }}
+    </ion-button>
+  </form>
+</ion-content>

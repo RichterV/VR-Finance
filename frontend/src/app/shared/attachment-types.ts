@@ -1,0 +1,66 @@
+/** Espelha a whitelist do backend (app/routers/attachments.py, ALLOWED_CONTENT_TYPES/MAX_FILE_SIZE_BYTES). */
+export const ALLOWED_ATTACHMENT_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'application/pdf',
+];
+
+export const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
+
+export function isAllowedAttachmentFile(file: File): boolean {
+  return ALLOWED_ATTACHMENT_TYPES.includes(file.type) && file.size <= MAX_ATTACHMENT_SIZE_BYTES;
+}
+
+/** XML de NFS-e -- aceito só como anexo de nota fiscal. O tipo varia (application/xml, text/xml, ou
+ * vazio no Android), então vale também a extensão. */
+export function isXmlFile(file: File): boolean {
+  return file.type === 'application/xml' || file.type === 'text/xml' || /\.xml$/i.test(file.name);
+}
+
+/** Mesmo arquivo com o tipo que o backend espera pra XML. */
+export function asXmlFile(file: File): File {
+  return file.type === 'application/xml' ? file : new File([file], file.name, { type: 'application/xml' });
+}
+
+const EXTENSION_BY_TYPE: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/heic': 'heic',
+  'application/pdf': 'pdf',
+  'application/xml': 'xml',
+};
+
+/** Imagem colada (Ctrl+V) chega sem nome de arquivo -- gera um baseado no tipo/horário. */
+export function buildPastedFileName(mimeType: string): string {
+  const ext = EXTENSION_BY_TYPE[mimeType] ?? 'png';
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return `colado-${stamp}.${ext}`;
+}
+
+/**
+ * Formato curto do anexo pra exibir (ex: "PDF", "PNG"), pelo `content_type` -- validado contra a
+ * whitelist no backend, então mais confiável que a extensão do nome enviado. Tipo fora do mapa cai
+ * na extensão do nome e, sem extensão, em "ARQUIVO".
+ */
+export function attachmentFormatLabel(file: { content_type: string; original_filename: string }): string {
+  const ext = EXTENSION_BY_TYPE[file.content_type] ?? file.original_filename.match(/\.([a-z0-9]{1,5})$/i)?.[1];
+  return (ext ?? 'arquivo').toUpperCase();
+}
+
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** Extrai uma mensagem legível de um erro de HttpClient, pra diagnosticar falhas de upload em vez de um toast genérico. */
+export function extractHttpErrorMessage(err: unknown): string {
+  const httpErr = err as { status?: number; error?: { detail?: string }; message?: string } | null;
+  if (httpErr?.error?.detail) return httpErr.error.detail;
+  if (httpErr?.status === 0) return 'sem conexão com o servidor';
+  if (httpErr?.status) return `erro ${httpErr.status}`;
+  return httpErr?.message ?? 'erro desconhecido';
+}
