@@ -21,6 +21,9 @@
   <div class="admin">
     <section>
       <h2>Usuários <span class="count">({{ users().length }})</span></h2>
+      @if (bancoTotal() !== null) {
+        <p class="storage-total">Banco de dados: {{ formatStorage(bancoTotal()!) }} no total. A parte de cada usuário é estimada; arquivos = anexos (inclusive na lixeira) e foto.</p>
+      }
       <!-- Celular: um cartão por usuário no lugar da tabela (que precisava de scroll lateral e
            espremia os módulos numa coluna estreita) -->
       <div class="user-cards">
@@ -47,6 +50,13 @@
               <span class="user-card-label">Última atividade</span>
               <span class="last-activity" [class.never]="!u.last_activity_at">{{ formatLastActivity(u.last_activity_at) }}</span>
             </div>
+
+            @if (uso().get(u.id); as e) {
+              <div class="user-card-section">
+                <span class="user-card-label">Armazenamento</span>
+                <span class="storage">Banco {{ formatStorage(e.banco_bytes) }} · Arquivos {{ formatStorage(e.arquivos_bytes) }}</span>
+              </div>
+            }
 
             <div class="user-card-section">
               <span class="user-card-label">Módulos</span>
@@ -100,6 +110,8 @@
                 <th>Usuário</th>
                 <th>Perfil</th>
                 <th>Última atividade</th>
+                <th class="num">Banco</th>
+                <th class="num">Arquivos</th>
                 <th>Módulos</th>
                 <th class="actions-col">Ações</th>
               </tr>
@@ -123,6 +135,13 @@
                   </td>
                   <td>{{ u.role === 'master' ? 'Master' : 'Usuário' }}</td>
                   <td class="last-activity" [class.never]="!u.last_activity_at">{{ formatLastActivity(u.last_activity_at) }}</td>
+                  @if (uso().get(u.id); as e) {
+                    <td class="num storage">{{ formatStorage(e.banco_bytes) }}</td>
+                    <td class="num storage">{{ formatStorage(e.arquivos_bytes) }}</td>
+                  } @else {
+                    <td class="num storage">—</td>
+                    <td class="num storage">—</td>
+                  }
                   <td>
                     <div class="module-chips">
                       <span class="chip core">Início</span>
@@ -148,7 +167,7 @@
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="6" class="empty">{{ loading() ? 'Carregando...' : 'Nenhum usuário cadastrado.' }}</td>
+                  <td colspan="8" class="empty">{{ loading() ? 'Carregando...' : 'Nenhum usuário cadastrado.' }}</td>
                 </tr>
               }
             </tbody>

@@ -45,6 +45,17 @@ h2 .count {
   }
 }
 
+.storage-total {
+  margin: -8px 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--app-text-secondary);
+}
+
+.storage {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 .last-activity {
   white-space: nowrap;
 

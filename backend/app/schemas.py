@@ -105,6 +105,17 @@ class UserOut(BaseModel):
         return value.replace(tzinfo=timezone.utc).isoformat()
 
 
+class UsoUsuarioOut(BaseModel):
+    user_id: int
+    banco_bytes: int  # parte proporcional do arquivo do banco (estimativa, ver app/uso_armazenamento.py)
+    arquivos_bytes: int  # anexos (inclusive na lixeira) + foto de perfil
+
+
+class UsoArmazenamentoOut(BaseModel):
+    banco_total_bytes: int
+    usuarios: list[UsoUsuarioOut]
+
+
 class UserCreate(BaseModel):
     username: str = Field(min_length=1)
     password: str = Field(min_length=6)

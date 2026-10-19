@@ -15,7 +15,7 @@ import {
 import { addIcons } from 'ionicons';
 import { createOutline, personAddOutline, swapHorizontalOutline, trashOutline } from 'ionicons/icons';
 
-import { AuthService, CurrentUser } from '../../core/auth.service';
+import { AuthService, CurrentUser, UsoUsuario } from '../../core/auth.service';
 import { ModuleKey, OPTIONAL_MODULES } from '../../core/modules';
 import { isDesktopViewport, slideInFromRight, slideOutToRight, SIDE_MODAL_CSS_CLASS } from '../../modals/side-modal.animations';
 import { extractHttpErrorMessage } from '../../shared/attachment-types';
@@ -37,6 +37,19 @@ export function formatLastActivity(iso: string | null): string {
   });
 }
 
+/** "512 KB", "11,5 MB", "1,2 GB" (base 1024, vírgula decimal). */
+export function formatStorage(bytes: number): string {
+  const unidades = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let valor = Math.max(0, bytes);
+  let i = 0;
+  while (valor >= 1024 && i < unidades.length - 1) {
+    valor /= 1024;
+    i++;
+  }
+  const casas = i === 0 || valor >= 100 ? 0 : 1;
+  return `${valor.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas })} ${unidades[i]}`;
+}
+
 /**
  * Painel de Administração (só master): lista de usuários, criar/editar (dados, senha, módulos
  * habilitados), excluir e "Mudar pra conta teste". Mexer na própria conta fica no Perfil.
@@ -50,6 +63,9 @@ export function formatLastActivity(iso: string | null): string {
 export class AdminPage implements OnInit {
   readonly users = signal<CurrentUser[]>([]);
   readonly loading = signal(true);
+  /** Espaço por usuário; carregado à parte -- se falhar, a coluna só fica com "—". */
+  readonly uso = signal<Map<number, UsoUsuario>>(new Map());
+  readonly bancoTotal = signal<number | null>(null);
 
   constructor(
     readonly auth: AuthService,
@@ -72,7 +88,16 @@ export class AdminPage implements OnInit {
       },
       error: () => this.loading.set(false),
     });
+    this.auth.usersStorage().subscribe({
+      next: (r) => {
+        this.uso.set(new Map(r.usuarios.map((u) => [u.user_id, u])));
+        this.bancoTotal.set(r.banco_total_bytes);
+      },
+      error: () => this.uso.set(new Map()),
+    });
   }
+
+  readonly formatStorage = formatStorage;
 
   readonly formatLastActivity = formatLastActivity;
 

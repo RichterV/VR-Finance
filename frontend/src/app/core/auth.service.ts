@@ -30,6 +30,20 @@ export interface CurrentUser {
   avatar_version?: number | null;
 }
 
+/** Espaço de um usuário (GET /auth/users/armazenamento, só master). */
+export interface UsoUsuario {
+  user_id: number;
+  /** Parte proporcional do arquivo do banco (estimativa). */
+  banco_bytes: number;
+  /** Anexos (inclusive na lixeira) + foto de perfil. */
+  arquivos_bytes: number;
+}
+
+export interface UsoArmazenamento {
+  banco_total_bytes: number;
+  usuarios: UsoUsuario[];
+}
+
 export interface UserPayload {
   username: string;
   first_name: string;
@@ -184,6 +198,10 @@ export class AuthService {
 
   listUsers(): Observable<CurrentUser[]> {
     return this.http.get<CurrentUser[]>(`${environment.apiUrl}/auth/users`);
+  }
+
+  usersStorage(): Observable<UsoArmazenamento> {
+    return this.http.get<UsoArmazenamento>(`${environment.apiUrl}/auth/users/armazenamento`);
   }
 
   updateUser(id: number, payload: UserPayload): Observable<CurrentUser> {

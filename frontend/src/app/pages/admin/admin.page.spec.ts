@@ -1,4 +1,4 @@
-import { formatLastActivity } from './admin.page';
+import { formatLastActivity, formatStorage } from './admin.page';
 
 describe('formatLastActivity', () => {
   it('mostra "Nunca" quando o usuário ainda não usou o app', () => {
@@ -20,5 +20,16 @@ describe('formatLastActivity', () => {
     });
     expect(formatLastActivity(iso)).toBe(esperado);
     expect(formatLastActivity(iso)).toMatch(/28\/09\/2026/);
+  });
+});
+
+describe('formatStorage', () => {
+  it('usa a unidade certa com vírgula decimal', () => {
+    expect(formatStorage(0)).toBe('0 B');
+    expect(formatStorage(512)).toBe('512 B');
+    expect(formatStorage(1536)).toBe('1,5 KB');
+    expect(formatStorage(11.5 * 1024 * 1024)).toBe('11,5 MB');
+    expect(formatStorage(1.25 * 1024 ** 3)).toBe('1,3 GB');
+    expect(formatStorage(250 * 1024 * 1024)).toBe('250 MB');
   });
 });

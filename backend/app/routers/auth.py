@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from app import compartilhamento, models, schemas
+from app import compartilhamento, models, schemas, uso_armazenamento
 from app.avatars import MAX_AVATAR_BYTES, AvatarError, avatar_path, normalize_avatar, save_avatar_file
 from app.deps import get_current_user, get_current_user_allow_password_change, get_db, require_master
 from app.lixeira import delete_all_for_user as delete_all_trash_for_user
@@ -223,6 +223,14 @@ def list_users(
     _master: models.User = Depends(require_master),
 ):
     return db.query(models.User).order_by(models.User.username).all()
+
+
+@router.get("/users/armazenamento", response_model=schemas.UsoArmazenamentoOut)
+def users_storage(
+    db: Session = Depends(get_db),
+    _master: models.User = Depends(require_master),
+):
+    return uso_armazenamento.uso_por_usuario(db)
 
 
 def _get_editable_user(db: Session, user_id: int) -> models.User:
